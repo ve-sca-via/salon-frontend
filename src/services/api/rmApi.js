@@ -1,0 +1,120 @@
+/**
+ * RM (Relationship Manager) API - RTK Query
+ * 
+ * Handles all RM operations for vendor onboarding.
+ */
+
+import { createApi } from '@reduxjs/toolkit/query/react';
+import axiosBaseQuery from './baseQuery';
+
+export const rmApi = createApi({
+  reducerPath: 'rmApi',
+  baseQuery: axiosBaseQuery(),
+  tagTypes: ['VendorRequests', 'VendorRequest', 'RMProfile', 'RMScore'],
+  endpoints: (builder) => ({
+    // Submit vendor join request
+    submitVendorRequest: builder.mutation({
+      query: ({ requestData, isDraft = false }) => ({
+        url: `/api/rm/vendor-requests${isDraft ? '?is_draft=true' : ''}`,
+        method: 'post',
+        data: requestData,
+      }),
+      invalidatesTags: [{ type: 'VendorRequests', id: 'LIST' }],
+    }),
+
+    // Get RM's own vendor requests
+    getOwnVendorRequests: builder.query({
+      query: ({ statusFilter, limit = 50, offset = 0 } = {}) => ({
+        url: '/api/rm/vendor-requests',
+        method: 'get',
+        params: { status_filter: statusFilter, limit, offset },
+      }),
+      providesTags: (result) =>
+        result?.data
+          ? [
+              ...result.data.map(({ id }) => ({ type: 'VendorRequests', id })),
+              { type: 'VendorRequests', id: 'LIST' },
+            ]
+          : [{ type: 'VendorRequests', id: 'LIST' }],
+      keepUnusedDataFor: 120, // Cache for 2 minutes
+      refetchOnFocus: true,
+    }),
+
+    // Get specific vendor request
+    getVendorRequestById: builder.query({
+      query: (requestId) => ({
+        url: `/api/rm/vendor-requests/${requestId}`,
+        method: 'get',
+      }),
+      providesTags: (result, error, id) => [{ type: 'VendorRequest', id }],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
+    }),
+
+    // Update vendor request
+    updateVendorRequest: builder.mutation({
+      query: ({ requestId, requestData, submitForApproval = false }) => ({
+        url: `/api/rm/vendor-requests/${requestId}${submitForApproval ? '?submit_for_approval=true' : ''}`,
+        method: 'put',
+        data: requestData,
+      }),
+      invalidatesTags: (result, error, { requestId }) => [
+        { type: 'VendorRequest', id: requestId },
+        { type: 'VendorRequests', id: 'LIST' },
+      ],
+    }),
+
+    // Delete vendor request
+    deleteVendorRequest: builder.mutation({
+      query: (requestId) => ({
+        url: `/api/rm/vendor-requests/${requestId}`,
+        method: 'delete',
+      }),
+      invalidatesTags: [{ type: 'VendorRequests', id: 'LIST' }],
+    }),
+
+    // Get RM profile and dashboard stats
+    getRMProfile: builder.query({
+      query: () => ({
+        url: '/api/rm/dashboard',
+        method: 'get',
+      }),
+      providesTags: ['RMProfile'],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
+      refetchOnFocus: true,
+    }),
+
+    // Update RM profile
+    updateRMProfile: builder.mutation({
+      query: (profileData) => ({
+        url: '/api/rm/profile',
+        method: 'put',
+        data: profileData,
+      }),
+      invalidatesTags: ['RMProfile'],
+    }),
+
+    // Get RM score history
+    getRMScoreHistory: builder.query({
+      query: ({ limit = 50, offset = 0 } = {}) => ({
+        url: '/api/rm/score-history',
+        method: 'get',
+        params: { limit, offset },
+      }),
+      providesTags: ['RMScore'],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
+    }),
+  }),
+});
+
+export const {
+  useSubmitVendorRequestMutation,
+  useGetOwnVendorRequestsQuery,
+  useGetVendorRequestByIdQuery,
+  useUpdateVendorRequestMutation,
+  useDeleteVendorRequestMutation,
+  useGetRMProfileQuery,
+  useUpdateRMProfileMutation,
+  useGetRMScoreHistoryQuery,
+} = rmApi;
+
+export default rmApi;

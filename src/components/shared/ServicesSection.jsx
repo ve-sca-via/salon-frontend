@@ -1,0 +1,299 @@
+import { useState } from "react";
+import service1 from "../../assets/images/Service_Image_1.png";
+import service2 from "../../assets/images/Service_Image_2.png";
+import service3 from "../../assets/images/service Image_3.png";
+import service4 from "../../assets/images/service_image_4.png";
+import svgPaths from "../../utils/svgPaths";
+
+// Scissors Icon for Header
+function ScissorsIcon() {
+  return (
+    <div className="relative shrink-0 size-[24px]">
+      <svg
+        className="block size-full"
+        fill="none"
+        preserveAspectRatio="none"
+        viewBox="0 0 24 24"
+      >
+        <g>
+          <path
+            clipRule="evenodd"
+            d={svgPaths.p25acb880}
+            fill="#242B3A"
+            fillRule="evenodd"
+          />
+          <path
+            clipRule="evenodd"
+            d={svgPaths.p278c7db0}
+            fill="#242B3A"
+            fillRule="evenodd"
+          />
+          <path
+            clipRule="evenodd"
+            d={svgPaths.pd7a6390}
+            fill="#242B3A"
+            fillRule="evenodd"
+          />
+          <path
+            clipRule="evenodd"
+            d={svgPaths.p33bb100}
+            fill="#242B3A"
+            fillRule="evenodd"
+          />
+          <path
+            clipRule="evenodd"
+            d={svgPaths.p153dbd00}
+            fill="#242B3A"
+            fillRule="evenodd"
+          />
+        </g>
+      </svg>
+    </div>
+  );
+}
+
+// Header with Scissors Icon and Lines
+function Header() {
+  return (
+    <div className="flex flex-col gap-4 items-center w-full">
+      <div className="flex flex-col gap-2 items-center">
+        {/* Title */}
+        <h2 className="font-display font-bold text-[32px] leading-[48px] text-neutral-black">
+          Our Services
+        </h2>
+
+        {/* Icon with Lines */}
+        <div className="flex items-center gap-4">
+          <div className="h-[1px] w-[50px] bg-neutral-black"></div>
+          <ScissorsIcon />
+          <div className="h-[1px] w-[50px] bg-neutral-black"></div>
+        </div>
+
+        {/* Description */}
+        <p className="font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
+          A featured services marketplace typically offers a platform where
+          various service providers
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Service Card Component
+function ServiceCard({ service }) {
+  return (
+    <div className="relative w-full max-w-[306px] h-[428px] rounded-[10px] overflow-hidden group cursor-pointer">
+      {/* Service Image */}
+      <img
+        src={service.image}
+        alt={service.name}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+
+      {/* Gradient Overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+
+      {/* Service Info */}
+      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-2 p-6">
+        {/* Icon */}
+        <div className="mb-2">{service.icon}</div>
+
+        {/* Service Name */}
+        <h3 className="font-body font-semibold text-[20px] leading-[32px] text-white">
+          {service.name}
+        </h3>
+
+        {/* Service Count */}
+        <p className="font-body font-normal text-[16px] leading-[24px] text-white">
+          {service.count}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Navigation Arrow Icons
+function ArrowIcon({ direction, isActive }) {
+  const fillColor = isActive ? "#F89C02" : "#242B3A";
+
+  return (
+    <div className="relative size-[24px]">
+      <svg className="block size-full" fill="none" viewBox="0 0 24 24">
+        <path
+          d="M9 18l6-6-6-6"
+          stroke={fillColor}
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          transform={direction === "left" ? "rotate(180 12 12)" : ""}
+        />
+      </svg>
+    </div>
+  );
+}
+
+// Navigation Button
+function NavigationButton({ direction, onClick, isActive }) {
+  const lineColor = isActive ? "bg-accent-orange" : "bg-neutral-black";
+
+  return (
+    <button
+      onClick={onClick}
+      className="flex items-center gap-1 cursor-pointer hover:opacity-70 transition-opacity"
+    >
+      {direction === "left" && (
+        <>
+          <div className={`h-[2px] w-[36px] ${lineColor}`}></div>
+          <ArrowIcon direction="left" isActive={isActive} />
+        </>
+      )}
+      {direction === "right" && (
+        <>
+          <ArrowIcon direction="right" isActive={isActive} />
+          <div className={`h-[2px] w-[36px] ${lineColor}`}></div>
+        </>
+      )}
+    </button>
+  );
+}
+
+export default function ServicesSection() {
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const services = [
+    {
+      name: "Haircut",
+      count: "25 Saloons",
+      image: service1,
+      icon: (
+        <div className="flex items-center justify-center relative w-[45px] h-[45px]">
+          <svg
+            className="block size-full"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 42 26"
+          >
+            <g>
+              <path d={svgPaths.p287f2700} fill="white" />
+              <path d={svgPaths.p38a96200} fill="white" />
+              <path d={svgPaths.p3c4d1280} fill="white" />
+              <path d={svgPaths.p26de5800} fill="white" />
+            </g>
+          </svg>
+        </div>
+      ),
+    },
+    {
+      name: "Shaving",
+      count: "25 Saloons",
+      image: service2,
+      icon: (
+        <div className="flex items-center justify-center relative size-[45px]">
+          <svg
+            className="block size-full"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 45 45"
+          >
+            <g>
+              <path d={svgPaths.p30bcd800} fill="white" />
+              <path d={svgPaths.p3b24f500} fill="white" />
+              <path d={svgPaths.p2f100240} fill="white" />
+              <path d={svgPaths.p76e1c00} fill="white" />
+            </g>
+          </svg>
+        </div>
+      ),
+    },
+    {
+      name: "Trimming",
+      count: "25 Saloons",
+      image: service3,
+      icon: (
+        <div className="flex items-center justify-center relative size-[45px]">
+          <svg
+            className="block size-full"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 45 45"
+          >
+            <g>
+              <path d={svgPaths.p3e6ee400} fill="white" />
+              <path d={svgPaths.p2a441dc0} fill="white" />
+              <path d={svgPaths.p3d4d2700} fill="white" />
+              <path d={svgPaths.p3f547900} fill="white" />
+            </g>
+          </svg>
+        </div>
+      ),
+    },
+    {
+      name: "Hair Style",
+      count: "25 Saloons",
+      image: service4,
+      icon: (
+        <div className="flex items-center justify-center relative w-[32px] h-[49px]">
+          <svg
+            className="block size-full"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 32 49"
+          >
+            <g>
+              <path d={svgPaths.p1eae4c80} fill="white" />
+              <path d={svgPaths.p8ed75c0} fill="white" />
+              <path d={svgPaths.p34fbc400} fill="white" />
+            </g>
+          </svg>
+        </div>
+      ),
+    },
+  ];
+
+  const itemsPerPage = 4;
+  const totalPages = Math.ceil(services.length / itemsPerPage);
+
+  const handlePrevious = () => {
+    setCurrentIndex((prev) => (prev > 0 ? prev - 1 : totalPages - 1));
+  };
+
+  const handleNext = () => {
+    setCurrentIndex((prev) => (prev < totalPages - 1 ? prev + 1 : 0));
+  };
+
+  const visibleServices = services.slice(
+    currentIndex * itemsPerPage,
+    (currentIndex + 1) * itemsPerPage
+  );
+
+  return (
+    <section className="w-full py-16 bg-bg-secondary">
+      <div className="max-w-[1320px] mx-auto px-4">
+        <div className="flex flex-col gap-10 items-center">
+          <Header />
+
+          {/* Services Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full place-items-center">
+            {visibleServices.map((service, index) => (
+              <ServiceCard key={index} service={service} />
+            ))}
+          </div>
+
+          {/* Navigation Buttons */}
+          <div className="flex gap-4 items-center">
+            <NavigationButton
+              direction="left"
+              onClick={handlePrevious}
+              isActive={false}
+            />
+            <NavigationButton
+              direction="right"
+              onClick={handleNext}
+              isActive={true}
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}

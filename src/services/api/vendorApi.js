@@ -1,0 +1,213 @@
+/**
+ * Vendor API - RTK Query
+ * 
+ * Handles all vendor/salon owner operations.
+ */
+
+import { createApi } from '@reduxjs/toolkit/query/react';
+import axiosBaseQuery from './baseQuery';
+
+export const vendorApi = createApi({
+  reducerPath: 'vendorApi',
+  baseQuery: axiosBaseQuery(),
+  tagTypes: ['VendorSalon', 'VendorServices', 'VendorStaff', 'VendorBookings', 'VendorAnalytics', 'ServiceCategories'],
+  endpoints: (builder) => ({
+    // Get vendor's salon
+    getVendorSalon: builder.query({
+      query: () => ({
+        url: '/api/vendors/salon',
+        method: 'get',
+      }),
+      providesTags: ['VendorSalon'],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
+    }),
+
+    // Update vendor salon
+    updateVendorSalon: builder.mutation({
+      query: (salonData) => ({
+        url: '/api/vendors/salon',
+        method: 'put',
+        data: salonData,
+      }),
+      invalidatesTags: ['VendorSalon'],
+    }),
+
+    // Get service categories
+    getServiceCategories: builder.query({
+      query: () => ({
+        url: '/api/vendors/service-categories',
+        method: 'get',
+      }),
+      providesTags: ['ServiceCategories'],
+      keepUnusedDataFor: 3600, // Cache for 1 hour (categories don't change often)
+    }),
+
+    // Get vendor's services
+    getVendorServices: builder.query({
+      query: () => ({
+        url: '/api/vendors/services',
+        method: 'get',
+      }),
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: 'VendorServices', id })),
+              { type: 'VendorServices', id: 'LIST' },
+            ]
+          : [{ type: 'VendorServices', id: 'LIST' }],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
+    }),
+
+    // Create service
+    createVendorService: builder.mutation({
+      query: (serviceData) => ({
+        url: '/api/vendors/services',
+        method: 'post',
+        data: serviceData,
+      }),
+      invalidatesTags: [{ type: 'VendorServices', id: 'LIST' }],
+    }),
+
+    // Update service
+    updateVendorService: builder.mutation({
+      query: ({ serviceId, ...serviceData }) => ({
+        url: `/api/vendors/services/${serviceId}`,
+        method: 'put',
+        data: serviceData,
+      }),
+      invalidatesTags: (result, error, { serviceId }) => [
+        { type: 'VendorServices', id: serviceId },
+        { type: 'VendorServices', id: 'LIST' },
+      ],
+    }),
+
+    // Delete service
+    deleteVendorService: builder.mutation({
+      query: (serviceId) => ({
+        url: `/api/vendors/services/${serviceId}`,
+        method: 'delete',
+      }),
+      invalidatesTags: [{ type: 'VendorServices', id: 'LIST' }],
+    }),
+
+    // Get vendor's staff
+    getVendorStaff: builder.query({
+      query: () => ({
+        url: '/api/vendors/staff',
+        method: 'get',
+      }),
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.map(({ id }) => ({ type: 'VendorStaff', id })),
+              { type: 'VendorStaff', id: 'LIST' },
+            ]
+          : [{ type: 'VendorStaff', id: 'LIST' }],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
+    }),
+
+    // Create staff member
+    createVendorStaff: builder.mutation({
+      query: (staffData) => ({
+        url: '/api/vendors/staff',
+        method: 'post',
+        data: staffData,
+      }),
+      invalidatesTags: [{ type: 'VendorStaff', id: 'LIST' }],
+    }),
+
+    // Update staff member
+    updateVendorStaff: builder.mutation({
+      query: ({ staffId, ...staffData }) => ({
+        url: `/api/vendors/staff/${staffId}`,
+        method: 'put',
+        data: staffData,
+      }),
+      invalidatesTags: (result, error, { staffId }) => [
+        { type: 'VendorStaff', id: staffId },
+        { type: 'VendorStaff', id: 'LIST' },
+      ],
+    }),
+
+    // Delete staff member
+    deleteVendorStaff: builder.mutation({
+      query: (staffId) => ({
+        url: `/api/vendors/staff/${staffId}`,
+        method: 'delete',
+      }),
+      invalidatesTags: [{ type: 'VendorStaff', id: 'LIST' }],
+    }),
+
+    // Get vendor's bookings
+    getVendorBookings: builder.query({
+      query: ({ status, limit = 50, offset = 0 } = {}) => ({
+        url: '/api/vendors/bookings',
+        method: 'get',
+        params: { status, limit, offset },
+      }),
+      providesTags: ['VendorBookings'],
+      keepUnusedDataFor: 60, // Cache for 1 minute (bookings change frequently)
+      refetchOnFocus: true,
+    }),
+
+    // Update booking status
+    updateBookingStatus: builder.mutation({
+      query: ({ bookingId, status }) => ({
+        url: `/api/vendors/bookings/${bookingId}/status`,
+        method: 'put',
+        data: { status },
+      }),
+      invalidatesTags: ['VendorBookings'],
+    }),
+
+    // Get vendor analytics
+    getVendorAnalytics: builder.query({
+      query: () => ({
+        url: '/api/vendors/analytics',
+        method: 'get',
+      }),
+      providesTags: ['VendorAnalytics'],
+      keepUnusedDataFor: 60, // Cache for 1 minute
+      refetchOnFocus: true,
+    }),
+
+    // Process vendor payment (demo)
+    processVendorPayment: builder.mutation({
+      query: () => ({
+        url: '/api/vendors/process-payment',
+        method: 'post',
+      }),
+      invalidatesTags: ['VendorSalon'],
+    }),
+
+    // Complete vendor registration
+    completeVendorRegistration: builder.mutation({
+      query: (data) => ({
+        url: '/api/vendors/complete-registration',
+        method: 'post',
+        data,
+      }),
+    }),
+  }),
+});
+
+export const {
+  useGetVendorSalonQuery,
+  useUpdateVendorSalonMutation,
+  useGetServiceCategoriesQuery,
+  useGetVendorServicesQuery,
+  useCreateVendorServiceMutation,
+  useUpdateVendorServiceMutation,
+  useDeleteVendorServiceMutation,
+  useGetVendorStaffQuery,
+  useCreateVendorStaffMutation,
+  useUpdateVendorStaffMutation,
+  useDeleteVendorStaffMutation,
+  useGetVendorBookingsQuery,
+  useUpdateBookingStatusMutation,
+  useGetVendorAnalyticsQuery,
+  useProcessVendorPaymentMutation,
+  useCompleteVendorRegistrationMutation,
+} = vendorApi;
+
+export default vendorApi;

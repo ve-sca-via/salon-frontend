@@ -1,0 +1,456 @@
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
+import PublicNavbar from "../../components/layout/PublicNavbar";
+import {
+  useGetMyBookingsQuery,
+  useCancelBookingMutation,
+} from "../../services/api/bookingApi";
+
+function BookingCard({ booking, onCancel }) {
+  const [showDetails, setShowDetails] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const navigate = useNavigate();
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "confirmed":
+        return "text-green-600";
+      case "completed":
+        return "text-green-700";
+      case "cancelled":
+        return "text-red-700";
+      default:
+        return "text-accent-orange";
+    }
+  };
+
+  const handleCancel = async () => {
+    setCancelling(true);
+    try {
+      await onCancel(booking.id);
+      setShowCancelConfirm(false);
+    } catch (error) {
+      console.error("Cancel error:", error);
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+  const isUpcoming =
+    booking.status !== "completed" && booking.status !== "cancelled";
+
+  return (
+    <div className="bg-primary-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden mb-6">
+      {/* Header with Salon Info */}
+      <div className="bg-gradient-orange p-4">
+        <div className="flex justify-between items-start">
+          <div className="flex-1">
+            <h3 className="font-display font-bold text-[20px] text-primary-white mb-1">
+              {booking.salon_name || "Salon"}
+            </h3>
+            <p className="font-body text-[12px] text-primary-white/80">
+              Booking #{booking.booking_number || booking.id?.substring(0, 8)}
+            </p>
+          </div>
+          <span
+            className={`px-3 py-1.5 rounded-full font-body text-[11px] font-bold uppercase tracking-wide ${getStatusColor(
+              booking.status
+            )} bg-primary-white`}
+          >
+            {booking.status}
+          </span>
+        </div>
+      </div>
+
+      <div className="p-5">
+        {/* Date & Time Section */}
+        <div className="grid grid-cols-2 gap-4 mb-5 pb-4 border-b border-neutral-gray-600">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-bg-secondary flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-body text-[11px] text-neutral-gray-500 mb-0.5">
+                Appointment Date
+              </p>
+              <p className="font-body text-[14px] text-neutral-black font-semibold">
+                {new Date(booking.booking_date).toLocaleDateString("en-US", {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 rounded-lg bg-bg-secondary flex items-center justify-center flex-shrink-0">
+              <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <div>
+              <p className="font-body text-[11px] text-neutral-gray-500 mb-0.5">
+                Time Slot
+              </p>
+              <p className="font-body text-[14px] text-neutral-black font-semibold">
+                {booking.all_booking_times || booking.booking_time}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Services Section */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-body text-[14px] text-neutral-black font-bold">
+              Services Booked ({booking.services?.length || 0})
+            </h4>
+          </div>
+          <div className="space-y-2">
+            {booking.services && booking.services
+              .slice(0, showDetails ? undefined : 2)
+              .map((service, idx) => (
+                <div
+                  key={idx}
+                  className="flex justify-between items-start gap-3 bg-bg-secondary rounded-lg p-3 hover:bg-neutral-gray-600 transition-colors"
+                >
+                  <div className="flex-1">
+                    <p className="font-body text-[14px] text-neutral-black font-semibold">
+                      {service.service_name || service.serviceName || "Service"}
+                    </p>
+                    {(service.plan_name || service.planName) && (
+                      <p className="font-body text-[12px] text-neutral-gray-500 mt-0.5">
+                        {service.plan_name || service.planName}
+                        {service.category && ` • ${service.category}`}
+                      </p>
+                    )}
+                    {service.duration && (
+                      <p className="font-body text-[11px] text-accent-orange mt-1">
+                        {service.duration} mins
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className="font-body text-[16px] text-accent-orange font-bold">
+                      ₹{service.price * (service.quantity || 1)}
+                    </p>
+                    {service.quantity > 1 && (
+                      <p className="font-body text-[11px] text-neutral-gray-500">
+                        ₹{service.price} × {service.quantity}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            {booking.services && booking.services.length > 2 && !showDetails && (
+              <button
+                onClick={() => setShowDetails(true)}
+                className="w-full font-body text-[13px] text-accent-orange font-semibold hover:text-neutral-black transition-colors py-2"
+              >
+                + Show {booking.services.length - 2} more service(s)
+              </button>
+            )}
+            {showDetails && booking.services && booking.services.length > 2 && (
+              <button
+                onClick={() => setShowDetails(false)}
+                className="w-full font-body text-[13px] text-accent-orange font-semibold hover:text-neutral-black transition-colors py-2"
+              >
+                Show less
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Payment Details */}
+        <div className="bg-bg-secondary rounded-lg p-4 mb-5">
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="font-body text-[13px] text-neutral-gray-500">
+                Services Total
+              </span>
+              <span className="font-body text-[13px] text-neutral-black font-semibold">
+                ₹{booking.total_amount || booking.service_price}
+              </span>
+            </div>
+            {booking.booking_fee > 0 && (
+              <>
+                <div className="flex justify-between items-center">
+                  <span className="font-body text-[13px] text-neutral-gray-500">
+                    Booking Fee
+                  </span>
+                  <span className="font-body text-[13px] text-neutral-black">
+                    ₹{booking.booking_fee}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-body text-[13px] text-neutral-gray-500">
+                    GST (18%)
+                  </span>
+                  <span className="font-body text-[13px] text-neutral-black">
+                    ₹{booking.gst_amount}
+                  </span>
+                </div>
+              </>
+            )}
+            <div className="flex justify-between items-center pt-2 border-t border-neutral-gray-600">
+              <span className="font-body text-[15px] text-neutral-black font-bold">
+                Total Paid
+              </span>
+              <span className="font-body text-[20px] text-accent-orange font-bold">
+                ₹{booking.amount_paid || booking.final_amount || booking.total_amount}
+              </span>
+            </div>
+            {booking.remaining_amount > 0 && (
+              <div className="flex justify-between items-center pt-2 border-t border-neutral-gray-600 bg-amber-50 -m-4 mt-2 p-3 rounded-b-lg">
+                <span className="font-body text-[13px] text-amber-700 font-semibold">
+                  Pay at Salon
+                </span>
+                <span className="font-body text-[16px] text-amber-700 font-bold">
+                  ₹{booking.remaining_amount}
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => navigate(`/salon/${booking.salon_id}`)}
+            className="flex items-center justify-center gap-2 bg-neutral-gray-600 hover:bg-neutral-gray-500 text-neutral-black font-body font-semibold text-[14px] py-3 rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
+            View Salon
+          </button>
+          
+          {isUpcoming ? (
+            <button
+              onClick={() => setShowCancelConfirm(true)}
+              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-primary-white font-body font-semibold text-[14px] py-3 rounded-lg transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Cancel Booking
+            </button>
+          ) : (
+            <button
+              onClick={() => navigate(`/salon/${booking.salon_id}/book`)}
+              className="flex items-center justify-center gap-2 bg-accent-orange hover:opacity-90 text-primary-white font-body font-semibold text-[14px] py-3 rounded-lg transition-opacity"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Book Again
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Cancel Confirmation Modal */}
+      {showCancelConfirm && (
+        <div className="fixed inset-0 bg-neutral-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-primary-white rounded-lg p-6 max-w-md w-full shadow-2xl">
+            <h3 className="font-display font-bold text-[20px] text-neutral-black mb-2">
+              Cancel Booking?
+            </h3>
+            <p className="font-body text-[14px] text-neutral-gray-500 mb-6">
+              Are you sure you want to cancel this booking? This action cannot
+              be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCancelConfirm(false)}
+                disabled={cancelling}
+                className="flex-1 bg-neutral-gray-600 hover:bg-neutral-gray-500 text-neutral-black font-body font-medium text-[14px] py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Keep Booking
+              </button>
+              <button
+                onClick={handleCancel}
+                disabled={cancelling}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-primary-white font-body font-medium text-[14px] py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {cancelling ? "Cancelling..." : "Yes, Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function MyBookings() {
+  const navigate = useNavigate();
+  
+  // RTK Query hooks
+  const { data: bookingsData, isLoading: loading, error } = useGetMyBookingsQuery();
+  const [cancelBooking] = useCancelBookingMutation();
+  
+  const bookings = bookingsData?.data || [];
+  
+  // Local UI state
+  const [activeTab, setActiveTab] = useState("all"); // all, upcoming, past
+
+  const handleCancelBooking = async (bookingId) => {
+    try {
+      await cancelBooking(bookingId).unwrap();
+      toast.success("Booking cancelled successfully", {
+        position: "top-center",
+        autoClose: 2000,
+        style: {
+          backgroundColor: "#000000",
+          color: "#fff",
+          fontFamily: "DM Sans, sans-serif",
+        },
+      });
+    } catch (error) {
+      console.error("Cancel error:", error);
+      toast.error(error?.message || "Failed to cancel booking");
+    }
+  };
+
+  const filterBookings = () => {
+    if (activeTab === "upcoming") {
+      return bookings.filter(
+        (b) => b.status !== "completed" && b.status !== "cancelled"
+      );
+    } else if (activeTab === "past") {
+      return bookings.filter(
+        (b) => b.status === "completed" || b.status === "cancelled"
+      );
+    }
+    return bookings;
+  };
+
+  const filteredBookings = filterBookings();
+
+  return (
+    <div className="min-h-screen bg-bg-primary">
+      <PublicNavbar />
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="font-display font-bold text-[32px] text-neutral-black mb-2">
+            My Bookings
+          </h1>
+          <p className="font-body text-[16px] text-neutral-gray-500">
+            Manage all your salon appointments
+          </p>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex gap-4 mb-6 border-b border-neutral-gray-600">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`font-body font-medium text-[16px] px-4 py-2 transition-colors ${
+              activeTab === "all"
+                ? "text-accent-orange border-b-2 border-accent-orange"
+                : "text-neutral-gray-500 hover:text-neutral-black"
+            }`}
+          >
+            All ({bookings.length})
+          </button>
+          <button
+            onClick={() => setActiveTab("upcoming")}
+            className={`font-body font-medium text-[16px] px-4 py-2 transition-colors ${
+              activeTab === "upcoming"
+                ? "text-accent-orange border-b-2 border-accent-orange"
+                : "text-neutral-gray-500 hover:text-neutral-black"
+            }`}
+          >
+            Upcoming (
+            {
+              bookings.filter(
+                (b) => b.status !== "completed" && b.status !== "cancelled"
+              ).length
+            }
+            )
+          </button>
+          <button
+            onClick={() => setActiveTab("past")}
+            className={`font-body font-medium text-[16px] px-4 py-2 transition-colors ${
+              activeTab === "past"
+                ? "text-accent-orange border-b-2 border-accent-orange"
+                : "text-neutral-gray-500 hover:text-neutral-black"
+            }`}
+          >
+            Past (
+            {
+              bookings.filter(
+                (b) => b.status === "completed" || b.status === "cancelled"
+              ).length
+            }
+            )
+          </button>
+        </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-orange"></div>
+          </div>
+        )}
+
+        {/* Empty State */}
+        {!loading && filteredBookings.length === 0 && (
+          <div className="bg-primary-white rounded-lg p-12 text-center shadow-md">
+            <div className="w-24 h-24 bg-bg-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg
+                className="w-12 h-12 text-neutral-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+            </div>
+            <h3 className="font-display font-bold text-[20px] text-neutral-black mb-2">
+              No bookings found
+            </h3>
+            <p className="font-body text-[14px] text-neutral-gray-500 mb-6">
+              {activeTab === "all"
+                ? "You haven't made any bookings yet"
+                : activeTab === "upcoming"
+                ? "You have no upcoming bookings"
+                : "You have no past bookings"}
+            </p>
+            <button
+              onClick={() => navigate("/salons")}
+              className="bg-accent-orange hover:opacity-90 text-primary-white font-body font-semibold text-[16px] px-8 py-3 rounded-lg transition-opacity"
+            >
+              Browse Salons
+            </button>
+          </div>
+        )}
+
+        {/* Bookings List */}
+        {!loading && filteredBookings.length > 0 && (
+          <div>
+            {filteredBookings.map((booking) => (
+              <BookingCard
+                key={booking.id}
+                booking={booking}
+                onCancel={handleCancelBooking}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

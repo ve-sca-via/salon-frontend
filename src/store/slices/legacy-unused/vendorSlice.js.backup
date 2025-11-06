@@ -1,0 +1,537 @@
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+  completeVendorRegistration,
+  getVendorSalonProfile,
+  updateVendorSalonProfile,
+  getVendorServices,
+  createVendorService,
+  updateVendorService,
+  deleteVendorService,
+  getVendorStaff,
+  createVendorStaff,
+  updateVendorStaff,
+  deleteVendorStaff,
+  getVendorBookings,
+  updateBookingStatus,
+  getVendorAnalytics,
+} from '../../services/backendApi';
+
+// =====================================================
+// ASYNC THUNKS
+// =====================================================
+
+/**
+ * Complete vendor registration (after admin approval)
+ */
+export const completeVendorRegistrationThunk = createAsyncThunk(
+  'vendor/completeRegistration',
+  async ({ token, fullName, password, confirmPassword }, { rejectWithValue }) => {
+    try {
+      const result = await completeVendorRegistration(token, {
+        full_name: fullName,
+        password,
+        confirm_password: confirmPassword,
+      });
+      return result;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Fetch vendor's own salon profile
+ */
+export const fetchVendorSalonProfile = createAsyncThunk(
+  'vendor/fetchSalonProfile',
+  async (_, { rejectWithValue }) => {
+    try {
+      const salon = await getVendorSalonProfile();
+      return salon;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Update vendor salon profile
+ */
+export const updateVendorSalonProfileThunk = createAsyncThunk(
+  'vendor/updateSalonProfile',
+  async (salonData, { rejectWithValue }) => {
+    try {
+      const updated = await updateVendorSalonProfile(salonData);
+      return updated;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Fetch vendor's services
+ */
+export const fetchVendorServices = createAsyncThunk(
+  'vendor/fetchServices',
+  async (_, { rejectWithValue }) => {
+    try {
+      const services = await getVendorServices();
+      return services;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Create new service
+ */
+export const createVendorServiceThunk = createAsyncThunk(
+  'vendor/createService',
+  async (serviceData, { rejectWithValue, getState }) => {
+    try {
+      // Get salon_id from state or fetch it
+      const state = getState();
+      let salonId = state.vendor.salonProfile?.id;
+      
+      // If salon profile not loaded, fetch it first
+      if (!salonId) {
+        const salonProfile = await getVendorSalonProfile();
+        salonId = salonProfile.id;
+      }
+      
+      // Add salon_id to service data
+      const serviceWithSalonId = {
+        ...serviceData,
+        salon_id: salonId
+      };
+      
+      const newService = await createVendorService(serviceWithSalonId);
+      return newService;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Update service
+ */
+export const updateVendorServiceThunk = createAsyncThunk(
+  'vendor/updateService',
+  async ({ id, ...serviceData }, { rejectWithValue }) => {
+    try {
+      const updated = await updateVendorService(id, serviceData);
+      return updated;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Delete service
+ */
+export const deleteVendorServiceThunk = createAsyncThunk(
+  'vendor/deleteService',
+  async (serviceId, { rejectWithValue }) => {
+    try {
+      await deleteVendorService(serviceId);
+      return serviceId;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Fetch vendor's staff
+ */
+export const fetchVendorStaff = createAsyncThunk(
+  'vendor/fetchStaff',
+  async (_, { rejectWithValue }) => {
+    try {
+      const staff = await getVendorStaff();
+      return staff;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Create new staff member
+ */
+export const createVendorStaffThunk = createAsyncThunk(
+  'vendor/createStaff',
+  async (staffData, { rejectWithValue }) => {
+    try {
+      const newStaff = await createVendorStaff(staffData);
+      return newStaff;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Update staff member
+ */
+export const updateVendorStaffThunk = createAsyncThunk(
+  'vendor/updateStaff',
+  async ({ staffId, staffData }, { rejectWithValue }) => {
+    try {
+      const updated = await updateVendorStaff(staffId, staffData);
+      return updated;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Delete staff member
+ */
+export const deleteVendorStaffThunk = createAsyncThunk(
+  'vendor/deleteStaff',
+  async (staffId, { rejectWithValue }) => {
+    try {
+      await deleteVendorStaff(staffId);
+      return staffId;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Fetch vendor's bookings
+ */
+export const fetchVendorBookings = createAsyncThunk(
+  'vendor/fetchBookings',
+  async ({ status = null, dateFrom = null, dateTo = null, limit = 50, offset = 0 } = {}, { rejectWithValue }) => {
+    try {
+      const bookings = await getVendorBookings(status, dateFrom, dateTo, limit, offset);
+      return bookings;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Update booking status
+ */
+export const updateBookingStatusThunk = createAsyncThunk(
+  'vendor/updateBookingStatus',
+  async ({ bookingId, status }, { rejectWithValue }) => {
+    try {
+      const updated = await updateBookingStatus(bookingId, status);
+      return updated;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+/**
+ * Fetch vendor analytics
+ */
+export const fetchVendorAnalytics = createAsyncThunk(
+  'vendor/fetchAnalytics',
+  async (_, { rejectWithValue }) => {
+    try {
+      const analytics = await getVendorAnalytics();
+      return analytics;
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+// =====================================================
+// SLICE
+// =====================================================
+
+const vendorSlice = createSlice({
+  name: 'vendor',
+  initialState: {
+    // Salon Profile
+    salonProfile: null,
+    profileLoading: false,
+    profileError: null,
+
+    // Services
+    services: [],
+    servicesLoading: false,
+    servicesError: null,
+
+    // Staff
+    staff: [],
+    staffLoading: false,
+    staffError: null,
+
+    // Bookings
+    bookings: [],
+    bookingsLoading: false,
+    bookingsError: null,
+
+    // Analytics
+    analytics: null,
+    analyticsLoading: false,
+    analyticsError: null,
+
+    // Registration
+    registrationLoading: false,
+    registrationError: null,
+
+    // Single operation loading/error states
+    createServiceLoading: false,
+    updateServiceLoading: false,
+    deleteServiceLoading: false,
+    createStaffLoading: false,
+    updateStaffLoading: false,
+    deleteStaffLoading: false,
+    updateBookingLoading: false,
+  },
+  reducers: {
+    clearErrors: (state) => {
+      state.profileError = null;
+      state.servicesError = null;
+      state.staffError = null;
+      state.bookingsError = null;
+      state.analyticsError = null;
+      state.registrationError = null;
+    },
+    clearSalonProfile: (state) => {
+      state.salonProfile = null;
+      state.services = [];
+      state.staff = [];
+      state.bookings = [];
+      state.analytics = null;
+    },
+  },
+  extraReducers: (builder) => {
+    // Complete Registration
+    builder
+      .addCase(completeVendorRegistrationThunk.pending, (state) => {
+        state.registrationLoading = true;
+        state.registrationError = null;
+      })
+      .addCase(completeVendorRegistrationThunk.fulfilled, (state) => {
+        state.registrationLoading = false;
+      })
+      .addCase(completeVendorRegistrationThunk.rejected, (state, action) => {
+        state.registrationLoading = false;
+        state.registrationError = action.payload;
+      });
+
+    // Fetch Salon Profile
+    builder
+      .addCase(fetchVendorSalonProfile.pending, (state) => {
+        state.profileLoading = true;
+        state.profileError = null;
+      })
+      .addCase(fetchVendorSalonProfile.fulfilled, (state, action) => {
+        state.profileLoading = false;
+        state.salonProfile = action.payload;
+      })
+      .addCase(fetchVendorSalonProfile.rejected, (state, action) => {
+        state.profileLoading = false;
+        state.profileError = action.payload;
+      });
+
+    // Update Salon Profile
+    builder
+      .addCase(updateVendorSalonProfileThunk.pending, (state) => {
+        state.profileLoading = true;
+        state.profileError = null;
+      })
+      .addCase(updateVendorSalonProfileThunk.fulfilled, (state, action) => {
+        state.profileLoading = false;
+        state.salonProfile = action.payload;
+      })
+      .addCase(updateVendorSalonProfileThunk.rejected, (state, action) => {
+        state.profileLoading = false;
+        state.profileError = action.payload;
+      });
+
+    // Fetch Services
+    builder
+      .addCase(fetchVendorServices.pending, (state) => {
+        state.servicesLoading = true;
+        state.servicesError = null;
+      })
+      .addCase(fetchVendorServices.fulfilled, (state, action) => {
+        state.servicesLoading = false;
+        state.services = action.payload;
+      })
+      .addCase(fetchVendorServices.rejected, (state, action) => {
+        state.servicesLoading = false;
+        state.servicesError = action.payload;
+      });
+
+    // Create Service
+    builder
+      .addCase(createVendorServiceThunk.pending, (state) => {
+        state.createServiceLoading = true;
+        state.servicesError = null;
+      })
+      .addCase(createVendorServiceThunk.fulfilled, (state, action) => {
+        state.createServiceLoading = false;
+        state.services.push(action.payload);
+      })
+      .addCase(createVendorServiceThunk.rejected, (state, action) => {
+        state.createServiceLoading = false;
+        state.servicesError = action.payload;
+      });
+
+    // Update Service
+    builder
+      .addCase(updateVendorServiceThunk.pending, (state) => {
+        state.updateServiceLoading = true;
+        state.servicesError = null;
+      })
+      .addCase(updateVendorServiceThunk.fulfilled, (state, action) => {
+        state.updateServiceLoading = false;
+        const index = state.services.findIndex((s) => s.id === action.payload.id);
+        if (index !== -1) {
+          state.services[index] = action.payload;
+        }
+      })
+      .addCase(updateVendorServiceThunk.rejected, (state, action) => {
+        state.updateServiceLoading = false;
+        state.servicesError = action.payload;
+      });
+
+    // Delete Service
+    builder
+      .addCase(deleteVendorServiceThunk.pending, (state) => {
+        state.deleteServiceLoading = true;
+        state.servicesError = null;
+      })
+      .addCase(deleteVendorServiceThunk.fulfilled, (state, action) => {
+        state.deleteServiceLoading = false;
+        state.services = state.services.filter((s) => s.id !== action.payload);
+      })
+      .addCase(deleteVendorServiceThunk.rejected, (state, action) => {
+        state.deleteServiceLoading = false;
+        state.servicesError = action.payload;
+      });
+
+    // Fetch Staff
+    builder
+      .addCase(fetchVendorStaff.pending, (state) => {
+        state.staffLoading = true;
+        state.staffError = null;
+      })
+      .addCase(fetchVendorStaff.fulfilled, (state, action) => {
+        state.staffLoading = false;
+        state.staff = action.payload;
+      })
+      .addCase(fetchVendorStaff.rejected, (state, action) => {
+        state.staffLoading = false;
+        state.staffError = action.payload;
+      });
+
+    // Create Staff
+    builder
+      .addCase(createVendorStaffThunk.pending, (state) => {
+        state.createStaffLoading = true;
+        state.staffError = null;
+      })
+      .addCase(createVendorStaffThunk.fulfilled, (state, action) => {
+        state.createStaffLoading = false;
+        state.staff.push(action.payload);
+      })
+      .addCase(createVendorStaffThunk.rejected, (state, action) => {
+        state.createStaffLoading = false;
+        state.staffError = action.payload;
+      });
+
+    // Update Staff
+    builder
+      .addCase(updateVendorStaffThunk.pending, (state) => {
+        state.updateStaffLoading = true;
+        state.staffError = null;
+      })
+      .addCase(updateVendorStaffThunk.fulfilled, (state, action) => {
+        state.updateStaffLoading = false;
+        const index = state.staff.findIndex((s) => s.id === action.payload.id);
+        if (index !== -1) {
+          state.staff[index] = action.payload;
+        }
+      })
+      .addCase(updateVendorStaffThunk.rejected, (state, action) => {
+        state.updateStaffLoading = false;
+        state.staffError = action.payload;
+      });
+
+    // Delete Staff
+    builder
+      .addCase(deleteVendorStaffThunk.pending, (state) => {
+        state.deleteStaffLoading = true;
+        state.staffError = null;
+      })
+      .addCase(deleteVendorStaffThunk.fulfilled, (state, action) => {
+        state.deleteStaffLoading = false;
+        state.staff = state.staff.filter((s) => s.id !== action.payload);
+      })
+      .addCase(deleteVendorStaffThunk.rejected, (state, action) => {
+        state.deleteStaffLoading = false;
+        state.staffError = action.payload;
+      });
+
+    // Fetch Bookings
+    builder
+      .addCase(fetchVendorBookings.pending, (state) => {
+        state.bookingsLoading = true;
+        state.bookingsError = null;
+      })
+      .addCase(fetchVendorBookings.fulfilled, (state, action) => {
+        state.bookingsLoading = false;
+        state.bookings = action.payload;
+      })
+      .addCase(fetchVendorBookings.rejected, (state, action) => {
+        state.bookingsLoading = false;
+        state.bookingsError = action.payload;
+      });
+
+    // Update Booking Status
+    builder
+      .addCase(updateBookingStatusThunk.pending, (state) => {
+        state.updateBookingLoading = true;
+        state.bookingsError = null;
+      })
+      .addCase(updateBookingStatusThunk.fulfilled, (state, action) => {
+        state.updateBookingLoading = false;
+        const index = state.bookings.findIndex((b) => b.id === action.payload.id);
+        if (index !== -1) {
+          state.bookings[index] = action.payload;
+        }
+      })
+      .addCase(updateBookingStatusThunk.rejected, (state, action) => {
+        state.updateBookingLoading = false;
+        state.bookingsError = action.payload;
+      });
+
+    // Fetch Analytics
+    builder
+      .addCase(fetchVendorAnalytics.pending, (state) => {
+        state.analyticsLoading = true;
+        state.analyticsError = null;
+      })
+      .addCase(fetchVendorAnalytics.fulfilled, (state, action) => {
+        state.analyticsLoading = false;
+        state.analytics = action.payload;
+      })
+      .addCase(fetchVendorAnalytics.rejected, (state, action) => {
+        state.analyticsLoading = false;
+        state.analyticsError = action.payload;
+      });
+  },
+});
+
+export const { clearErrors, clearSalonProfile } = vendorSlice.actions;
+export default vendorSlice.reducer;
