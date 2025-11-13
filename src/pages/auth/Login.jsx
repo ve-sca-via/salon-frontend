@@ -1,84 +1,170 @@
-﻿import React, { useState } from "react";
+﻿/**
+ * Login Component (Customer Portal)
+ * 
+ * Purpose:
+ * Customer-only login page for the SalonHub platform. Authenticates users,
+ * validates customer role, and redirects to home page after successful login.
+ * 
+ * Data Management:
+ * - Form data stored in local state (email, password, rememberMe)
+ * - Authentication via RTK Query (authApi.useLoginMutation)
+ * - User stored in Redux auth slice (minimal state)
+ * - Loading state managed by RTK Query (isLoading)
+ * - Cart automatically loaded via RTK Query on mount
+ * 
+ * Key Features:
+ * - Customer role validation (blocks vendor/admin/RM access)
+ * - Remember me functionality (stores email in localStorage)
+ * - Visual feedback (loading states, toasts)
+ * - Links to other portals (vendor, RM)
+ * - Responsive design with background image
+ * - Token storage (access_token, refresh_token in localStorage)
+ * 
+ * Security:
+ * - Role-based access control (customer only)
+ * - Password field masked
+ * - Input validation (required fields, email format)
+ * - Error handling for invalid credentials
+ * - Automatic token refresh handled by apiClient.js interceptors
+ * 
+ * User Flow:
+ * 1. Enter email and password
+ * 2. Optionally check "Remember me"
+ * 3. Submit form → RTK Query mutation → validate customer role
+ * 4. Store tokens in localStorage + user in Redux
+ * 5. Show success toast → Navigate to home page
+ * 6. Cart loads automatically via RTK Query
+ * 
+ * Alternative Portals:
+ * - Vendor/Salon: /vendor-login
+ * - Relationship Manager: /rm-login
+ */
+
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { loginStart, loginSuccess, loginFailure } from "../../store/slices/authSlice";
-import { loadCartFromSupabaseThunk } from "../../store/slices/cartSlice";
-import { login as loginApi } from "../../services/backendApi";
+import { setUser } from "../../store/slices/authSlice";
+import { useLoginMutation } from "../../services/api/authApi";
+import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import Button from "../../components/shared/Button";
 import InputField from "../../components/shared/InputField";
 import { FiMail, FiLock, FiShoppingBag, FiUsers } from "react-icons/fi";
-import { toast } from "react-toastify";
 import bgImage from "../../assets/images/bg.png";
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: "", password: "" });
-  const [loading, setLoading] = useState(false);
+  // Form state
+  const [formData, setFormData] = useState({ 
+    email: "", 
+    password: "",
+    rememberMe: false 
+  });
+  
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  
+  // RTK Query mutation hook - provides loading state automatically
+  const [login, { isLoading }] = useLoginMutation();
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  /**
+   * Load saved email from localStorage if "Remember me" was checked
+   */
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      setFormData(prev => ({ ...prev, email: savedEmail, rememberMe: true }));
+    }
+  }, []);
 
-  const showToast = (message, type = "info") => {
-    const style = {
-      backgroundColor: type === "error" ? "#EF4444" : "#000000",
-      color: "#fff",
-      fontFamily: "DM Sans, sans-serif",
-    };
-    toast[type](message, { position: "top-center", autoClose: 2500, style });
+  /**
+   * handleChange - Updates form field values
+   */
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData({ 
+      ...formData, 
+      [name]: type === 'checkbox' ? checked : value 
+    });
   };
 
+  /**
+   * handleSubmit - Validates and submits login credentials
+   * - Uses RTK Query mutation (automatic loading states)
+   * - Validates customer role
+   * - Stores user in Redux
+   * - Handles "Remember me" functionality
+   * - Navigates to home page on success
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    dispatch(loginStart());
+    
+    // Basic client-side validation
+    if (!formData.email.trim() || !formData.password) {
+      showErrorToast('Please enter both email and password');
+      return;
+    }
 
     try {
-      console.log("Attempting login for:", formData.email);
+      // Call login mutation (RTK Query handles loading state)
+      const response = await login({
+        email: formData.email,
+        password: formData.password,
+      }).unwrap();
       
-      // Call backend API
-      const response = await loginApi(formData.email, formData.password);
-      
-      if (response && response.user) {
-        // Validate customer role - only customers can login here
-        const userRole = response.user.role || 'customer';
-        if (userRole !== 'customer') {
-          throw new Error('Access denied. This login is for customers only. Please use the appropriate login portal for your role.');
-        }
-
-        // Store user in Redux (just the user object, not wrapped)
-        dispatch(loginSuccess(response.user));
-        
-        showToast("Login successful! 🎉", "info");
-
-        // Load user's cart (optional - silently fail if cart table doesn't exist)
-        if (response.user.id) {
-          try {
-            dispatch(loadCartFromSupabaseThunk(response.user.id)).catch(err => {
-              console.warn("Cart loading failed (table may not exist yet):", err);
-            });
-          } catch (err) {
-            console.warn("Cart loading failed:", err);
-          }
-        }
-
-        // Navigate to home page
-        navigate("/");
-      } else {
-        throw new Error("Invalid login response");
+      // Validate response structure
+      if (!response || !response.user) {
+        throw new Error('Invalid login response from server');
       }
+
+      // Validate user data completeness
+      if (!response.user.id || !response.user.email) {
+        throw new Error('Incomplete user data received');
+      }
+
+      // Customer role validation - only customers can login here
+      const userRole = response.user.role || 'customer';
+      if (userRole !== 'customer') {
+        throw new Error('Access denied. Please use the appropriate login portal for your role.');
+      }
+
+      // Handle "Remember me" functionality
+      if (formData.rememberMe) {
+        localStorage.setItem('rememberedEmail', formData.email);
+      } else {
+        localStorage.removeItem('rememberedEmail');
+      }
+
+      // Store access token and refresh token
+      localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
+
+      // Store authenticated user in Redux
+      dispatch(setUser(response.user));
+      
+      showSuccessToast('Login successful! Welcome back! 🎉');
+
+      // Cart is automatically loaded via RTK Query when cart components mount
+      // No manual cart fetching needed - useGetCartQuery() handles it
+
+      // Slight delay to ensure toast displays before navigation
+      setTimeout(() => {
+        navigate('/');
+      }, 500);
+
     } catch (error) {
-      console.error("Login error:", error);
-      dispatch(loginFailure(error.message));
-      showToast(error.message || "Login failed. Please check your credentials.", "error");
-    } finally {
-      setLoading(false);
+      // Only log errors in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Login error:', error);
+      }
+
+      // RTK Query errors have a 'data' property
+      const errorMessage = error.data?.detail || error.message || 'Login failed';
+      showErrorToast(errorMessage);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background Image */}
+      {/* Background Image with Overlay */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${bgImage})` }}
@@ -86,10 +172,10 @@ const Login = () => {
         <div className="absolute inset-0 bg-neutral-black/70" />
       </div>
 
-      {/* Content */}
+      {/* Main Content */}
       <div className="relative z-10 w-full max-w-6xl mx-auto px-4 py-12">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left - Info Section */}
+          {/* Left Section - Marketing Content (Desktop Only) */}
           <div className="text-primary-white hidden lg:block">
             <Link to="/" className="inline-block mb-8">
               <h1 className="font-display font-bold text-5xl text-primary-white">
@@ -122,8 +208,9 @@ const Login = () => {
             ))}
           </div>
 
-          {/* Right - Login Form */}
+          {/* Right Section - Login Form */}
           <div className="w-full">
+            {/* Mobile Logo */}
             <div className="text-center mb-6 lg:hidden">
               <Link to="/">
                 <h1 className="font-display font-bold text-4xl text-primary-white">
@@ -132,6 +219,7 @@ const Login = () => {
               </Link>
             </div>
 
+            {/* Login Form Card */}
             <div className="bg-primary-white rounded-[10px] shadow-2xl p-8 lg:p-10">
               <h2 className="font-display font-bold text-[32px] text-neutral-black mb-2">
                 Sign In
@@ -141,6 +229,7 @@ const Login = () => {
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Email Input */}
                 <InputField
                   label="Email Address"
                   name="email"
@@ -149,8 +238,12 @@ const Login = () => {
                   onChange={handleChange}
                   placeholder="Enter your email"
                   icon={<FiMail />}
+                  disabled={isLoading}
                   required
+                  aria-label="Email address"
                 />
+                
+                {/* Password Input */}
                 <InputField
                   label="Password"
                   name="password"
@@ -159,18 +252,28 @@ const Login = () => {
                   onChange={handleChange}
                   placeholder="Enter your password"
                   icon={<FiLock />}
+                  disabled={isLoading}
                   required
+                  aria-label="Password"
                 />
+                
+                {/* Remember Me & Forgot Password */}
                 <div className="flex items-center justify-between">
                   <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
+                      name="rememberMe"
+                      checked={formData.rememberMe}
+                      onChange={handleChange}
+                      disabled={isLoading}
                       className="rounded border-neutral-gray-500 text-accent-orange focus:ring-accent-orange"
+                      aria-label="Remember my email"
                     />
                     <span className="ml-2 font-body text-sm text-neutral-gray-500">
                       Remember me
                     </span>
                   </label>
+                  {/* TODO: Implement forgot password functionality */}
                   <Link
                     to="/forgot-password"
                     className="font-body text-sm text-accent-orange hover:opacity-80 transition-opacity"
@@ -179,11 +282,20 @@ const Login = () => {
                   </Link>
                 </div>
 
-                <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
+                {/* Submit Button */}
+                <Button 
+                  type="submit" 
+                  variant="primary" 
+                  size="lg" 
+                  fullWidth 
+                  loading={isLoading}
+                  disabled={isLoading}
+                >
                   Sign In
                 </Button>
               </form>
 
+              {/* Sign Up Link */}
               <div className="mt-6 text-center text-sm text-neutral-gray-500">
                 Don't have an account?{" "}
                 <Link
@@ -194,6 +306,7 @@ const Login = () => {
                 </Link>
               </div>
 
+              {/* Back to Home Link */}
               <div className="mt-4 text-center">
                 <Link
                   to="/"
@@ -216,12 +329,13 @@ const Login = () => {
                 </Link>
               </div>
 
-              {/* Other Login Portals */}
+              {/* Alternative Login Portals */}
               <div className="mt-6 pt-6 border-t border-neutral-gray-600">
                 <p className="text-center text-sm text-neutral-gray-500 mb-3 font-body">
                   Looking for a different portal?
                 </p>
                 <div className="flex flex-col gap-2">
+                  {/* Vendor/Salon Portal Link */}
                   <Link
                     to="/vendor-login"
                     className="font-body text-sm text-neutral-black hover:bg-neutral-gray-600 transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 border border-neutral-gray-600"
@@ -229,6 +343,7 @@ const Login = () => {
                     <FiShoppingBag className="text-lg" />
                     <span>Vendor/Salon Login</span>
                   </Link>
+                  {/* Relationship Manager Portal Link */}
                   <Link
                     to="/rm-login"
                     className="font-body text-sm text-neutral-black hover:bg-neutral-gray-600 transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 border border-neutral-gray-600"

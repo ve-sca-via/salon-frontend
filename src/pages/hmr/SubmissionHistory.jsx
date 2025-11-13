@@ -16,10 +16,23 @@ const SubmissionHistory = () => {
   const { data: submissionsData, isLoading: submissionsLoading } = useGetOwnVendorRequestsQuery();
   
   // Backend returns array directly, not wrapped in { data: [...] }
-  const submissions = submissionsData || [];
+  const submissions = submissionsData?.data || [];
+
+  // TODO: we will use this later
+  const count = submissionsData?.count || 0;  // we also retrieve the total count of submissions
 
   // Safety check: ensure submissions is an array
   const submissionsArray = Array.isArray(submissions) ? submissions : [];
+
+  // Debug log to check admin_notes
+  React.useEffect(() => {
+    if (submissionsArray.length > 0) {
+      console.log('Submission History - Sample submission:', submissionsArray[0]);
+      console.log('Admin notes field:', submissionsArray[0]?.admin_notes);
+      console.log('Reviewed at:', submissionsArray[0]?.reviewed_at);
+      console.log('Reviewed by:', submissionsArray[0]?.reviewed_by);
+    }
+  }, [submissionsArray]);
 
   const getStatusColor = (status) => {
     switch (status) {

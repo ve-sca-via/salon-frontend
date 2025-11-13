@@ -1,10 +1,42 @@
-﻿import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+﻿/**
+ * CompleteRegistration Component
+ * 
+ * Purpose:
+ * Final step of vendor registration after admin approval. Allows approved vendors to
+ * set up their account credentials (full name and password) using a secure token link.
+ * 
+ * Data Management:
+ * - Token from URL search params (contains email and approval info)
+ * - Registration completion via RTK Query mutation
+ * - User stored in Redux on successful registration
+ * 
+ * Key Features:
+ * - Secure token-based registration (JWT decoded client-side)
+ * - Password strength validation (8+ chars, uppercase, lowercase, number)
+ * - Real-time password match indicator
+ * - Terms and conditions acceptance
+ * - Automatic redirect to vendor dashboard after completion
+ * 
+ * Security:
+ * - Token validation (format check and JWT decode)
+ * - Server-side token verification in mutation
+ * - Password requirements enforced
+ * 
+ * User Flow:
+ * 1. Vendor receives email with registration link containing token
+ * 2. Token is decoded to show email/approval info
+ * 3. Vendor enters full name and creates password
+ * 4. Password strength is validated in real-time
+ * 5. On submit: account created, user logged in, redirected to dashboard
+ */
+
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import { FiLock, FiCheckCircle, FiAlertCircle, FiShield, FiCheck, FiUser } from 'react-icons/fi';
 import { useCompleteVendorRegistrationMutation } from '../../services/api/vendorApi';
-import { loginSuccess } from '../../store/slices/authSlice';
+import { setUser } from '../../store/slices/authSlice';
 import Button from '../../components/shared/Button';
 import InputField from '../../components/shared/InputField';
 
@@ -14,9 +46,10 @@ const CompleteRegistration = () => {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
-  // RTK Query mutation
+  // RTK Query mutation for completing registration
   const [completeRegistration, { isLoading: loading }] = useCompleteVendorRegistrationMutation();
 
+  // Local state
   const [tokenData, setTokenData] = useState(null);
   const [formData, setFormData] = useState({
     fullName: '',
@@ -25,6 +58,10 @@ const CompleteRegistration = () => {
     acceptTerms: false,
   });
 
+  /**
+   * Password strength criteria tracking
+   * Validates: min length, uppercase, lowercase, number, special char
+   */
   const [passwordStrength, setPasswordStrength] = useState({
     hasMinLength: false,
     hasUpperCase: false,
@@ -33,14 +70,20 @@ const CompleteRegistration = () => {
     hasSpecialChar: false,
   });
 
+  /**
+   * Validate and decode JWT token on mount
+   * Token contains vendor email and approval info
+   * TODO: Add server-side token validation for additional security
+   */
   useEffect(() => {
     if (!token) {
-      toast.error('Invalid registration link. Please contact support.');
+      showErrorToast('Invalid registration link. Please contact support.');
       navigate('/vendor/login');
       return;
     }
 
     try {
+      // Decode JWT token (format: header.payload.signature)
       const base64Url = token.split('.')[1];
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
       const jsonPayload = decodeURIComponent(
@@ -53,10 +96,14 @@ const CompleteRegistration = () => {
       setTokenData(decoded);
     } catch (error) {
       console.error('Error decoding token:', error);
-      toast.error('Invalid registration token');
+      showErrorToast('Invalid registration token');
+      // Still allow form to render - server will validate token on submit
     }
   }, [token, navigate]);
 
+  /**
+   * Update password strength indicators as user types
+   */
   useEffect(() => {
     const password = formData.password;
     setPasswordStrength({
@@ -68,6 +115,9 @@ const CompleteRegistration = () => {
     });
   }, [formData.password]);
 
+  /**
+   * handleChange - Updates form field values
+   */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -76,55 +126,74 @@ const CompleteRegistration = () => {
     });
   };
 
+  /**
+   * handleSubmit - Validates and submits registration data
+   * Performs client-side validation before calling API
+   * On success: stores user in Redux and redirects to dashboard
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validation checks
     if (!formData.fullName || !formData.password || !formData.confirmPassword) {
-      toast.error('Please fill in all fields');
+      showErrorToast('Please fill in all fields');
       return;
     }
 
     if (formData.fullName.trim().length < 2) {
-      toast.error('Please enter your full name');
+      showErrorToast('Please enter your full name');
       return;
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast.error('Passwords do not match');
+      showErrorToast('Passwords do not match');
       return;
     }
 
     if (formData.password.length < 8) {
-      toast.error('Password must be at least 8 characters long');
+      showErrorToast('Password must be at least 8 characters long');
       return;
     }
 
     if (!formData.acceptTerms) {
-      toast.error('Please accept the terms and conditions');
+      showErrorToast('Please accept the terms and conditions');
       return;
     }
 
     try {
+      // Submit registration with token
       const result = await completeRegistration({
         token,
-        fullName: formData.fullName.trim(),
+        full_name: formData.fullName.trim(),  // Backend expects snake_case
         password: formData.password,
-        confirmPassword: formData.confirmPassword,
+        confirm_password: formData.confirmPassword,  // Backend expects snake_case
       }).unwrap();
 
       if (result.data) {
-        // Store user in Redux
-        dispatch(loginSuccess(result.data.user));
+        // Store access token and refresh token
+        if (result.data.access_token) {
+          localStorage.setItem('access_token', result.data.access_token);
+        }
+        if (result.data.refresh_token) {
+          localStorage.setItem('refresh_token', result.data.refresh_token);
+        }
 
-        toast.success('Registration completed successfully! Welcome aboard!');
+        // Store authenticated user in Redux
+        dispatch(setUser(result.data.user));
+
+        showSuccessToast('Registration completed successfully! Welcome aboard!');
         navigate('/vendor/dashboard');
       }
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error(error.message || 'Registration failed. Please try again.');
+      showErrorToast(error.message || 'Registration failed. Please try again.');
     }
   };
 
+  /**
+   * Check if password meets all strength requirements
+   * Note: Special character is optional but recommended
+   */
   const isPasswordStrong =
     passwordStrength.hasMinLength &&
     passwordStrength.hasUpperCase &&
@@ -133,12 +202,14 @@ const CompleteRegistration = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 flex items-center justify-center px-4 py-12">
+      {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-200 rounded-full opacity-20 blur-3xl"></div>
         <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-amber-200 rounded-full opacity-20 blur-3xl"></div>
       </div>
 
       <div className="max-w-xl w-full relative z-10">
+        {/* Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-[#F89C02] to-orange-600 rounded-2xl shadow-2xl mb-6">
             <FiShield className="text-white text-4xl" />
@@ -151,6 +222,7 @@ const CompleteRegistration = () => {
           </p>
         </div>
 
+        {/* Approval Confirmation Card */}
         {tokenData && (
           <div className="bg-white border-2 border-[#F89C02]/30 rounded-xl p-6 mb-6 shadow-sm">
             <div className="flex items-start">
@@ -172,8 +244,10 @@ const CompleteRegistration = () => {
           </div>
         )}
 
+        {/* Registration Form */}
         <div className="bg-white rounded-2xl shadow-2xl p-8 border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Full Name Input */}
             <div>
               <InputField
                 label="Your Full Name"
@@ -188,6 +262,7 @@ const CompleteRegistration = () => {
               />
             </div>
 
+            {/* Password Input */}
             <div>
               <InputField
                 label="Create Password"
@@ -202,6 +277,7 @@ const CompleteRegistration = () => {
               />
             </div>
 
+            {/* Password Strength Indicator */}
             {formData.password && (
               <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                 <p className="text-sm font-body font-semibold text-gray-700 mb-3">Password Requirements:</p>
@@ -230,6 +306,7 @@ const CompleteRegistration = () => {
               </div>
             )}
 
+            {/* Confirm Password Input */}
             <div>
               <InputField
                 label="Confirm Password"
@@ -244,6 +321,7 @@ const CompleteRegistration = () => {
               />
             </div>
 
+            {/* Password Match Indicator */}
             {formData.confirmPassword && (
               <div className="flex items-center">
                 {formData.password === formData.confirmPassword ? (
@@ -260,6 +338,7 @@ const CompleteRegistration = () => {
               </div>
             )}
 
+            {/* Terms and Conditions Checkbox */}
             <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
               <label className="flex items-start space-x-3 cursor-pointer group">
                 <input
@@ -272,27 +351,24 @@ const CompleteRegistration = () => {
                 />
                 <span className="text-sm text-gray-700 font-body leading-relaxed">
                   I agree to the{' '}
-                  <a 
-                    href="/terms" 
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link 
+                    to="/terms"
                     className="text-[#F89C02] hover:text-orange-700 font-semibold underline"
                   >
                     Terms and Conditions
-                  </a>{' '}
+                  </Link>{' '}
                   and{' '}
-                  <a 
-                    href="/privacy" 
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link 
+                    to="/privacy"
                     className="text-[#F89C02] hover:text-orange-700 font-semibold underline"
                   >
                     Privacy Policy
-                  </a>
+                  </Link>
                 </span>
               </label>
             </div>
 
+            {/* Submit Button */}
             <Button
               type="submit"
               variant="primary"
@@ -312,23 +388,25 @@ const CompleteRegistration = () => {
               )}
             </Button>
 
+            {/* Sign In Link */}
             <p className="text-center text-sm text-gray-600 font-body">
               Already have an account?{' '}
-              <a 
-                href="/vendor/login" 
+              <Link 
+                to="/vendor/login"
                 className="text-[#F89C02] hover:text-orange-700 font-semibold"
               >
                 Sign in here
-              </a>
+              </Link>
             </p>
           </form>
         </div>
 
+        {/* Support Contact */}
         <div className="text-center mt-6">
           <p className="text-sm text-gray-600 font-body">
             Need help?{' '}
             <a 
-              href="mailto:support@salonhub.com" 
+              href="mailto:support@salonhub.com"
               className="text-[#F89C02] hover:text-orange-700 font-semibold"
             >
               Contact Support
@@ -340,6 +418,10 @@ const CompleteRegistration = () => {
   );
 };
 
+/**
+ * PasswordRequirement - Visual indicator for password strength requirement
+ * Shows checkmark when requirement is met, empty circle otherwise
+ */
 const PasswordRequirement = ({ met, text }) => (
   <div className="flex items-center text-sm font-body">
     {met ? (

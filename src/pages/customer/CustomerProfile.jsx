@@ -1,7 +1,32 @@
-import React, { useEffect, useState } from "react";
+/**
+ * CustomerProfile Component
+ * 
+ * Purpose:
+ * Customer dashboard displaying profile information, booking statistics, recent activity,
+ * and quick access to key features. Serves as the central hub for customer accounts.
+ * 
+ * Data Management:
+ * - Auth state from Redux (user, isAuthenticated)
+ * - Booking data from RTK Query (useGetMyBookingsQuery)
+ * - Calculates statistics from booking data
+ * 
+ * Key Features:
+ * - Profile card with user information
+ * - Booking statistics (total, completed, upcoming, cancelled)
+ * - Recent bookings list (shows last 5)
+ * - Quick navigation to My Bookings, Favorites, and Reviews
+ * - Account settings placeholder buttons
+ * 
+ * User Flow:
+ * 1. User lands on profile page
+ * 2. View profile info and statistics
+ * 3. Access recent bookings or navigate to other sections
+ * 4. Use quick action buttons to access key features
+ */
+
+import React, { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { toast } from "react-toastify";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetMyBookingsQuery } from "../../services/api/bookingApi";
 import { FiUser, FiMail, FiPhone, FiCalendar, FiHeart, FiMessageSquare, FiShoppingBag } from "react-icons/fi";
@@ -17,9 +42,9 @@ export default function CustomerProfile() {
     skip: !isAuthenticated
   });
 
-  // Local state
-  const [activeTab, setActiveTab] = useState("profile");
-
+  /**
+   * Redirect to login if not authenticated
+   */
   useEffect(() => {
     if (!isAuthenticated) {
       navigate("/login");
@@ -27,7 +52,9 @@ export default function CustomerProfile() {
     }
   }, [isAuthenticated, navigate]);
 
-  // Calculate stats
+  /**
+   * Calculate booking statistics from booking data
+   */
   const stats = {
     totalBookings: myBookings.length,
     completedBookings: myBookings.filter((b) => b.status === "completed").length,
@@ -35,6 +62,22 @@ export default function CustomerProfile() {
       (b) => b.status === "confirmed" || b.status === "pending"
     ).length,
     cancelledBookings: myBookings.filter((b) => b.status === "cancelled").length,
+  };
+
+  /**
+   * Placeholder handlers for account settings
+   * TODO: Implement edit profile, change password, and notification preferences
+   */
+  const handleEditProfile = () => {
+    console.log("Edit profile - Not yet implemented");
+  };
+
+  const handleChangePassword = () => {
+    console.log("Change password - Not yet implemented");
+  };
+
+  const handleNotificationPreferences = () => {
+    console.log("Notification preferences - Not yet implemented");
   };
 
   return (
@@ -57,13 +100,13 @@ export default function CustomerProfile() {
           <div className="lg:col-span-1">
             <div className="bg-primary-white rounded-lg shadow-lg overflow-hidden sticky top-24">
               {/* Profile Header */}
-              <div className="bg-gradient-to-r from-purple-600 to-pink-500 h-24"></div>
+              <div className="bg-gradient-to-r from-accent-orange to-yellow-500 h-24"></div>
               
               {/* Profile Info */}
               <div className="px-6 pb-6 -mt-12">
                 <div className="relative">
                   <div className="w-24 h-24 bg-primary-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg border-4 border-primary-white">
-                    <FiUser className="w-12 h-12 text-purple-600" />
+                    <FiUser className="w-12 h-12 text-accent-orange" />
                   </div>
                 </div>
 
@@ -116,7 +159,7 @@ export default function CustomerProfile() {
                   </button>
                   <button
                     onClick={() => navigate("/my-reviews")}
-                    className="w-full flex items-center justify-center gap-2 border border-purple-600 text-purple-600 hover:bg-purple-600 hover:text-primary-white font-body font-medium text-[14px] py-2.5 rounded-lg transition-colors"
+                    className="w-full flex items-center justify-center gap-2 border border-neutral-gray-300 text-neutral-gray-700 hover:bg-neutral-gray-100 font-body font-medium text-[14px] py-2.5 rounded-lg transition-colors"
                   >
                     <FiMessageSquare className="w-4 h-4" />
                     My Reviews
@@ -132,8 +175,8 @@ export default function CustomerProfile() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-primary-white rounded-lg p-5 shadow-md">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                    <FiShoppingBag className="w-5 h-5 text-purple-600" />
+                  <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
+                    <FiShoppingBag className="w-5 h-5 text-accent-orange" />
                   </div>
                 </div>
                 <p className="font-display font-bold text-[28px] text-neutral-black mb-1">
@@ -195,7 +238,7 @@ export default function CustomerProfile() {
 
               {bookingsLoading ? (
                 <div className="text-center py-8">
-                  <div className="animate-spin h-8 w-8 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4" />
+                  <div className="animate-spin h-8 w-8 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4" />
                   <p className="font-body text-[14px] text-neutral-gray-500">
                     Loading bookings...
                   </p>
@@ -267,7 +310,10 @@ export default function CustomerProfile() {
               </h3>
               
               <div className="space-y-4">
-                <button className="w-full flex items-center justify-between p-4 bg-bg-secondary rounded-lg hover:shadow-md transition-shadow">
+                <button 
+                  onClick={handleEditProfile}
+                  className="w-full flex items-center justify-between p-4 bg-bg-secondary rounded-lg hover:shadow-md transition-shadow"
+                >
                   <span className="font-body font-medium text-[16px] text-neutral-black">
                     Edit Profile
                   </span>
@@ -286,7 +332,10 @@ export default function CustomerProfile() {
                   </svg>
                 </button>
 
-                <button className="w-full flex items-center justify-between p-4 bg-bg-secondary rounded-lg hover:shadow-md transition-shadow">
+                <button 
+                  onClick={handleChangePassword}
+                  className="w-full flex items-center justify-between p-4 bg-bg-secondary rounded-lg hover:shadow-md transition-shadow"
+                >
                   <span className="font-body font-medium text-[16px] text-neutral-black">
                     Change Password
                   </span>
@@ -305,7 +354,10 @@ export default function CustomerProfile() {
                   </svg>
                 </button>
 
-                <button className="w-full flex items-center justify-between p-4 bg-bg-secondary rounded-lg hover:shadow-md transition-shadow">
+                <button 
+                  onClick={handleNotificationPreferences}
+                  className="w-full flex items-center justify-between p-4 bg-bg-secondary rounded-lg hover:shadow-md transition-shadow"
+                >
                   <span className="font-body font-medium text-[16px] text-neutral-black">
                     Notification Preferences
                   </span>

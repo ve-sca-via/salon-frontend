@@ -4,7 +4,7 @@ import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import bgImage from "../../assets/images/bg_7.jpg";
 import { useGetSalonsQuery, useSearchSalonsQuery } from "../../services/api/salonApi";
-import { FiStar, FiMapPin, FiClock, FiCalendar } from "react-icons/fi";
+import { FiStar, FiMapPin, FiClock, FiCalendar, FiNavigation, FiX } from "react-icons/fi";
 
 // Arrow Icon Component
 function ArrowCircleRight() {
@@ -69,10 +69,17 @@ function HeroSection() {
 }
 
 const PublicSalonListing = () => {
+  // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState("all");
   const [isSearching, setIsSearching] = useState(false);
   const [searchParams, setSearchParams] = useState(null);
+  
+  // Location-based search state
+  const [userLocation, setUserLocation] = useState(null);
+  const [locationError, setLocationError] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [radius, setRadius] = useState(10); // Default 10km radius
 
   // RTK Query hooks - automatic caching and deduplication!
   const { data: salonsData, isLoading: salonsLoading, error: salonsError } = useGetSalonsQuery(
@@ -85,13 +92,101 @@ const PublicSalonListing = () => {
     { skip: !isSearching || !searchParams } // Only run when actively searching
   );
 
-  // Handle search
-  const handleSearch = () => {
-    if (searchTerm.trim()) {
+  /**
+   * getUserLocation - Request user's current location using Browser Geolocation API
+   */
+  const getUserLocation = () => {
+    setLocationLoading(true);
+    setLocationError(null);
+    
+    if (!navigator.geolocation) {
+      setLocationError("Geolocation is not supported by your browser");
+      setLocationLoading(false);
+      return;
+    }
+    
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lon: position.coords.longitude
+        };
+        setUserLocation(location);
+        setLocationLoading(false);
+        
+        // Trigger search with location
+        setIsSearching(true);
+        setSearchParams({
+          lat: location.lat,
+          lon: location.lon,
+          radius: radius,
+          limit: 50,
+          query: searchTerm || undefined,
+        });
+      },
+      (error) => {
+        let errorMsg = "Unable to get your location";
+        switch(error.code) {
+          case error.PERMISSION_DENIED:
+            errorMsg = "Location access denied. Please enable location permissions.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMsg = "Location information unavailable.";
+            break;
+          case error.TIMEOUT:
+            errorMsg = "Location request timed out.";
+            break;
+        }
+        setLocationError(errorMsg);
+        setLocationLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 300000 // 5 minutes cache
+      }
+    );
+  };
+
+  /**
+   * clearLocation - Clear user location and return to showing all salons
+   */
+  const clearLocation = () => {
+    setUserLocation(null);
+    setLocationError(null);
+    setIsSearching(false);
+    setSearchParams(null);
+  };
+
+  /**
+   * handleRadiusChange - Update search radius and re-search if location is active
+   */
+  const handleRadiusChange = (newRadius) => {
+    setRadius(newRadius);
+    if (userLocation) {
       setIsSearching(true);
       setSearchParams({
-        query: searchTerm,
+        lat: userLocation.lat,
+        lon: userLocation.lon,
+        radius: newRadius,
+        limit: 50,
+        query: searchTerm || undefined,
+      });
+    }
+  };
+
+  /**
+   * handleSearch - Triggers search or resets to all salons
+   */
+  const handleSearch = () => {
+    if (searchTerm.trim() || userLocation) {
+      setIsSearching(true);
+      setSearchParams({
+        query: searchTerm || undefined,
         location: selectedCity !== "all" ? selectedCity : undefined,
+        lat: userLocation?.lat,
+        lon: userLocation?.lon,
+        radius: userLocation ? radius : undefined,
       });
     } else {
       setIsSearching(false);
@@ -129,35 +224,138 @@ const PublicSalonListing = () => {
 
       <section className="py-12 bg-bg-secondary">
         <div className="max-w-7xl mx-auto px-4">
-          {/* Search and Filter Bar */}
-          <div className="mb-8 flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search salons by name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                className="w-full h-[48px] px-4 py-3 font-body text-[16px] leading-[24px] text-neutral-black placeholder:text-neutral-gray-400 border border-neutral-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange transition-all outline-none"
-              />
+          {/* Location Status Banner */}
+          {userLocation && !locationError && (
+            <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-green-100 rounded-full p-2">
+                  <FiMapPin className="size-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-green-800">
+                    📍 Showing salons near your location
+                  </p>
+                  <p className="text-xs text-green-600 mt-0.5">
+                    Within {radius}km radius • {filteredSalons.length} salon{filteredSalons.length !== 1 ? 's' : ''} found
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={clearLocation}
+                className="text-green-700 hover:text-green-900 hover:bg-green-100 p-2 rounded-lg transition-colors"
+                aria-label="Clear location"
+              >
+                <FiX className="size-5" />
+              </button>
             </div>
-            <select
-              value={selectedCity}
-              onChange={(e) => setSelectedCity(e.target.value)}
-              className="h-[48px] px-4 py-3 font-body text-[16px] leading-[24px] text-neutral-black border border-neutral-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange transition-all outline-none cursor-pointer bg-white"
-            >
-              {cities.map((city) => (
-                <option key={city} value={city}>
-                  {city === "all" ? "All Cities" : city}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleSearch}
-              className="h-[48px] px-6 py-3 bg-accent-orange text-white rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors font-body font-semibold text-[16px] leading-[24px]"
-            >
-              Search
-            </button>
+          )}
+
+          {/* Location Error Banner */}
+          {locationError && (
+            <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <div className="bg-red-100 rounded-full p-2 mt-0.5">
+                  <FiMapPin className="size-5 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-semibold text-red-800">
+                    Location Access Error
+                  </p>
+                  <p className="text-xs text-red-600 mt-1">
+                    {locationError}
+                  </p>
+                  <button
+                    onClick={getUserLocation}
+                    className="mt-2 text-xs text-red-700 hover:text-red-900 underline"
+                  >
+                    Try Again
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Search and Filter Bar */}
+          <div className="mb-8 space-y-4">
+            {/* Row 1: Search input, City filter, Location button, Search button */}
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Search salons by name..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                  className="w-full h-[48px] px-4 py-3 font-body text-[16px] leading-[24px] text-neutral-black placeholder:text-neutral-gray-400 border border-neutral-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange transition-all outline-none"
+                />
+              </div>
+              <select
+                value={selectedCity}
+                onChange={(e) => setSelectedCity(e.target.value)}
+                className="h-[48px] px-4 py-3 font-body text-[16px] leading-[24px] text-neutral-black border border-neutral-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange transition-all outline-none cursor-pointer bg-white"
+              >
+                {cities.map((city) => (
+                  <option key={city} value={city}>
+                    {city === "all" ? "All Cities" : city}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={getUserLocation}
+                disabled={locationLoading || userLocation}
+                className={`h-[48px] px-6 py-3 rounded-lg transition-colors font-body font-semibold text-[16px] leading-[24px] flex items-center gap-2 whitespace-nowrap ${
+                  userLocation
+                    ? 'bg-green-600 text-white cursor-default'
+                    : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {locationLoading ? (
+                  <>
+                    <div className="animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                    Getting Location...
+                  </>
+                ) : userLocation ? (
+                  <>
+                    <FiMapPin className="size-5" />
+                    Location Active
+                  </>
+                ) : (
+                  <>
+                    <FiNavigation className="size-5" />
+                    Use My Location
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleSearch}
+                className="h-[48px] px-6 py-3 bg-accent-orange text-white rounded-lg hover:bg-orange-600 active:bg-orange-700 transition-colors font-body font-semibold text-[16px] leading-[24px]"
+              >
+                Search
+              </button>
+            </div>
+
+            {/* Row 2: Radius selector (only show when location is active) */}
+            {userLocation && (
+              <div className="flex items-center gap-3 bg-white border border-neutral-gray-300 rounded-lg p-4">
+                <FiMapPin className="size-5 text-gray-600" />
+                <span className="text-sm font-medium text-gray-700">Search Radius:</span>
+                <div className="flex gap-2">
+                  {[5, 10, 20, 50].map((km) => (
+                    <button
+                      key={km}
+                      onClick={() => handleRadiusChange(km)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        radius === km
+                          ? 'bg-accent-orange text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      {km} km
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {loading ? (
@@ -226,9 +424,16 @@ const PublicSalonListing = () => {
                       {/* Location */}
                       <div className="flex items-start gap-3 mb-3">
                         <FiMapPin className="text-accent-orange mt-0.5 flex-shrink-0" size={18} />
-                        <p className="font-body text-[15px] leading-[22px] text-neutral-gray-700">
-                          {salon.address || `${salon.city}, ${salon.state}`}
-                        </p>
+                        <div className="flex-1">
+                          <p className="font-body text-[15px] leading-[22px] text-neutral-gray-700">
+                            {salon.address || `${salon.city}, ${salon.state}`}
+                          </p>
+                          {salon.distance_km && (
+                            <p className="font-body text-[14px] leading-[20px] text-accent-orange font-semibold mt-1">
+                              {salon.distance_km.toFixed(1)} km away
+                            </p>
+                          )}
+                        </div>
                       </div>
 
                       {/* Business Hours */}

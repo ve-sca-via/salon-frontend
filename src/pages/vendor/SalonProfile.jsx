@@ -1,3 +1,35 @@
+/**
+ * SalonProfile Component
+ * 
+ * Purpose:
+ * Allows vendors to view and edit their salon profile information including basic details,
+ * business hours, images, and settings. Central hub for managing salon presence on the platform.
+ * 
+ * Data Management:
+ * - Fetches salon data via RTK Query (useGetVendorSalonQuery)
+ * - Updates via mutation (useUpdateVendorSalonMutation)
+ * - Local state for edit mode and form data
+ * 
+ * Key Features:
+ * - Edit mode toggle for profile updates
+ * - Business hours management with 12h/24h conversion
+ * - Status indicators (active/inactive, payment status)
+ * - Image management (logo, cover, gallery) - TODO: Upload functionality
+ * - Responsive layout with sidebar stats
+ * 
+ * Business Hours:
+ * - Stored in 12-hour format (e.g., "9:00 AM - 6:00 PM")
+ * - Converted to 24-hour for time inputs
+ * - Supports "Closed" state for any day
+ * 
+ * User Flow:
+ * 1. View salon profile in read-only mode
+ * 2. Click "Edit Profile" to enable editing
+ * 3. Modify fields and business hours
+ * 4. Save changes or cancel to revert
+ * 5. View status indicators and quick stats
+ */
+
 import React, { useEffect, useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
@@ -8,16 +40,21 @@ import {
   useUpdateVendorSalonMutation 
 } from '../../services/api/vendorApi';
 import { FiEdit2, FiSave, FiX, FiMapPin, FiPhone, FiMail, FiClock, FiImage } from 'react-icons/fi';
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 
 const SalonProfile = () => {
-  // RTK Query hooks
+  // RTK Query hooks for fetching and updating salon data
   const { data: salonData, isLoading: profileLoading } = useGetVendorSalonQuery();
-  const [updateSalonProfile] = useUpdateVendorSalonMutation();
+  const [updateSalonProfile, { isLoading: isUpdating }] = useUpdateVendorSalonMutation();
   
+  // Handle data structure variations from API response
+  // Some endpoints return { salon: {...} }, others return data directly
   const salonProfile = salonData?.salon || salonData;
   
+  // Edit mode toggle state
   const [isEditing, setIsEditing] = useState(false);
+  
+  // Form data state - synced with salon profile from API
   const [formData, setFormData] = useState({
     business_name: '',
     email: '',
@@ -42,6 +79,9 @@ const SalonProfile = () => {
     },
   });
 
+  /**
+   * Sync form data with salon profile when it loads or changes
+   */
   useEffect(() => {
     if (salonProfile) {
       setFormData({
@@ -70,16 +110,23 @@ const SalonProfile = () => {
     }
   }, [salonProfile]);
 
-  // Helper function to convert 12-hour time to 24-hour format
+  /**
+   * convertTo24Hour - Converts 12-hour time format to 24-hour format
+   * Used for HTML time inputs which require 24-hour format
+   * @param {string} time12h - Time in 12-hour format (e.g., "9:00 AM")
+   * @returns {string} Time in 24-hour format (e.g., "09:00")
+   */
   const convertTo24Hour = (time12h) => {
     if (!time12h || time12h === 'Closed') return '';
     
+    // Parse 12-hour format using regex
     const match = time12h.match(/(\d+):(\d+)\s*(AM|PM)/i);
-    if (!match) return '';
+    if (!match) return ''; // Invalid format
     
     let [, hours, minutes, period] = match;
     hours = parseInt(hours);
     
+    // Convert to 24-hour format
     if (period.toUpperCase() === 'PM' && hours !== 12) {
       hours += 12;
     } else if (period.toUpperCase() === 'AM' && hours === 12) {
@@ -89,7 +136,12 @@ const SalonProfile = () => {
     return `${hours.toString().padStart(2, '0')}:${minutes}`;
   };
 
-  // Helper function to convert 24-hour time to 12-hour format
+  /**
+   * convertTo12Hour - Converts 24-hour time format to 12-hour format
+   * Used to display user-friendly times and store in database
+   * @param {string} time24h - Time in 24-hour format (e.g., "09:00")
+   * @returns {string} Time in 12-hour format (e.g., "9:00 AM")
+   */
   const convertTo12Hour = (time24h) => {
     if (!time24h) return '';
     
@@ -100,11 +152,19 @@ const SalonProfile = () => {
     return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
   };
 
+  /**
+   * handleChange - Updates form field values
+   */
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
+  /**
+   * handleBusinessHoursChange - Updates business hours for a specific day
+   * @param {string} day - Day of week (e.g., "monday")
+   * @param {string} value - Time range or "Closed" (e.g., "9:00 AM - 6:00 PM")
+   */
   const handleBusinessHoursChange = (day, value) => {
     setFormData({
       ...formData,
@@ -115,16 +175,24 @@ const SalonProfile = () => {
     });
   };
 
+  /**
+   * handleSave - Submits updated profile data to backend
+   * Disables edit mode on success
+   */
   const handleSave = async () => {
     try {
       await updateSalonProfile(formData).unwrap();
-      toast.success('Salon profile updated successfully!');
+      showSuccessToast('Salon profile updated successfully!');
       setIsEditing(false);
     } catch (error) {
-      toast.error(error?.message || 'Failed to update profile');
+      showErrorToast(error?.message || 'Failed to update profile');
     }
   };
 
+  /**
+   * handleCancel - Reverts form data to original profile values
+   * Exits edit mode without saving
+   */
   const handleCancel = () => {
     if (salonProfile) {
       setFormData({
@@ -146,12 +214,13 @@ const SalonProfile = () => {
     setIsEditing(false);
   };
 
+  // Loading state - show spinner while fetching profile data
   if (profileLoading && !salonProfile) {
     return (
       <DashboardLayout role="vendor">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin h-16 w-16 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <div className="animate-spin h-16 w-16 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-gray-600 font-body">Loading salon profile...</p>
           </div>
         </div>
@@ -159,6 +228,7 @@ const SalonProfile = () => {
     );
   }
 
+  // Days of week for business hours section
   const days = [
     { key: 'monday', label: 'Monday' },
     { key: 'tuesday', label: 'Tuesday' },
@@ -228,7 +298,7 @@ const SalonProfile = () => {
                     variant="ghost"
                     size="sm"
                     onClick={() => setIsEditing(true)}
-                    className="text-purple-600 hover:bg-purple-50"
+                    className="text-accent-orange hover:bg-orange-50"
                   >
                     <FiEdit2 className="mr-2" />
                     Edit Profile
@@ -240,6 +310,7 @@ const SalonProfile = () => {
                       size="sm"
                       onClick={handleCancel}
                       className="text-gray-600 hover:bg-gray-100"
+                      disabled={isUpdating}
                     >
                       <FiX className="mr-2" />
                       Cancel
@@ -248,10 +319,10 @@ const SalonProfile = () => {
                       variant="primary"
                       size="sm"
                       onClick={handleSave}
-                      disabled={profileLoading}
+                      disabled={isUpdating}
                     >
                       <FiSave className="mr-2" />
-                      Save Changes
+                      {isUpdating ? 'Saving...' : 'Save Changes'}
                     </Button>
                   </div>
                 )}
@@ -352,7 +423,7 @@ const SalonProfile = () => {
                     onChange={handleChange}
                     disabled={!isEditing}
                     rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 font-body"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
                     placeholder="Tell customers about your salon..."
                   />
                 </div>
@@ -362,14 +433,26 @@ const SalonProfile = () => {
             {/* Business Hours Card */}
             <Card className="mt-6">
               <h2 className="text-xl font-display font-bold text-gray-900 mb-4 flex items-center">
-                <FiClock className="mr-2 text-purple-600" />
+                <FiClock className="mr-2 text-accent-orange" />
                 Business Hours
               </h2>
               <div className="space-y-3">
                 {days.map((day) => {
                   const dayHours = formData.business_hours[day.key] || '';
                   const isClosed = dayHours === 'Closed';
-                  const [startTime12, endTime12] = !isClosed && dayHours ? dayHours.split(' - ') : ['9:00 AM', '6:00 PM'];
+                  
+                  // Parse business hours with fallback to default times
+                  // Format expected: "9:00 AM - 6:00 PM" or "Closed"
+                  let startTime12 = '9:00 AM';
+                  let endTime12 = '6:00 PM';
+                  
+                  if (!isClosed && dayHours && dayHours.includes(' - ')) {
+                    const times = dayHours.split(' - ');
+                    if (times.length === 2) {
+                      startTime12 = times[0];
+                      endTime12 = times[1];
+                    }
+                  }
                   
                   return (
                     <div key={day.key} className="flex items-center gap-4">
@@ -386,7 +469,8 @@ const SalonProfile = () => {
                               <button
                                 type="button"
                                 onClick={() => handleBusinessHoursChange(day.key, '9:00 AM - 6:00 PM')}
-                                className="text-xs text-purple-600 hover:text-purple-700 font-body"
+                                className="text-xs text-accent-orange hover:text-orange-700 font-body"
+                                aria-label={`Set hours for ${day.label}`}
                               >
                                 Set Hours
                               </button>
@@ -402,7 +486,8 @@ const SalonProfile = () => {
                                 handleBusinessHoursChange(day.key, `${newStartTime} - ${endTime12}`);
                               }}
                               disabled={!isEditing}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 font-body text-sm"
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body text-sm"
+                              aria-label={`Opening time for ${day.label}`}
                             />
                             <span className="text-gray-600 text-sm">to</span>
                             <input
@@ -413,7 +498,8 @@ const SalonProfile = () => {
                                 handleBusinessHoursChange(day.key, `${startTime12} - ${newEndTime}`);
                               }}
                               disabled={!isEditing}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-50 font-body text-sm"
+                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body text-sm"
+                              aria-label={`Closing time for ${day.label}`}
                             />
                             {isEditing && (
                               <button
@@ -439,7 +525,7 @@ const SalonProfile = () => {
             {/* Images Card */}
             <Card>
               <h3 className="text-lg font-display font-bold text-gray-900 mb-4 flex items-center">
-                <FiImage className="mr-2 text-purple-600" />
+                <FiImage className="mr-2 text-accent-orange" />
                 Salon Images
               </h3>
               
@@ -455,8 +541,13 @@ const SalonProfile = () => {
                       alt="Cover"
                       className="w-full h-32 object-cover rounded-lg"
                     />
+                    {/* TODO: Implement image upload functionality */}
                     {isEditing && (
-                      <button className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100">
+                      <button 
+                        className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
+                        aria-label="Edit cover image"
+                        type="button"
+                      >
                         <FiEdit2 size={16} />
                       </button>
                     )}
@@ -484,8 +575,13 @@ const SalonProfile = () => {
                       alt="Logo"
                       className="w-24 h-24 object-cover rounded-lg"
                     />
+                    {/* TODO: Implement image upload functionality */}
                     {isEditing && (
-                      <button className="absolute top-1 right-1 p-1 bg-white rounded-full shadow-lg hover:bg-gray-100">
+                      <button 
+                        className="absolute top-1 right-1 p-1 bg-white rounded-full shadow-lg hover:bg-gray-100"
+                        aria-label="Edit logo"
+                        type="button"
+                      >
                         <FiEdit2 size={14} />
                       </button>
                     )}
@@ -514,9 +610,14 @@ const SalonProfile = () => {
                           alt={`Gallery ${index + 1}`}
                           className="w-full h-24 object-cover rounded-lg"
                         />
+                        {/* TODO: Implement image deletion functionality */}
                         {isEditing && (
                           <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                            <button className="p-2 bg-white rounded-full hover:bg-red-50 text-red-600">
+                            <button 
+                              className="p-2 bg-white rounded-full hover:bg-red-50 text-red-600"
+                              aria-label={`Delete gallery image ${index + 1}`}
+                              type="button"
+                            >
                               <FiX size={16} />
                             </button>
                           </div>
@@ -534,6 +635,7 @@ const SalonProfile = () => {
                 )}
               </div>
 
+              {/* TODO: Implement image upload functionality */}
               {isEditing && (
                 <Button variant="outline" size="sm" className="w-full mt-4">
                   Upload Images
@@ -569,7 +671,7 @@ const SalonProfile = () => {
                   <span className="text-sm text-gray-600 font-body">Member Since</span>
                   <span className="text-sm text-gray-900 font-body">
                     {salonProfile?.created_at
-                      ? new Date(salonProfile.created_at).toLocaleDateString()
+                      ? new Date(salonProfile.created_at).toLocaleDateString('en-US')
                       : 'N/A'}
                   </span>
                 </div>

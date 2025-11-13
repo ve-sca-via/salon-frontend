@@ -1,18 +1,55 @@
+/**
+ * MyBookings.jsx - Customer Bookings Management Page
+ * 
+ * PURPOSE:
+ * - Display all user's salon bookings
+ * - Filter bookings by status (All, Upcoming, Past)
+ * - Allow booking cancellation
+ * - Navigate to salon or rebook
+ * 
+ * DATA MANAGEMENT:
+ * - Fetches bookings via useGetMyBookingsQuery
+ * - Cancel via useCancelBookingMutation
+ * - Real-time updates via RTK Query cache invalidation
+ * 
+ * KEY FEATURES:
+ * - Tab navigation (All/Upcoming/Past)
+ * - Booking cards with expandable service details
+ * - Payment breakdown display
+ * - Cancel confirmation modal
+ * - Empty states for each tab
+ * - Status badges with color coding
+ * 
+ * USER FLOW:
+ * 1. View all bookings by default
+ * 2. Filter by Upcoming or Past tabs
+ * 3. Expand service details if needed
+ * 4. Cancel upcoming bookings
+ * 5. Book again or view salon
+ */
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import {
   useGetMyBookingsQuery,
   useCancelBookingMutation,
 } from "../../services/api/bookingApi";
+import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 
+/**
+ * BookingCard - Individual booking display component
+ * Shows booking details with expandable services and cancel functionality
+ */
 function BookingCard({ booking, onCancel }) {
   const [showDetails, setShowDetails] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const navigate = useNavigate();
 
+  /**
+   * getStatusColor - Returns Tailwind color class for booking status
+   */
   const getStatusColor = (status) => {
     switch (status) {
       case "confirmed":
@@ -26,6 +63,9 @@ function BookingCard({ booking, onCancel }) {
     }
   };
 
+  /**
+   * handleCancel - Cancels booking with confirmation
+   */
   const handleCancel = async () => {
     setCancelling(true);
     try {
@@ -300,24 +340,24 @@ export default function MyBookings() {
   // Local UI state
   const [activeTab, setActiveTab] = useState("all"); // all, upcoming, past
 
+  /**
+   * handleCancelBooking - Cancels booking via API mutation
+   */
   const handleCancelBooking = async (bookingId) => {
     try {
       await cancelBooking(bookingId).unwrap();
-      toast.success("Booking cancelled successfully", {
+      showSuccessToast("Booking cancelled successfully", {
         position: "top-center",
-        autoClose: 2000,
-        style: {
-          backgroundColor: "#000000",
-          color: "#fff",
-          fontFamily: "DM Sans, sans-serif",
-        },
       });
     } catch (error) {
       console.error("Cancel error:", error);
-      toast.error(error?.message || "Failed to cancel booking");
+      showErrorToast(error?.message || "Failed to cancel booking");
     }
   };
 
+  /**
+   * filterBookings - Filters bookings based on active tab
+   */
   const filterBookings = () => {
     if (activeTab === "upcoming") {
       return bookings.filter(

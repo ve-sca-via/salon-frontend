@@ -24,10 +24,10 @@ export const rmApi = createApi({
 
     // Get RM's own vendor requests
     getOwnVendorRequests: builder.query({
-      query: ({ statusFilter, limit = 50, offset = 0 } = {}) => ({
+      query: ({ status_filter, limit = 50, offset = 0 } = {}) => ({
         url: '/api/rm/vendor-requests',
         method: 'get',
-        params: { status_filter: statusFilter, limit, offset },
+        params: { status_filter: status_filter, limit, offset },
       }),
       providesTags: (result) =>
         result?.data
@@ -103,6 +103,16 @@ export const rmApi = createApi({
       providesTags: ['RMScore'],
       keepUnusedDataFor: 300, // Cache for 5 minutes
     }),
+
+    // Get service categories for dropdown
+    getServiceCategories: builder.query({
+      query: () => ({
+        url: '/api/rm/service-categories',
+        method: 'get',
+      }),
+      keepUnusedDataFor: 600, // Cache for 10 minutes (rarely changes)
+      refetchOnFocus: false, // No need to refetch on focus
+    }),
   }),
 });
 
@@ -115,6 +125,7 @@ export const {
   useGetRMProfileQuery,
   useUpdateRMProfileMutation,
   useGetRMScoreHistoryQuery,
+  useGetServiceCategoriesQuery,
 } = rmApi;
 
 export default rmApi;

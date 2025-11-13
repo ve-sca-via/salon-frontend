@@ -1,8 +1,9 @@
 /**
  * Cart API - RTK Query
  * 
- * Handles shopping cart operations with optimistic updates
- * for instant UI feedback.
+ * Handles shopping cart operations with database backend.
+ * All operations sync to Supabase for multi-device access.
+ * Uses RTK Query for caching and automatic refetching.
  */
 
 import { createApi } from '@reduxjs/toolkit/query/react';
@@ -13,57 +14,74 @@ export const cartApi = createApi({
   baseQuery: axiosBaseQuery(),
   tagTypes: ['Cart'],
   endpoints: (builder) => ({
-    // Get cart items
+    
+    // Get all cart items
     getCart: builder.query({
       query: () => ({
         url: '/api/customers/cart',
         method: 'get',
       }),
-      providesTags: ['Cart'],
-      keepUnusedDataFor: 30, // Cache for 30 seconds (cart changes frequently)
+      providesTags: (result) =>
+        result?.items
+          ? [
+              ...result.items.map(({ id }) => ({ type: 'Cart', id })),
+              { type: 'Cart', id: 'LIST' },
+            ]
+          : [{ type: 'Cart', id: 'LIST' }],
+      keepUnusedDataFor: 30, // Cache for 30 seconds
       refetchOnFocus: true, // Refetch when user comes back to tab
+      refetchOnReconnect: true, // Refetch when network reconnects
     }),
 
-    // Add item to cart
+    // Add item to cart (or increment quantity if exists)
     addToCart: builder.mutation({
       query: (cartItem) => ({
         url: '/api/customers/cart',
         method: 'post',
         data: cartItem,
       }),
-      // Optimistic update - add item to UI immediately
-      async onQueryStarted(cartItem, { dispatch, queryFulfilled }) {
+      // Invalidate cart cache to trigger refetch
+      invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
+    }),
+
+    // Update cart item quantity
+    updateCartItem: builder.mutation({
+      query: ({ itemId, quantity }) => ({
+        url: `/api/customers/cart/${itemId}`,
+        method: 'put',
+        data: { quantity },
+      }),
+      // Optimistic update
+      async onQueryStarted({ itemId, quantity }, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
           cartApi.util.updateQueryData('getCart', undefined, (draft) => {
-            // Add temporary item to draft
-            if (draft.items) {
-              draft.items.push({
-                ...cartItem,
-                id: `temp-${Date.now()}`, // Temporary ID
-              });
+            const item = draft.items?.find((item) => item.id === itemId);
+            if (item) {
+              item.quantity = quantity;
+              
+              // Recalculate totals
+              draft.total_amount = draft.items.reduce(
+                (total, item) => total + item.price * item.quantity,
+                0
+              );
+              draft.item_count = draft.items.reduce(
+                (total, item) => total + item.quantity,
+                0
+              );
             }
           })
         );
+        
         try {
-          const { data } = await queryFulfilled;
-          // Update with real data from server
-          dispatch(
-            cartApi.util.updateQueryData('getCart', undefined, (draft) => {
-              // Replace temp item with real one
-              if (draft.items) {
-                const tempIndex = draft.items.findIndex((i) => i.id?.toString().startsWith('temp-'));
-                if (tempIndex !== -1 && data.item) {
-                  draft.items[tempIndex] = data.item;
-                }
-              }
-            })
-          );
+          await queryFulfilled;
         } catch {
-          // Rollback optimistic update on error
           patchResult.undo();
         }
       },
-      invalidatesTags: ['Cart'],
+      invalidatesTags: (result, error, { itemId }) => [
+        { type: 'Cart', id: itemId },
+        { type: 'Cart', id: 'LIST' },
+      ],
     }),
 
     // Remove item from cart
@@ -72,34 +90,50 @@ export const cartApi = createApi({
         url: `/api/customers/cart/${itemId}`,
         method: 'delete',
       }),
-      // Optimistic update - remove from UI immediately
+      // Optimistic update
       async onQueryStarted(itemId, { dispatch, queryFulfilled }) {
         const patchResult = dispatch(
           cartApi.util.updateQueryData('getCart', undefined, (draft) => {
-            if (draft.items) {
-              draft.items = draft.items.filter((item) => item.id !== itemId);
+            draft.items = draft.items?.filter((item) => item.id !== itemId) || [];
+            
+            // Recalculate totals
+            draft.total_amount = draft.items.reduce(
+              (total, item) => total + item.price * item.quantity,
+              0
+            );
+            draft.item_count = draft.items.reduce(
+              (total, item) => total + item.quantity,
+              0
+            );
+            
+            // Clear salon if cart empty
+            if (draft.items.length === 0) {
+              draft.salon_id = null;
+              draft.salon_name = null;
             }
           })
         );
+        
         try {
           await queryFulfilled;
         } catch {
-          // Rollback on error
           patchResult.undo();
         }
       },
-      invalidatesTags: ['Cart'],
+      invalidatesTags: (result, error, itemId) => [
+        { type: 'Cart', id: itemId },
+        { type: 'Cart', id: 'LIST' },
+      ],
     }),
 
-    // Checkout cart
-    checkoutCart: builder.mutation({
-      query: (checkoutData) => ({
-        url: '/api/customers/cart/checkout',
-        method: 'post',
-        data: checkoutData,
+    // Clear entire cart
+    clearCart: builder.mutation({
+      query: () => ({
+        url: '/api/customers/cart/clear/all',
+        method: 'delete',
       }),
-      // After checkout, clear cart and refetch bookings
-      invalidatesTags: ['Cart'],
+      // Invalidate all cart cache
+      invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
   }),
 });
@@ -107,8 +141,9 @@ export const cartApi = createApi({
 export const {
   useGetCartQuery,
   useAddToCartMutation,
+  useUpdateCartItemMutation,
   useRemoveFromCartMutation,
-  useCheckoutCartMutation,
+  useClearCartMutation,
 } = cartApi;
 
 export default cartApi;

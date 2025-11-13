@@ -1,4 +1,44 @@
-import React, { useState } from 'react';
+/**
+ * ServicesManagement Component
+ * 
+ * Purpose:
+ * Comprehensive service management interface for vendors to create, edit, delete,
+ * and toggle service availability. Central hub for managing salon service offerings.
+ * 
+ * Data Management:
+ * - Fetches services via RTK Query (useGetVendorServicesQuery)
+ * - Fetches categories via RTK Query (useGetServiceCategoriesQuery)
+ * - CRUD operations via mutations (create, update, delete)
+ * - Local state for form data, filters, and modal
+ * 
+ * Key Features:
+ * - Service CRUD operations (Create, Read, Update, Delete)
+ * - Real-time search filtering
+ * - Status filtering (All, Active, Inactive)
+ * - Quick toggle for service activation/deactivation
+ * - Category assignment
+ * - Responsive grid layout
+ * - Empty state handling
+ * 
+ * Service Structure:
+ * - name: Service name (required)
+ * - description: Service details (optional)
+ * - price: Cost in INR (0 for FREE)
+ * - duration_minutes: Service duration (required)
+ * - category_id: Associated category (optional)
+ * - is_active: Availability status (boolean)
+ * 
+ * User Flow:
+ * 1. View all services in grid layout
+ * 2. Search/filter services by name, category, description
+ * 3. Filter by active/inactive status
+ * 4. Add new service via modal form
+ * 5. Edit existing service (pre-fills form)
+ * 6. Quick toggle service active status
+ * 7. Delete service with confirmation
+ */
+
+import React, { useState, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
@@ -22,24 +62,29 @@ import {
   FiShoppingBag,
   FiSearch,
 } from 'react-icons/fi';
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 
 const ServicesManagement = () => {
-  // RTK Query hooks
+  // RTK Query hooks for fetching and mutating service data
   const { data: servicesData, isLoading: servicesLoading } = useGetVendorServicesQuery();
   const { data: categoriesData, isLoading: categoriesLoading } = useGetServiceCategoriesQuery();
-  const [createService] = useCreateVendorServiceMutation();
-  const [updateService] = useUpdateVendorServiceMutation();
-  const [deleteService] = useDeleteVendorServiceMutation();
+  const [createService, { isLoading: isCreating }] = useCreateVendorServiceMutation();
+  const [updateService, { isLoading: isUpdating }] = useUpdateVendorServiceMutation();
+  const [deleteService, { isLoading: isDeleting }] = useDeleteVendorServiceMutation();
   
   const services = servicesData || [];
   const categories = categoriesData?.data || [];
 
+  // Modal and edit state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
+  
+  // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [filterActive, setFilterActive] = useState('all');
 
+  // Form data state - represents service fields
+  // Note: duration_minutes is the canonical field, but API may return 'duration' in some cases
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -49,18 +94,25 @@ const ServicesManagement = () => {
     is_active: true,
   });
 
+  /**
+   * handleOpenModal - Opens modal for adding or editing a service
+   * @param {Object|null} service - Service to edit, or null for new service
+   */
   const handleOpenModal = (service = null) => {
     if (service) {
+      // Edit mode - pre-fill form with service data
       setEditingService(service);
       setFormData({
         name: service.name || '',
         description: service.description || '',
         price: service.price || '',
+        // Handle API inconsistency: duration_minutes is canonical, but may receive 'duration'
         duration: service.duration_minutes || service.duration || '',
         category_id: service.category_id || (categories.length > 0 ? categories[0].id : ''),
         is_active: service.is_active !== undefined ? service.is_active : true,
       });
     } else {
+      // Add mode - reset form with default values
       setEditingService(null);
       setFormData({
         name: '',
@@ -74,6 +126,9 @@ const ServicesManagement = () => {
     setIsModalOpen(true);
   };
 
+  /**
+   * handleCloseModal - Closes modal and resets form state
+   */
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setEditingService(null);
@@ -87,6 +142,10 @@ const ServicesManagement = () => {
     });
   };
 
+  /**
+   * handleChange - Updates form field values
+   * Handles both regular inputs and checkboxes
+   */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -95,24 +154,33 @@ const ServicesManagement = () => {
     });
   };
 
+  /**
+   * handleSubmit - Validates and submits service data
+   * Creates new service or updates existing one
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Validation
+    // Client-side validation
     if (!formData.name.trim()) {
-      toast.error('Service name is required');
+      showErrorToast('Service name is required');
       return;
     }
     if (!formData.duration || formData.duration <= 0) {
-      toast.error('Duration must be greater than 0');
+      showErrorToast('Duration must be greater than 0');
       return;
     }
-    if (formData.price < 0) {
-      toast.error('Price cannot be negative');
+    if (!formData.price || formData.price === '') {
+      showErrorToast('Price is required (use 0 for FREE services)');
+      return;
+    }
+    if (parseFloat(formData.price) < 0) {
+      showErrorToast('Price cannot be negative');
       return;
     }
 
     try {
+      // Prepare service data for API
       const serviceData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
@@ -124,17 +192,21 @@ const ServicesManagement = () => {
 
       if (editingService) {
         await updateService({ serviceId: editingService.id, ...serviceData }).unwrap();
-        toast.success('Service updated successfully!');
+        showSuccessToast('Service updated successfully!');
       } else {
         await createService(serviceData).unwrap();
-        toast.success('Service created successfully!');
+        showSuccessToast('Service created successfully!');
       }
       handleCloseModal();
     } catch (error) {
-      toast.error(error?.message || 'Failed to save service');
+      showErrorToast(error?.message || 'Failed to save service');
     }
   };
 
+  /**
+   * handleToggleActive - Toggles service active/inactive status
+   * Updates service with all existing data plus new is_active value
+   */
   const handleToggleActive = async (service) => {
     try {
       await updateService({
@@ -142,41 +214,56 @@ const ServicesManagement = () => {
         name: service.name,
         description: service.description,
         price: service.price,
+        // Handle API inconsistency: duration_minutes is canonical
         duration_minutes: service.duration_minutes || service.duration,
         category_id: service.category_id,
         is_active: !service.is_active,
       }).unwrap();
-      toast.success(`Service ${!service.is_active ? 'activated' : 'deactivated'}`);
+      showSuccessToast(`Service ${!service.is_active ? 'activated' : 'deactivated'}`);
     } catch (error) {
-      toast.error(error?.message || 'Failed to update service status');
+      showErrorToast(error?.message || 'Failed to update service status');
     }
   };
 
+  /**
+   * handleDelete - Deletes service after confirmation
+   * Uses window.confirm for now - TODO: Replace with Modal for better UX
+   */
   const handleDelete = async (serviceId) => {
+    // TODO: Replace window.confirm with custom Modal component for better accessibility
     if (!window.confirm('Are you sure you want to delete this service?')) {
       return;
     }
 
     try {
       await deleteService(serviceId).unwrap();
-      toast.success('Service deleted successfully!');
+      showSuccessToast('Service deleted successfully!');
     } catch (error) {
-      toast.error(error?.message || 'Failed to delete service');
+      showErrorToast(error?.message || 'Failed to delete service');
     }
   };
 
-  // Filter services
-  const filteredServices = services.filter((service) => {
-    const matchesSearch =
-      service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (service.category && service.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (service.description && service.description.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchesActive =
-      filterActive === 'all' ||
-      (filterActive === 'active' && service.is_active) ||
-      (filterActive === 'inactive' && !service.is_active);
-    return matchesSearch && matchesActive;
-  });
+  /**
+   * Filter services based on search term and active status
+   * Memoized to prevent recalculation on every render
+   */
+  const filteredServices = useMemo(() => {
+    return services.filter((service) => {
+      // Search filter - matches name, category, or description
+      const matchesSearch =
+        service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (service.category && service.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (service.description && service.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      
+      // Status filter - all, active only, or inactive only
+      const matchesActive =
+        filterActive === 'all' ||
+        (filterActive === 'active' && service.is_active) ||
+        (filterActive === 'inactive' && !service.is_active);
+      
+      return matchesSearch && matchesActive;
+    });
+  }, [services, searchTerm, filterActive]);
 
   return (
     <DashboardLayout role="vendor">
@@ -211,7 +298,8 @@ const ServicesManagement = () => {
                   placeholder="Search services..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-body"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
+                  aria-label="Search services"
                 />
               </div>
             </div>
@@ -247,7 +335,7 @@ const ServicesManagement = () => {
         {servicesLoading ? (
           <div className="flex items-center justify-center min-h-[40vh]">
             <div className="text-center">
-              <div className="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
               <p className="text-gray-600 font-body">Loading services...</p>
             </div>
           </div>
@@ -283,7 +371,7 @@ const ServicesManagement = () => {
                         {service.name}
                       </h3>
                       {service.category && (
-                        <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs font-body rounded-full mt-1">
+                        <span className="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs font-body rounded-full mt-1">
                           {service.category}
                         </span>
                       )}
@@ -292,6 +380,8 @@ const ServicesManagement = () => {
                       onClick={() => handleToggleActive(service)}
                       className="text-2xl focus:outline-none"
                       title={service.is_active ? 'Active' : 'Inactive'}
+                      aria-label={`Toggle service ${service.is_active ? 'inactive' : 'active'}`}
+                      disabled={isUpdating}
                     >
                       {service.is_active ? (
                         <FiToggleRight className="text-green-600" />
@@ -308,10 +398,10 @@ const ServicesManagement = () => {
 
                   {/* Details */}
                   <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center text-purple-600">
+                    <div className="flex items-center text-accent-orange">
                       <FiDollarSign className="mr-1" />
                       <span className="font-body font-semibold">
-                        {service.price === 0 ? 'FREE' : `₹${service.price}`}
+                        {!service.price || service.price === 0 ? 'FREE' : `₹${service.price}`}
                       </span>
                     </div>
                     <div className="flex items-center text-gray-600">
@@ -349,6 +439,8 @@ const ServicesManagement = () => {
                       size="sm"
                       onClick={() => handleDelete(service.id)}
                       className="text-red-600 hover:bg-red-50 border-red-200"
+                      disabled={isDeleting}
+                      aria-label="Delete service"
                     >
                       <FiTrash2 />
                     </Button>
@@ -374,6 +466,7 @@ const ServicesManagement = () => {
             onChange={handleChange}
             required
             placeholder="e.g., Haircut, Facial, Manicure"
+            disabled={isCreating || isUpdating}
           />
 
           <div>
@@ -384,8 +477,8 @@ const ServicesManagement = () => {
               name="category_id"
               value={formData.category_id}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-body"
-              disabled={categoriesLoading}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
+              disabled={categoriesLoading || isCreating || isUpdating}
             >
               {categoriesLoading ? (
                 <option>Loading categories...</option>
@@ -410,8 +503,9 @@ const ServicesManagement = () => {
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-body"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
               placeholder="Describe the service..."
+              disabled={isCreating || isUpdating}
             />
           </div>
 
@@ -427,6 +521,7 @@ const ServicesManagement = () => {
               step="0.01"
               placeholder="0 for FREE"
               icon={<FiDollarSign />}
+              disabled={isCreating || isUpdating}
             />
 
             <InputField
@@ -439,6 +534,7 @@ const ServicesManagement = () => {
               min="1"
               placeholder="e.g., 30"
               icon={<FiClock />}
+              disabled={isCreating || isUpdating}
             />
           </div>
 
@@ -449,7 +545,8 @@ const ServicesManagement = () => {
               name="is_active"
               checked={formData.is_active}
               onChange={handleChange}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+              className="w-4 h-4 text-accent-orange border-gray-300 rounded focus:ring-accent-orange"
+              disabled={isCreating || isUpdating}
             />
             <label htmlFor="is_active" className="text-sm font-body text-gray-700">
               Service is active and available for booking
@@ -457,11 +554,20 @@ const ServicesManagement = () => {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="outline" onClick={handleCloseModal}>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleCloseModal}
+              disabled={isCreating || isUpdating}
+            >
               Cancel
             </Button>
-            <Button type="submit" variant="primary" disabled={servicesLoading}>
-              {editingService ? 'Update Service' : 'Add Service'}
+            <Button 
+              type="submit" 
+              variant="primary" 
+              disabled={isCreating || isUpdating}
+            >
+              {isCreating || isUpdating ? 'Saving...' : editingService ? 'Update Service' : 'Add Service'}
             </Button>
           </div>
         </form>

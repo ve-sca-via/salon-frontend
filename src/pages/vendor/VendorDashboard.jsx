@@ -1,3 +1,30 @@
+/**
+ * VendorDashboard Component
+ * 
+ * Purpose:
+ * Main dashboard for salon vendors displaying comprehensive overview of their salon operations.
+ * Shows analytics, bookings, payment status, and quick actions for managing salon.
+ * 
+ * Data Management:
+ * - Salon profile from RTK Query (useGetVendorSalonQuery)
+ * - Analytics data from RTK Query (useGetVendorAnalyticsQuery)
+ * - Recent bookings from RTK Query (useGetVendorBookingsQuery)
+ * - Auth state from Redux (user display name)
+ * 
+ * Key Features:
+ * - Payment status check for new vendors (registration fee)
+ * - Analytics cards (bookings, revenue, services, staff, rating, pending)
+ * - Quick action links (add service, add staff, view bookings)
+ * - Recent bookings table (last 5 bookings)
+ * - Responsive grid layouts
+ * 
+ * User Flow:
+ * 1. Vendor logs in and lands on dashboard
+ * 2. If payment pending: sees payment CTA and limited access
+ * 3. If payment complete: sees full analytics and bookings
+ * 4. Can navigate to manage services, staff, or bookings
+ */
+
 import React from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
@@ -11,39 +38,63 @@ import {
 } from '../../services/api/vendorApi';
 import { 
   FiCalendar, FiDollarSign, FiShoppingBag, FiUsers, 
-  FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle
+  FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle, FiLock
 } from 'react-icons/fi';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
   
-  // Get user from auth state (still needed for display name)
+  // Get user from auth state for display name
   const { user } = useSelector((state) => state.auth);
   
-  // RTK Query hooks
-  const { data: salonData, isLoading: salonLoading } = useGetVendorSalonQuery();
-  const { data: analyticsData, isLoading: analyticsLoading } = useGetVendorAnalyticsQuery();
+  // RTK Query hooks for fetching salon data
+  const { data: salonData, isLoading: salonLoading, error: salonError } = useGetVendorSalonQuery();
+  const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useGetVendorAnalyticsQuery();
   const { data: bookingsData, isLoading: bookingsLoading } = useGetVendorBookingsQuery({ limit: 5 });
   
-  const salonProfile = salonData?.salon;
-  const analytics = analyticsData?.data || analyticsData; // Handle both {data: {...}} and direct response
+  // Handle different response formats from API
+  const salonProfile = salonData?.salon || salonData;
+  // TODO: Standardize analytics response structure in API (sometimes {data: {...}}, sometimes direct)
+  const analytics = analyticsData?.data || analyticsData;
   const bookings = bookingsData?.bookings || [];
 
-  // Check if payment is pending (salon inactive or payment not complete)
-  // Only check after data is loaded to avoid false positives
+  // Debug logging
+  console.log('🔍 Dashboard Debug:', {
+    salonData: salonData,
+    salonProfile: salonProfile,
+    salonError: salonError,
+    is_verified: salonProfile?.is_verified,
+    is_active: salonProfile?.is_active,
+    registration_fee_paid: salonProfile?.registration_fee_paid,
+  });
+
+  /**
+   * Check if vendor needs to complete payment
+   * Payment is pending if salon is inactive OR registration fee not paid
+   */
   const isPaymentPending = salonProfile && (!salonProfile.is_active || !salonProfile.registration_fee_paid);
 
+  console.log('� Payment Status:', {
+    isPaymentPending: isPaymentPending,
+    calculation: salonProfile ? `!${salonProfile.is_active} || !${salonProfile.registration_fee_paid}` : 'no salon'
+  });
+
+  /**
+   * handleMakePayment - Navigate to vendor payment page
+   */
   const handleMakePayment = () => {
-    // Navigate to payment page or open payment modal
     navigate('/vendor/payment');
   };
 
+  /**
+   * Loading state - show spinner while fetching initial data
+   */
   if ((analyticsLoading && !analytics) || (salonLoading && !salonProfile)) {
     return (
       <DashboardLayout role="vendor">
         <div className="flex items-center justify-center min-h-[60vh]">
           <div className="text-center">
-            <div className="animate-spin h-16 w-16 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+            <div className="animate-spin h-16 w-16 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
             <p className="text-gray-600 font-body">Loading dashboard...</p>
           </div>
         </div>
@@ -51,13 +102,43 @@ const VendorDashboard = () => {
     );
   }
 
+  /**
+   * Error state - show error message if queries fail
+   */
+  if (salonError || analyticsError) {
+    return (
+      <DashboardLayout role="vendor">
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <Card className="max-w-md text-center">
+            <FiAlertCircle className="text-red-600 text-5xl mx-auto mb-4" />
+            <h2 className="text-2xl font-display font-bold text-gray-900 mb-2">
+              Failed to Load Dashboard
+            </h2>
+            <p className="text-gray-600 font-body mb-4">
+              {salonError?.message || analyticsError?.message || "Unable to fetch dashboard data"}
+            </p>
+            <Button onClick={() => window.location.reload()} className="bg-accent-orange text-white">
+              Retry
+            </Button>
+          </Card>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  /**
+   * Analytics stats cards configuration
+   * Note: Change percentages are currently static - consider implementing
+   * real comparison with previous period from analytics API
+   */
   const stats = [
     {
       title: 'Total Bookings',
       value: analytics?.total_bookings || 0,
       icon: <FiCalendar className="text-blue-600" size={24} />,
       bgColor: 'bg-blue-100',
-      change: '+12%',
+      // TODO: Replace with real comparison data from API
+      change: analytics?.bookings_change || null,
       changeType: 'increase',
     },
     {
@@ -65,15 +146,15 @@ const VendorDashboard = () => {
       value: `₹${analytics?.total_revenue || 0}`,
       icon: <FiDollarSign className="text-green-600" size={24} />,
       bgColor: 'bg-green-100',
-      change: '+8%',
+      change: analytics?.revenue_change || null,
       changeType: 'increase',
     },
     {
       title: 'Active Services',
       value: analytics?.active_services || 0,
-      icon: <FiShoppingBag className="text-purple-600" size={24} />,
-      bgColor: 'bg-purple-100',
-      change: '+2',
+      icon: <FiShoppingBag className="text-accent-orange" size={24} />,
+      bgColor: 'bg-orange-100',
+      change: analytics?.services_change || null,
       changeType: 'neutral',
     },
     {
@@ -81,7 +162,7 @@ const VendorDashboard = () => {
       value: analytics?.total_staff || 0,
       icon: <FiUsers className="text-orange-600" size={24} />,
       bgColor: 'bg-orange-100',
-      change: '0',
+      change: analytics?.staff_change || null,
       changeType: 'neutral',
     },
     {
@@ -89,7 +170,7 @@ const VendorDashboard = () => {
       value: (analytics?.average_rating || 0).toFixed(1),
       icon: <FiStar className="text-yellow-600" size={24} />,
       bgColor: 'bg-yellow-100',
-      change: '+0.3',
+      change: analytics?.rating_change || null,
       changeType: 'increase',
     },
     {
@@ -97,11 +178,14 @@ const VendorDashboard = () => {
       value: analytics?.pending_bookings || 0,
       icon: <FiClock className="text-red-600" size={24} />,
       bgColor: 'bg-red-100',
-      change: '-3',
+      change: analytics?.pending_change || null,
       changeType: 'decrease',
     },
   ];
 
+  /**
+   * Status badge colors for booking statuses
+   */
   const statusColors = {
     pending: 'bg-yellow-100 text-yellow-800',
     confirmed: 'bg-blue-100 text-blue-800',
@@ -111,102 +195,31 @@ const VendorDashboard = () => {
 
   return (
     <DashboardLayout role="vendor">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-display font-bold text-gray-900">
-              Welcome back, {user?.full_name || 'Vendor'}! 👋
-            </h1>
-            <p className="text-gray-600 font-body mt-1">
-              {salonProfile?.business_name ? `Managing ${salonProfile.business_name}` : "Here's what's happening with your salon today"}
-            </p>
-          </div>
-        </div>
 
-        {/* Payment Required Notice */}
-        {isPaymentPending && (
-          <Card className="border-2 border-orange-300 bg-gradient-to-r from-orange-50 to-amber-50">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="w-16 h-16 bg-gradient-to-br from-[#F89C02] to-orange-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <FiCreditCard className="text-white text-3xl" />
-                </div>
-              </div>
-              <div className="ml-6 flex-1">
-                <div className="flex items-center mb-2">
-                  <FiAlertCircle className="text-orange-600 mr-2" size={24} />
-                  <h2 className="text-2xl font-display font-bold text-gray-900">
-                    Complete Your Registration
-                  </h2>
-                </div>
-                <p className="text-gray-700 font-body mb-4 leading-relaxed">
-                  Your salon has been approved! To activate your account and start receiving bookings, 
-                  please complete the payment process. Once payment is confirmed, you'll have full access 
-                  to all dashboard features including analytics, bookings, and customer management.
-                </p>
-                
-                {/* Payment Details */}
-                <div className="bg-white rounded-lg p-4 mb-4 border border-orange-200">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="flex items-start">
-                      <FiCheckCircle className="text-green-600 mt-1 mr-2 flex-shrink-0" size={20} />
-                      <div>
-                        <p className="font-body font-semibold text-gray-900">Salon Approved</p>
-                        <p className="text-sm text-gray-600">Admin verified your salon</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <FiAlertCircle className="text-orange-600 mt-1 mr-2 flex-shrink-0" size={20} />
-                      <div>
-                        <p className="font-body font-semibold text-gray-900">Payment Pending</p>
-                        <p className="text-sm text-gray-600">Complete to activate</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start">
-                      <FiDollarSign className="text-blue-600 mt-1 mr-2 flex-shrink-0" size={20} />
-                      <div>
-                        <p className="font-body font-semibold text-gray-900">Registration Fee</p>
-                        <p className="text-sm text-gray-600">₹5,000 (One-time)</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-wrap gap-3">
-                  <Button
-                    onClick={handleMakePayment}
-                    className="bg-gradient-to-r from-[#F89C02] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-heading font-bold px-8 py-3 shadow-lg hover:shadow-xl transition-all duration-200"
-                  >
-                    <FiCreditCard className="mr-2" size={20} />
-                    Make Payment Now
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="border-2 border-orange-300 text-orange-700 hover:bg-orange-50 font-body font-semibold px-6 py-3"
-                    onClick={() => window.open('https://wa.me/your-support-number', '_blank')}
-                  >
-                    Contact Support
-                  </Button>
-                </div>
-              </div>
+      {/* Main Dashboard Content - Only visible after payment */}
+      {!isPaymentPending && (
+        <div className="space-y-6">
+          {/* Header */}
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-display font-bold text-gray-900">
+                Welcome back, {user?.full_name || 'Vendor'}! 👋
+              </h1>
+              <p className="text-gray-600 font-body mt-1">
+                {salonProfile?.business_name ? `Managing ${salonProfile.business_name}` : "Here's what's happening with your salon today"}
+              </p>
             </div>
-          </Card>
-        )}
+          </div>
 
-        {/* Show limited dashboard content when payment is pending */}
-        {!isPaymentPending && (
-          <>
-            {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Analytics Stats Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {stats.map((stat, index) => (
                 <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm text-gray-600 font-body mb-1">{stat.title}</p>
                       <p className="text-3xl font-display font-bold text-gray-900">{stat.value}</p>
-                      {stat.change !== '0' && (
+                      {stat.change && (
                         <p
                           className={`text-sm font-body mt-2 ${
                             stat.changeType === 'increase'
@@ -228,21 +241,21 @@ const VendorDashboard = () => {
               ))}
             </div>
 
-        {/* Quick Actions */}
+        {/* Quick Actions Section */}
         <Card>
           <h2 className="text-xl font-display font-bold text-gray-900 mb-4">Quick Actions</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Link
               to="/vendor/services"
-              className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200"
+              className="flex items-center justify-between p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200"
             >
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
+                <div className="w-10 h-10 bg-accent-orange rounded-lg flex items-center justify-center mr-3">
                   <FiPlus className="text-white" size={20} />
                 </div>
                 <span className="font-body font-semibold text-gray-900">Add Service</span>
               </div>
-              <FiArrowRight className="text-purple-600" />
+              <FiArrowRight className="text-accent-orange" />
             </Link>
 
             <Link
@@ -273,13 +286,13 @@ const VendorDashboard = () => {
           </div>
         </Card>
 
-        {/* Recent Bookings */}
+        {/* Recent Bookings Table */}
         <Card>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-display font-bold text-gray-900">Recent Bookings</h2>
             <Link
               to="/vendor/bookings"
-              className="text-purple-600 hover:text-purple-700 font-body font-medium text-sm"
+              className="text-accent-orange hover:text-orange-600 font-body font-medium text-sm"
             >
               View All →
             </Link>
@@ -287,7 +300,7 @@ const VendorDashboard = () => {
 
           {bookingsLoading ? (
             <div className="text-center py-8">
-              <div className="animate-spin h-8 w-8 border-2 border-purple-600 border-t-transparent rounded-full mx-auto"></div>
+              <div className="animate-spin h-8 w-8 border-2 border-accent-orange border-t-transparent rounded-full mx-auto"></div>
             </div>
           ) : bookings && bookings.length > 0 ? (
             <div className="overflow-x-auto">
@@ -312,7 +325,7 @@ const VendorDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {bookings.slice(0, 5).map((booking) => (
+                  {bookings.map((booking) => (
                     <tr key={booking.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-900">
                         {booking.customer_name || 'N/A'}
@@ -322,7 +335,12 @@ const VendorDashboard = () => {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-600">
                         {booking.booking_date
-                          ? new Date(booking.booking_date).toLocaleString()
+                          ? new Date(booking.booking_date).toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            }) + ` at ${booking.booking_time || ''}`
                           : 'N/A'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -349,11 +367,93 @@ const VendorDashboard = () => {
             </div>
           )}
         </Card>
-          </>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Payment Pending Content - Shows locked state message */}
+      {isPaymentPending && (
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
+          <Card className="max-w-2xl mx-auto text-center py-16 px-8">
+            <div className="mb-8">
+              <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
+                <FiLock className="text-white text-5xl" />
+              </div>
+              <h2 className="text-3xl font-display font-bold text-gray-900 mb-3">
+                Dashboard Locked
+              </h2>
+              <p className="text-gray-600 font-body text-lg mb-8">
+                Your salon has been verified by admin! Complete your registration payment to unlock full dashboard access and start managing your salon.
+              </p>
+              
+              {/* Payment Details */}
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-6 mb-8 border border-orange-200 max-w-md mx-auto">
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-orange-200">
+                  <div className="flex items-center gap-2">
+                    <FiCheckCircle className="text-green-600 text-xl" />
+                    <span className="font-body font-bold text-gray-900">Admin Verified</span>
+                  </div>
+                  <span className="text-xs text-gray-600 font-body bg-white px-3 py-1 rounded-full">Approved ✓</span>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FiCreditCard className="text-orange-600 text-xl" />
+                    <span className="font-body font-semibold text-gray-900">Registration Fee</span>
+                  </div>
+                  <span className="text-2xl font-display font-bold text-orange-600">₹{salonProfile?.registration_fee_amount || 5000}</span>
+                </div>
+                <p className="text-xs text-gray-600 font-body mt-2">One-time payment • Includes GST</p>
+              </div>
+
+              {/* Locked Features */}
+              <div className="bg-gray-50 rounded-xl p-6 mb-8 max-w-md mx-auto">
+                <h3 className="font-body font-semibold text-gray-900 mb-3 flex items-center justify-center gap-2">
+                  <FiLock className="text-orange-600" />
+                  Features Locked Until Payment
+                </h3>
+                <ul className="space-y-2 text-sm text-gray-700 font-body text-left">
+                  <li className="flex items-center gap-2">
+                    <FiShoppingBag className="text-gray-400" />
+                    Manage Services & Pricing
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiUsers className="text-gray-400" />
+                    Add & Manage Staff
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiCalendar className="text-gray-400" />
+                    Accept Customer Bookings
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <FiStar className="text-gray-400" />
+                    Update Salon Profile
+                  </li>
+                </ul>
+              </div>
+            </div>
+            
+            {/* Action Button - Centered */}
+            <div className="flex justify-center">
+              <Button
+                onClick={handleMakePayment}
+                className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 font-heading font-bold py-3 px-8 shadow-lg text-lg"
+              >
+                <FiCreditCard className="inline mr-2" />
+                Complete Payment Now
+              </Button>
+            </div>
+            
+            {/* Security Note */}
+            <p className="text-center text-xs text-gray-500 font-body mt-6">
+              🔒 Secure payment powered by Razorpay
+            </p>
+          </Card>
+        </div>
+      )}
     </DashboardLayout>
   );
 };
 
 export default VendorDashboard;
+
+

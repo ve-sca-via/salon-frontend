@@ -1,3 +1,38 @@
+/**
+ * StaffManagement Component
+ * 
+ * Purpose:
+ * Enables vendors to manage their salon staff members including creating, editing,
+ * and managing staff availability and service assignments.
+ * 
+ * Data Management:
+ * - Fetches staff data via RTK Query (useGetVendorStaffQuery)
+ * - CRUD operations via mutations (create/update/delete)
+ * - Modal-based forms for add/edit operations
+ * 
+ * Key Features:
+ * - Staff CRUD operations (Create, Read, Update, Delete)
+ * - Weekly availability schedule management
+ * - Service assignments (which services each staff member provides)
+ * - Active/inactive status toggle
+ * - Search and filter functionality
+ * - Validation for required fields (name, phone)
+ * 
+ * Staff Availability:
+ * - Per-day schedule configuration (Monday-Sunday)
+ * - Available/unavailable toggle for each day
+ * - Custom start/end times in 24-hour format
+ * - Default hours: 09:00 - 18:00
+ * 
+ * User Flow:
+ * 1. View staff list with search/filter options
+ * 2. Click "Add Staff" to open modal with blank form
+ * 3. Fill in staff details and availability
+ * 4. Assign services staff member can provide
+ * 5. Save to create new staff member
+ * 6. Edit/delete existing staff as needed
+ */
+
 import React, { useState } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
@@ -23,7 +58,7 @@ import {
   FiSearch,
   FiCalendar,
 } from 'react-icons/fi';
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 
 const StaffManagement = () => {
   // RTK Query hooks
@@ -140,11 +175,11 @@ const StaffManagement = () => {
 
     // Validation
     if (!formData.name.trim()) {
-      toast.error('Staff name is required');
+      showErrorToast('Staff name is required');
       return;
     }
     if (!formData.phone.trim()) {
-      toast.error('Phone number is required');
+      showErrorToast('Phone number is required');
       return;
     }
 
@@ -161,14 +196,14 @@ const StaffManagement = () => {
 
       if (editingStaff) {
         await updateStaff({ staffId: editingStaff.id, ...staffData }).unwrap();
-        toast.success('Staff member updated successfully!');
+        showSuccessToast('Staff member updated successfully!');
       } else {
         await createStaff(staffData).unwrap();
-        toast.success('Staff member added successfully!');
+        showSuccessToast('Staff member added successfully!');
       }
       handleCloseModal();
     } catch (error) {
-      toast.error(error?.message || 'Failed to save staff member');
+      showErrorToast(error?.message || 'Failed to save staff member');
     }
   };
 
@@ -184,9 +219,9 @@ const StaffManagement = () => {
         availability: staffMember.availability,
         is_active: !staffMember.is_active,
       }).unwrap();
-      toast.success(`Staff member ${!staffMember.is_active ? 'activated' : 'deactivated'}`);
+      showSuccessToast(`Staff member ${!staffMember.is_active ? 'activated' : 'deactivated'}`);
     } catch (error) {
-      toast.error(error?.message || 'Failed to update staff status');
+      showErrorToast(error?.message || 'Failed to update staff status');
     }
   };
 
@@ -197,9 +232,9 @@ const StaffManagement = () => {
 
     try {
       await deleteStaff(staffId).unwrap();
-      toast.success('Staff member deleted successfully!');
+      showSuccessToast('Staff member deleted successfully!');
     } catch (error) {
-      toast.error(error?.message || 'Failed to delete staff member');
+      showErrorToast(error?.message || 'Failed to delete staff member');
     }
   };
 

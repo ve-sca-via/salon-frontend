@@ -1,59 +1,51 @@
 import React, { useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { loginSuccess } from '../../store/slices/authSlice';
-import { getCurrentUser } from '../../services/backendApi';
-import { fetchRMProfile } from '../../store/slices/rmAgentSlice';
+import { setUser } from '../../store/slices/authSlice';
+import { useGetCurrentUserQuery } from '../../services/api/authApi';
+import { useGetRMProfileQuery } from '../../services/api/rmApi';
 
 /**
  * Protected Route for RM (Relationship Manager) Portal
  * Ensures only authenticated RMs with valid JWT tokens can access
+ * 
+ * Uses RTK Query for automatic user verification and profile loading
  */
 const RMProtectedRoute = ({ children }) => {
   const dispatch = useDispatch();
   const location = useLocation();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
-  const { profile } = useSelector((state) => state.rmAgent);
   
   const token = localStorage.getItem('access_token');
 
-  useEffect(() => {
-    const verifyAndFetchUser = async () => {
-      // If we have a token but no user data, fetch it
-      if (token && !user) {
-        try {
-          console.log('🔍 Token found, fetching user profile...');
-          const userData = await getCurrentUser();
-          
-          // Verify user is RM
-          if (userData.role !== 'relationship_manager') {
-            console.error('❌ User is not an RM:', userData.role);
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            return;
-          }
-          
-          console.log('✅ RM verified:', userData.email);
-          dispatch(loginSuccess(userData));
-          
-          // Fetch RM profile with stats
-          if (!profile) {
-            dispatch(fetchRMProfile());
-          }
-        } catch (error) {
-          console.error('❌ Token verification failed:', error);
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
-        }
-      } else if (user && user.role === 'relationship_manager' && !profile) {
-        // User exists but profile not loaded
-        console.log('📊 Loading RM profile...');
-        dispatch(fetchRMProfile());
-      }
-    };
+  // RTK Query hooks - only run if token exists
+  const { data: currentUserData, isLoading: isLoadingUser, error: userError } = useGetCurrentUserQuery(
+    undefined,
+    { skip: !token || !!user } // Skip if no token or user already loaded
+  );
+  
+  const { data: rmProfileData, isLoading: isLoadingProfile } = useGetRMProfileQuery(
+    undefined,
+    { skip: !token || !user || user.role !== 'relationship_manager' } // Skip if no RM user
+  );
 
-    verifyAndFetchUser();
-  }, [token, user, profile, dispatch]);
+  useEffect(() => {
+    // If we got user data from API and don't have it in Redux yet
+    if (currentUserData?.user && !user) {
+      const userData = currentUserData.user;
+      
+      // Verify user is RM
+      if (userData.role !== 'relationship_manager') {
+        console.error('❌ User is not an RM:', userData.role);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        return;
+      }
+      
+      console.log('✅ RM verified:', userData.email);
+      dispatch(setUser(userData));
+    }
+  }, [currentUserData, user, dispatch]);
 
   // No token - redirect to login
   if (!token) {
@@ -62,7 +54,7 @@ const RMProtectedRoute = ({ children }) => {
   }
 
   // Token exists but user not loaded yet - show loading
-  if (!user) {
+  if (isLoadingUser || (!user && !userError)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-orange-50 to-orange-100">
         <div className="text-center">
@@ -71,6 +63,14 @@ const RMProtectedRoute = ({ children }) => {
         </div>
       </div>
     );
+  }
+
+  // User fetch failed - redirect to login
+  if (userError) {
+    console.error('❌ Token verification failed');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    return <Navigate to="/rm-login" state={{ from: location }} replace />;
   }
 
   // User loaded but not an RM - redirect with error

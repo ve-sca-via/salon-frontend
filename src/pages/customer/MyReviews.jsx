@@ -1,15 +1,45 @@
+/**
+ * MyReviews Component
+ * 
+ * Purpose:
+ * Displays all reviews written by the customer with options to view and edit them.
+ * Shows review status (published, under review, draft) and allows customers to
+ * update their ratings and comments.
+ * 
+ * Data Management:
+ * - Reviews from RTK Query (useGetMyReviewsQuery)
+ * - Review updates via RTK Query mutation (useUpdateReviewMutation)
+ * - Local state for edit modal management
+ * 
+ * Key Features:
+ * - Display all customer reviews in a grid layout
+ * - Edit reviews via modal dialog
+ * - Star rating input (1-5 stars)
+ * - Review status indicators (published, under review, draft)
+ * - Empty state with "Browse Salons" call-to-action
+ * - Character limit enforcement (500 chars)
+ * 
+ * User Flow:
+ * 1. Customer views their review history
+ * 2. Clicks edit icon to modify a review
+ * 3. Updates rating and/or comment in modal
+ * 4. Saves changes (with validation)
+ */
+
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import {
   useGetMyReviewsQuery,
   useUpdateReviewMutation,
-  useCreateReviewMutation,
 } from "../../services/api/reviewApi";
-import { FiStar, FiEdit2, FiTrash2, FiMessageSquare } from "react-icons/fi";
+import { FiStar, FiEdit2, FiMessageSquare } from "react-icons/fi";
 
-// Star Rating Input Component
+/**
+ * StarRatingInput - Interactive star rating selector
+ * Allows users to select a rating from 1-5 stars by clicking
+ */
 function StarRatingInput({ rating, onRatingChange }) {
   return (
     <div className="flex gap-1">
@@ -33,7 +63,10 @@ function StarRatingInput({ rating, onRatingChange }) {
   );
 }
 
-// Review Card Component
+/**
+ * ReviewCard - Displays individual review with salon info, rating, and edit button
+ * Shows review status badge (published, under review, draft)
+ */
 function ReviewCard({ review, onEdit }) {
   return (
     <div className="bg-primary-white rounded-lg p-5 shadow-md hover:shadow-lg transition-shadow">
@@ -100,15 +133,21 @@ function ReviewCard({ review, onEdit }) {
   );
 }
 
-// Edit Review Modal
+/**
+ * EditReviewModal - Modal dialog for editing review rating and comment
+ * Features character limit (500), validation, and backdrop close
+ */
 function EditReviewModal({ review, onClose, onSave }) {
   const [rating, setRating] = useState(review.rating);
   const [comment, setComment] = useState(review.comment);
   const [saving, setSaving] = useState(false);
 
+  /**
+   * handleSave - Validates and saves review changes
+   */
   const handleSave = async () => {
     if (!comment.trim()) {
-      toast.error("Please write a review comment");
+      showErrorToast("Please write a review comment");
       return;
     }
 
@@ -121,8 +160,20 @@ function EditReviewModal({ review, onClose, onSave }) {
     }
   };
 
+  /**
+   * handleBackdropClick - Closes modal when clicking outside
+   */
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 bg-neutral-black/50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-neutral-black/50 flex items-center justify-center z-50 p-4"
+      onClick={handleBackdropClick}
+    >
       <div className="bg-primary-white rounded-lg p-6 max-w-2xl w-full shadow-2xl max-h-[90vh] overflow-y-auto">
         <h3 className="font-display font-bold text-[24px] text-neutral-black mb-4">
           Edit Review
@@ -154,12 +205,24 @@ function EditReviewModal({ review, onClose, onSave }) {
             </label>
             <textarea
               value={comment}
-              onChange={(e) => setComment(e.target.value)}
+              onChange={(e) => {
+                // Enforce 500 character limit
+                if (e.target.value.length <= 500) {
+                  setComment(e.target.value);
+                }
+              }}
               rows={5}
-              className="w-full px-4 py-3 border border-neutral-gray-600 rounded-lg font-body text-[14px] focus:outline-none focus:border-accent-orange resize-none"
+              maxLength={500}
+              className={`w-full px-4 py-3 border rounded-lg font-body text-[14px] focus:outline-none resize-none ${
+                !comment.trim() && saving
+                  ? "border-red-500"
+                  : "border-neutral-gray-600 focus:border-accent-orange"
+              }`}
               placeholder="Share your experience with this salon..."
             />
-            <p className="font-body text-[12px] text-neutral-gray-500 mt-1">
+            <p className={`font-body text-[12px] mt-1 ${
+              comment.length >= 500 ? "text-accent-orange font-semibold" : "text-neutral-gray-500"
+            }`}>
               {comment.length}/500 characters
             </p>
           </div>
@@ -187,7 +250,10 @@ function EditReviewModal({ review, onClose, onSave }) {
   );
 }
 
-// Empty State Component
+/**
+ * EmptyReviews - Empty state when customer has no reviews yet
+ * Encourages users to browse salons and book services
+ */
 function EmptyReviews({ onBrowse }) {
   return (
     <div className="bg-primary-white rounded-lg p-12 text-center shadow-md">
@@ -222,28 +288,29 @@ export default function MyReviews() {
   // Local state
   const [editingReview, setEditingReview] = useState(null);
 
+  /**
+   * handleEditReview - Opens edit modal for selected review
+   */
   const handleEditReview = (review) => {
     setEditingReview(review);
   };
 
+  /**
+   * handleSaveReview - Saves review updates via RTK Query mutation
+   */
   const handleSaveReview = async (reviewId, updatedData) => {
     try {
       await updateReview({ reviewId, ...updatedData }).unwrap();
-      toast.success("Review updated successfully", {
-        position: "bottom-right",
-        autoClose: 2000,
-        style: {
-          backgroundColor: "#000000",
-          color: "#fff",
-          fontFamily: "DM Sans, sans-serif",
-        },
-      });
+      showSuccessToast("Review updated successfully");
     } catch (error) {
       console.error("Update review error:", error);
-      toast.error(error?.message || "Failed to update review");
+      showErrorToast(error?.message || "Failed to update review");
     }
   };
 
+  /**
+   * handleBrowse - Navigate to salons listing page
+   */
   const handleBrowse = () => {
     navigate("/salons");
   };
@@ -254,7 +321,7 @@ export default function MyReviews() {
         <PublicNavbar />
         <div className="max-w-7xl mx-auto px-4 py-20 text-center">
           <div className="flex justify-center mb-4">
-            <div className="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full" />
+            <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full" />
           </div>
           <h2 className="font-display text-3xl font-bold text-neutral-black mb-4">
             Loading your reviews...

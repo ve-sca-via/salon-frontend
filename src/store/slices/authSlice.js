@@ -1,64 +1,43 @@
+/**
+ * Auth Slice - Minimal Client State
+ * 
+ * Purpose:
+ * Store authenticated user data for global access across the app.
+ * All API operations (login, logout, etc.) are handled by authApi (RTK Query).
+ * 
+ * State:
+ * - user: Current user object (id, email, role, etc.)
+ * - isAuthenticated: Boolean flag for auth status
+ * 
+ * Actions:
+ * - setUser: Store user after successful login/signup
+ * - clearUser: Remove user on logout
+ * 
+ * Note: Loading states and errors are managed by RTK Query hooks,
+ * not in this slice. This is purely for storing the current user.
+ */
+
 import { createSlice } from "@reduxjs/toolkit";
 
 const initialState = {
   user: null,
   isAuthenticated: false,
-  loading: false,
-  error: null,
 };
 
 const authSlice = createSlice({
   name: "auth",
   initialState,
   reducers: {
-    loginStart: (state) => {
-      state.loading = true;
-      state.error = null;
-    },
-    loginSuccess: (state, action) => {
-      state.loading = false;
-      state.isAuthenticated = true;
-      state.user = action.payload;
-      state.error = null;
-    },
-    loginFailure: (state, action) => {
-      state.loading = false;
-      state.isAuthenticated = false;
-      state.user = null;
-      state.error = action.payload;
-    },
-    logout: (state) => {
-      state.user = null;
-      state.isAuthenticated = false;
-      state.loading = false;
-      state.error = null;
-    },
     setUser: (state, action) => {
       state.user = action.payload;
       state.isAuthenticated = !!action.payload;
     },
-    updateUser: (state, action) => {
-      // Merge updates with existing user data
-      if (state.user) {
-        state.user = { ...state.user, ...action.payload };
-      }
-    },
-    login: (state, action) => {
-      state.user = action.payload;
-      state.isAuthenticated = true;
-      state.loading = false;
-      state.error = null;
+    clearUser: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
     },
   },
 });
 
-export const {
-  loginStart,
-  loginSuccess,
-  loginFailure,
-  logout,
-  setUser,
-  updateUser,
-  login,
-} = authSlice.actions;
+export const { setUser, clearUser } = authSlice.actions;
 export default authSlice.reducer;

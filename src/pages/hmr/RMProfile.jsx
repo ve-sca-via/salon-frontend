@@ -1,3 +1,36 @@
+/**
+ * RMProfile Component
+ * 
+ * Purpose:
+ * Displays and allows editing of Relationship Manager's profile information
+ * and performance statistics including salon submissions and earnings.
+ * 
+ * Data Management:
+ * - Fetches RM profile and stats via RTK Query (useGetRMProfileQuery)
+ * - Updates profile via mutation (useUpdateRMProfileMutation)
+ * - Syncs changes with Redux auth state
+ * 
+ * Key Features:
+ * - Edit mode toggle for profile updates
+ * - Personal information management (name, phone)
+ * - Performance statistics display (total score, submissions, earnings)
+ * - Status breakdown (approved, pending, rejected salons)
+ * - Visual performance score indicator
+ * 
+ * Statistics Tracking:
+ * - Total score and percentage (out of 1000)
+ * - Total salon submissions count
+ * - Approved, pending, and rejected counts
+ * - Monthly earnings (commission-based)
+ * 
+ * User Flow:
+ * 1. View profile with statistics in read-only mode
+ * 2. Click "Edit Profile" to enable editing
+ * 3. Modify name and phone fields
+ * 4. Save changes (syncs with Redux auth state)
+ * 5. Cancel to revert changes
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -5,9 +38,9 @@ import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import InputField from '../../components/shared/InputField';
 import { useGetRMProfileQuery, useUpdateRMProfileMutation } from '../../services/api/rmApi';
-import { updateUser } from '../../store/slices/authSlice';
+import { setUser } from '../../store/slices/authSlice';
 import { FiUser, FiMail, FiPhone, FiEdit2, FiSave, FiX, FiAward, FiTrendingUp, FiCheckCircle, FiClock, FiXCircle } from 'react-icons/fi';
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 
 const RMProfile = () => {
   const dispatch = useDispatch();
@@ -15,7 +48,7 @@ const RMProfile = () => {
   
   // RTK Query hooks
   const { data: profileData, isLoading: profileLoading } = useGetRMProfileQuery();
-  const [updateRMProfile] = useUpdateRMProfileMutation();
+  const [updateRMProfile, { isLoading: isUpdating }] = useUpdateRMProfileMutation();
   
   // Extract data - backend returns { profile: {...}, statistics: {...} }
   const profile = profileData?.profile;
@@ -45,16 +78,16 @@ const RMProfile = () => {
       await updateRMProfile(formData).unwrap();
       
       // Update auth state with new user data
-      dispatch(updateUser({
+      dispatch(setUser({
         ...user,
         full_name: formData.full_name,
         phone: formData.phone,
       }));
       
-      toast.success('Profile updated successfully!');
+      showSuccessToast('Profile updated successfully!');
       setIsEditing(false);
     } catch (error) {
-      toast.error(error?.message || 'Failed to update profile');
+      showErrorToast(error?.message || 'Failed to update profile');
     }
   };
 
@@ -115,6 +148,7 @@ const RMProfile = () => {
                       size="sm"
                       onClick={handleCancel}
                       className="text-gray-600 hover:bg-gray-100"
+                      disabled={isUpdating}
                     >
                       <FiX className="mr-2" />
                       Cancel
@@ -123,7 +157,8 @@ const RMProfile = () => {
                       variant="primary"
                       size="sm"
                       onClick={handleSave}
-                      disabled={profileLoading}
+                      disabled={isUpdating}
+                      loading={isUpdating}
                     >
                       <FiSave className="mr-2" />
                       Save Changes

@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { logout } from "../../../store/slices/authSlice";
-import { clearCart } from "../../../store/slices/cartSlice";
+import { clearUser } from "../../../store/slices/authSlice";
+import { useLogoutMutation } from "../../../services/api/authApi";
+import { useClearCartMutation } from "../../../services/api/cartApi";
 import { toast } from "react-toastify";
 import { UserIcon } from "./Icons";
 
@@ -11,18 +12,38 @@ export function AuthButton() {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [showDropdown, setShowDropdown] = useState(false);
+  
+  // RTK Query mutations
+  const [logoutApi] = useLogoutMutation();
+  const [clearCart] = useClearCartMutation();
 
   const handleLogout = async () => {
     try {
       console.log("Logout button clicked");
       setShowDropdown(false);
 
+      // Call logout API (invalidates token on backend)
+      try {
+        await logoutApi().unwrap();
+        console.log("Backend logout successful");
+      } catch (apiError) {
+        console.warn("Backend logout failed, continuing with local cleanup:", apiError);
+      }
+
+      // Clear tokens from localStorage
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       console.log("Tokens cleared from localStorage");
 
-      dispatch(logout());
-      dispatch(clearCart());
+      // Clear user from Redux
+      dispatch(clearUser());
+      
+      // Clear cart from database (only if authenticated)
+      if (isAuthenticated) {
+        await clearCart().unwrap().catch(err => {
+          console.warn("Cart clear failed on logout:", err);
+        });
+      }
       console.log("Redux state cleared");
 
       toast.success("Logged out successfully", {

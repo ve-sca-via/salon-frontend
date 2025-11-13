@@ -4,19 +4,31 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import { useGetOwnVendorRequestsQuery, useDeleteVendorRequestMutation } from '../../services/api/rmApi';
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import { FiEdit2, FiTrash2, FiSend, FiClock, FiAlertCircle } from 'react-icons/fi';
 
+/**
+ * Drafts
+ *
+ * Lists Relationship Manager draft salon submissions and provides actions to
+ * continue editing or delete a draft. Uses RTK Query to fetch drafts and
+ * performs delete via mutation. Notifications are shown using the
+ * centralized toast utilities to keep UX consistent.
+ *
+ * Inputs: none (reads RM-owned drafts from server)
+ * Outputs: navigates to edit flow or triggers server-side delete
+ * Error modes: shows user-facing error toasts when delete fails
+ */
 const Drafts = () => {
   const navigate = useNavigate();
-  const [localLoading, setLocalLoading] = useState(false);
   
   // RTK Query hooks
   const { data: submissionsData, isLoading: submissionsLoading } = useGetOwnVendorRequestsQuery({ statusFilter: 'draft' });
-  const [deleteVendorRequest] = useDeleteVendorRequestMutation();
-  
+  // Include mutation loading state so we can disable UI while deleting
+  const [deleteVendorRequest, { isLoading: deleteLoading }] = useDeleteVendorRequestMutation();
+
   // Backend returns array directly, not wrapped
-  const submissions = submissionsData || [];
+  const submissions = submissionsData?.data || [];
 
   // Filter only draft status
   const drafts = submissions?.filter(sub => sub.status === 'draft') || [];
@@ -31,14 +43,19 @@ const Drafts = () => {
       return;
     }
 
-    setLocalLoading(true);
     try {
-      await deleteVendorRequest(draftId).unwrap();
-      toast.success('Draft deleted successfully!');
+      const res = await deleteVendorRequest(draftId).unwrap();
+      // basic shape validation: if unwrap didn't throw, consider it success
+      if (res) {
+        showSuccessToast('Draft deleted successfully!');
+      } else {
+        // defensively handle unexpected empty response
+        showSuccessToast('Draft deleted — refresh to update the list.');
+      }
     } catch (error) {
-      toast.error(error?.message || 'Failed to delete draft');
-    } finally {
-      setLocalLoading(false);
+      // Prefer a friendly message if backend provides one
+      const errMsg = error?.data?.message || error?.message || 'Failed to delete draft';
+      showErrorToast(errMsg);
     }
   };
 
@@ -167,7 +184,8 @@ const Drafts = () => {
                         variant="primary"
                         onClick={() => handleEdit(draft.id)}
                         className="bg-gradient-orange whitespace-nowrap"
-                        disabled={localLoading}
+                        disabled={deleteLoading}
+                        aria-label={`Continue editing ${draft.business_name || 'draft'}`}
                       >
                         <FiEdit2 className="mr-2" size={16} />
                         Continue Editing
@@ -176,7 +194,8 @@ const Drafts = () => {
                         variant="outline"
                         onClick={() => handleDelete(draft.id)}
                         className="border-red-300 text-red-600 hover:bg-red-50 whitespace-nowrap"
-                        disabled={localLoading}
+                        disabled={deleteLoading}
+                        aria-label={`Delete draft ${draft.business_name || 'draft'}`}
                       >
                         <FiTrash2 className="mr-2" size={16} />
                         Delete Draft

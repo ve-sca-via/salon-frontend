@@ -1,17 +1,52 @@
+/**
+ * Favorites.jsx - User's Favorite Salons Page
+ * 
+ * PURPOSE:
+ * - Display all salons marked as favorites by the user
+ * - Allow removing salons from favorites
+ * - Navigate to salon details or booking page
+ * - Show empty state when no favorites exist
+ * 
+ * DATA MANAGEMENT:
+ * - Fetches favorites via useGetFavoritesQuery
+ * - Removes favorites via useRemoveFavoriteMutation
+ * - RTK Query handles caching and automatic refetch
+ * 
+ * KEY FEATURES:
+ * - Salon cards with image, rating, location
+ * - Heart icon to remove from favorites
+ * - "View Details" and "Book Now" buttons
+ * - Empty state with CTA
+ * - Loading and error states
+ * - Responsive grid layout
+ * 
+ * USER FLOW:
+ * 1. View all favorite salons
+ * 2. Click heart to remove from favorites
+ * 3. View details or book appointment
+ * 4. Browse salons if no favorites
+ */
+
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import {
   useGetFavoritesQuery,
   useRemoveFavoriteMutation,
 } from "../../services/api/favoriteApi";
-import { FiHeart, FiMapPin, FiStar, FiTrash2 } from "react-icons/fi";
+import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
+import { FiHeart, FiMapPin, FiStar } from "react-icons/fi";
 
-// Favorite Salon Card Component
-function FavoriteSalonCard({ salon, onRemove, onViewDetails }) {
+/**
+ * FavoriteSalonCard - Individual favorite salon display card
+ * Shows salon info with remove and action buttons
+ */
+function FavoriteSalonCard({ salon, onRemove, onViewDetails, onBook }) {
   const [removing, setRemoving] = React.useState(false);
 
+  /**
+   * handleRemove - Removes salon from favorites with loading state
+   */
   const handleRemove = async () => {
     setRemoving(true);
     try {
@@ -26,8 +61,8 @@ function FavoriteSalonCard({ salon, onRemove, onViewDetails }) {
       {/* Salon Image */}
       <div className="relative h-48 overflow-hidden">
         <img
-          src={salon.images?.[0] || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=400&fit=crop"}
-          alt={salon.name}
+          src={salon.cover_image_url || salon.images?.[0] || "https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=400&fit=crop"}
+          alt={salon.business_name || salon.name}
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
         />
         {/* Favorite Badge */}
@@ -47,7 +82,7 @@ function FavoriteSalonCard({ salon, onRemove, onViewDetails }) {
       <div className="p-5">
         <div className="mb-3">
           <h3 className="font-display font-bold text-[20px] text-neutral-black mb-2">
-            {salon.name}
+            {salon.business_name || salon.name}
           </h3>
           
           {/* Rating */}
@@ -55,7 +90,7 @@ function FavoriteSalonCard({ salon, onRemove, onViewDetails }) {
             <div className="flex items-center gap-1">
               <FiStar className="w-4 h-4 fill-yellow-400 text-yellow-400" />
               <span className="font-body font-semibold text-[14px] text-neutral-black">
-                {salon.rating || "4.5"}
+                {salon.average_rating || salon.rating || "4.5"}
               </span>
             </div>
             <span className="text-neutral-gray-500 text-[12px]">
@@ -67,7 +102,7 @@ function FavoriteSalonCard({ salon, onRemove, onViewDetails }) {
           <div className="flex items-start gap-2 text-neutral-gray-500">
             <FiMapPin className="w-4 h-4 mt-0.5 flex-shrink-0" />
             <span className="font-body text-[13px] line-clamp-2">
-              {salon.address_line1}, {salon.city}, {salon.state}
+              {salon.address || `${salon.address_line1 || ''}, ${salon.city}, ${salon.state}`}
             </span>
           </div>
         </div>
@@ -83,12 +118,12 @@ function FavoriteSalonCard({ salon, onRemove, onViewDetails }) {
         <div className="flex gap-3">
           <button
             onClick={() => onViewDetails(salon.id)}
-            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-500 hover:opacity-90 text-primary-white font-body font-semibold text-[14px] py-2 rounded-lg transition-opacity"
+            className="flex-1 bg-accent-orange hover:opacity-90 text-primary-white font-body font-semibold text-[14px] py-2 rounded-lg transition-opacity"
           >
             View Details
           </button>
           <button
-            onClick={() => onViewDetails(salon.id)}
+            onClick={() => onBook(salon.id)}
             className="px-4 border border-accent-orange text-accent-orange hover:bg-accent-orange hover:text-primary-white font-body font-medium text-[14px] py-2 rounded-lg transition-colors"
           >
             Book Now
@@ -99,7 +134,9 @@ function FavoriteSalonCard({ salon, onRemove, onViewDetails }) {
   );
 }
 
-// Empty State Component
+/**
+ * EmptyFavorites - Empty state when user has no favorites
+ */
 function EmptyFavorites({ onBrowse }) {
   return (
     <div className="bg-primary-white rounded-lg p-12 text-center shadow-md">
@@ -131,28 +168,36 @@ export default function Favorites() {
   
   const favorites = favoritesData?.favorites || [];
 
+  /**
+   * handleRemoveFavorite - Removes salon from favorites list
+   */
   const handleRemoveFavorite = async (salonId) => {
     try {
       await removeFavorite(salonId).unwrap();
-      toast.success("Removed from favorites", {
-        position: "bottom-right",
-        autoClose: 2000,
-        style: {
-          backgroundColor: "#000000",
-          color: "#fff",
-          fontFamily: "DM Sans, sans-serif",
-        },
-      });
+      showSuccessToast("Removed from favorites");
     } catch (error) {
       console.error("Remove favorite error:", error);
-      toast.error(error?.message || "Failed to remove from favorites");
+      showErrorToast(error?.message || "Failed to remove from favorites");
     }
   };
 
+  /**
+   * handleViewDetails - Navigate to salon detail page
+   */
   const handleViewDetails = (salonId) => {
     navigate(`/salons/${salonId}`);
   };
 
+  /**
+   * handleBook - Navigate to salon booking page
+   */
+  const handleBook = (salonId) => {
+    navigate(`/salons/${salonId}/book`);
+  };
+
+  /**
+   * handleBrowse - Navigate to all salons page
+   */
   const handleBrowse = () => {
     navigate("/salons");
   };
@@ -163,7 +208,7 @@ export default function Favorites() {
         <PublicNavbar />
         <div className="max-w-7xl mx-auto px-4 py-20 text-center">
           <div className="flex justify-center mb-4">
-            <div className="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full" />
+            <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full" />
           </div>
           <h2 className="font-display text-3xl font-bold text-neutral-black mb-4">
             Loading your favorites...
@@ -220,6 +265,7 @@ export default function Favorites() {
                 salon={salon}
                 onRemove={handleRemoveFavorite}
                 onViewDetails={handleViewDetails}
+                onBook={handleBook}
               />
             ))}
           </div>

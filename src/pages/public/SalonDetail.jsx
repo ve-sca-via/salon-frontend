@@ -1,10 +1,44 @@
+/**
+ * SalonDetail.jsx - Individual Salon Details and Preview
+ * 
+ * PURPOSE:
+ * - Display complete salon information (location, hours, contact)
+ * - Show featured services grouped by category
+ * - Display customer reviews with ratings
+ * - Provide CTA to book services
+ * 
+ * DATA MANAGEMENT:
+ * - Fetches salon details via useGetSalonByIdQuery
+ * - Fetches salon services via useGetSalonServicesQuery
+ * - Groups services by category for navigation
+ * - Uses icon_url from DB or fallback images
+ * 
+ * KEY FEATURES:
+ * - Hero section with salon images and info
+ * - Breadcrumb navigation
+ * - Category-based service browsing
+ * - Service cards with hover effects
+ * - Reviews section with star ratings
+ * - Map integration for location
+ * - "Book Services" CTA button
+ * 
+ * USER FLOW:
+ * 1. View salon overview (images, rating, location)
+ * 2. Browse services by category
+ * 3. Read customer reviews
+ * 4. Click "Book Services" → navigate to /salons/:id/book
+ */
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock } from "react-icons/fi";
 
-// Category to Image Mapping
+/**
+ * getCategoryImage - Returns category-specific image URL
+ * Uses service image_url if available, otherwise matches category/service name to predefined Unsplash images
+ */
 const getCategoryImage = (categoryName, serviceName) => {
   const category = categoryName?.toLowerCase() || serviceName?.toLowerCase() || '';
   
@@ -42,7 +76,11 @@ const getCategoryImage = (categoryName, serviceName) => {
   return 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=300&fit=crop';
 };
 
-// Star Rating Component
+/**
+ * StarRating - Displays 5-star rating component
+ * Fills stars based on rating prop (1-5)
+ * Supports small and large sizes
+ */
 function StarRating({ rating = 5, size = "small" }) {
   const starSize = size === "small" ? "w-4 h-4" : "w-5 h-5";
   return (
@@ -61,7 +99,10 @@ function StarRating({ rating = 5, size = "small" }) {
   );
 }
 
-// Breadcrumb Component
+/**
+ * Breadcrumb - Navigation breadcrumbs
+ * Shows: Home / Salons / City / Salon Name
+ */
 function Breadcrumb({ city, salonName }) {
   return (
     <nav className="flex items-center gap-2 text-sm font-body mb-6">
@@ -83,7 +124,12 @@ function Breadcrumb({ city, salonName }) {
   );
 }
 
-// Service Card Component with Real Data and Images
+/**
+ * ServiceCard - Individual service preview card
+ * Displays service image, name, price, duration
+ * Clickable to navigate to booking page
+ * Hover effects: shadow lift, image scale
+ */
 function ServiceCard({ service, onBook }) {
   const categoryImage = service.image_url || getCategoryImage(service.category_name, service.name);
   
@@ -115,7 +161,11 @@ function ServiceCard({ service, onBook }) {
   );
 }
 
-// Category Card Component - Shows category with service count
+/**
+ * CategoryCard - Service category navigation card
+ * Shows category icon and name
+ * Clicking scrolls to category section
+ */
 function CategoryCard({ category, onClick }) {
   return (
     <div 
@@ -148,7 +198,10 @@ function CategoryCard({ category, onClick }) {
   );
 }
 
-// Review Card Component
+/**
+ * ReviewCard - Customer review display card
+ * Shows customer avatar, name, rating, date, and comment
+ */
 function ReviewCard({ review }) {
   return (
     <div className="bg-white border border-neutral-gray-300 rounded-xl p-5">
@@ -219,7 +272,8 @@ export default function SalonDetail() {
         }
       });
       
-      setServiceCategories(Array.from(categoriesMap.values()));
+      const categoriesArray = Array.from(categoriesMap.values());
+      setServiceCategories(categoriesArray);
     }
   }, [services]); // Re-run when services change
 
@@ -472,6 +526,7 @@ export default function SalonDetail() {
                     <h3 className="font-display font-bold text-[24px] text-neutral-black mb-6">
                       Service Categories
                     </h3>
+                    
                     {servicesLoading ? (
                       <div className="text-center py-12">
                         <div className="animate-spin h-8 w-8 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-3" />

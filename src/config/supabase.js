@@ -1,3 +1,22 @@
+/**
+ * ⚠️ SUPABASE STORAGE ONLY - NOT FOR AUTHENTICATION ⚠️
+ * 
+ * This file configures Supabase client for STORAGE operations ONLY.
+ * Used exclusively for uploading salon images (covers, logos, gallery) to Supabase Storage/CDN.
+ * 
+ * DO NOT USE for:
+ * - Authentication (use RTK Query authApi instead)
+ * - Database queries (use FastAPI backend endpoints)
+ * - Any direct Supabase calls except storage.upload()
+ * 
+ * Current usage:
+ * - AddSalonForm.jsx: Image uploads to 'salon-images' bucket
+ * 
+ * Future TODO:
+ * - Consider moving image uploads to FastAPI backend endpoint
+ * - This would eliminate frontend Supabase dependency completely
+ */
+
 import { createClient } from "@supabase/supabase-js";
 
 // --- Load environment variables ---

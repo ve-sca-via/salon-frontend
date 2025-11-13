@@ -1,12 +1,44 @@
+/**
+ * ServiceBooking.jsx - Salon Service Booking Interface
+ * 
+ * PURPOSE:
+ * - Display all services offered by a specific salon
+ * - Allow browsing services by category
+ * - Add/remove services to/from cart
+ * - Navigate to cart for checkout
+ * 
+ * DATA MANAGEMENT:
+ * - Fetches salon details via useGetSalonByIdQuery
+ * - Fetches services via useGetSalonServicesQuery
+ * - Cart operations via RTK Query mutations
+ * - Groups services by category on frontend
+ * 
+ * KEY FEATURES:
+ * - Category navigation with images (DB icon_url or fallback)
+ * - Service cards with pricing and duration
+ * - Cart validation (single salon restriction)
+ * - Floating cart button with item count
+ * - Real-time cart state updates
+ * 
+ * USER FLOW:
+ * 1. View salon's services grouped by category
+ * 2. Select category to filter services
+ * 3. Add services to cart (validates same salon)
+ * 4. View cart via floating button
+ * 5. Navigate to /cart for checkout
+ */
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { toast } from "react-toastify";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
-import { addToCart, removeFromCart } from "../../store/slices/cartSlice";
+import { useGetCartQuery, useAddToCartMutation, useRemoveFromCartMutation } from "../../services/api/cartApi";
+import { showSuccessToast, showErrorToast, showInfoToast, showTopCenterToast } from "../../utils/toastConfig";
 
-// Category to Image Mapping
+/**
+ * getCategoryImage - Returns category image URL
+ * Uses icon_url from database if available, otherwise returns Unsplash fallback
+ */
 const getCategoryImage = (categoryName) => {
   const category = categoryName?.toLowerCase() || '';
   
@@ -44,7 +76,11 @@ const getCategoryImage = (categoryName) => {
   return 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=300&fit=crop';
 };
 
-// Service Category Card Component
+/**
+ * ServiceCategoryCard - Category selector component
+ * Displays category image and name
+ * Highlights selected category with border and scale animation
+ */
 function ServiceCategoryCard({ category, isSelected, onClick }) {
   return (
     <div
@@ -83,18 +119,18 @@ function ServiceCategoryCard({ category, isSelected, onClick }) {
 export default function ServiceBooking() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   
   // RTK Query hooks
   const { data: salonData, isLoading: salonLoading, error: salonError } = useGetSalonByIdQuery(id);
   const { data: servicesData, isLoading: servicesLoading } = useGetSalonServicesQuery(id);
+  const { data: cart } = useGetCartQuery();
+  const [addToCart] = useAddToCartMutation();
+  const [removeFromCart] = useRemoveFromCartMutation();
   
   const salon = salonData?.salon || salonData;
   const services = servicesData?.services || servicesData || [];
   const loading = salonLoading;
   const error = salonError;
-  
-  const cart = useSelector((state) => state.cart);
   
   // Local UI state
   const [serviceCategories, setServiceCategories] = useState([]);
@@ -102,6 +138,11 @@ export default function ServiceBooking() {
   const [expandedPlan, setExpandedPlan] = useState(null);
   const [groupedServices, setGroupedServices] = useState({});
 
+  /**
+   * Group services by category when data loads
+   * Extracts unique categories with counts
+   * Uses icon_url from service_categories or fallback to getCategoryImage
+   */
   useEffect(() => {
     if (services.length > 0) {
       // Group services by category
@@ -137,7 +178,10 @@ export default function ServiceBooking() {
     }
   }, [services]);
 
-  // Group services by category name
+  /**
+   * groupServicesByCategory - Groups services array by category name
+   * Returns object with category names as keys and service arrays as values
+   */
   const groupServicesByCategory = (servicesList) => {
     const grouped = {};
     
@@ -152,78 +196,78 @@ export default function ServiceBooking() {
     return grouped;
   };
 
-  // Add to cart handler
-  const handleAddToCart = (service) => {
+  /**
+   * handleAddToCart - Adds service to cart with validation
+   * 
+   * VALIDATION:
+   * - Checks if cart contains items from different salon
+   * - Shows error toast if attempting to mix salons
+   * 
+   * CART ITEM STRUCTURE:
+   * - salon_id, salon_name (for display)
+   * - service_id, service_name
+   * - plan_name, category, duration
+   * - price, description, quantity (defaults to 1)
+   */
+  const handleAddToCart = async (service) => {
     // Check if trying to add from different salon
-    if (cart.salonId && cart.salonId !== id) {
-      toast.error(
-        `Your cart contains items from ${cart.salonName}. Please clear your cart to add items from a different salon.`,
-        {
-          position: "top-center",
-          autoClose: 3000,
-          className: "font-body",
-          style: {
-            backgroundColor: "#EF4444",
-            color: "#fff",
-            fontFamily: "DM Sans, sans-serif",
-          },
-        }
+    if (cart?.salon_id && cart.salon_id !== id) {
+      showTopCenterToast(
+        `Your cart contains items from ${cart.salon_name}. Please clear your cart to add items from a different salon.`,
+        'error',
+        { autoClose: 4000 }
       );
       return;
     }
 
     const cartItem = {
-      salonId: id, // Keep as UUID string
-      salonName: salon.business_name || salon.name,
-      serviceId: service.id,
-      serviceName: service.name,
+      salon_id: id, // Keep as UUID string
+      salon_name: salon.business_name || salon.name,
+      service_id: service.id,
+      service_name: service.name,
+      plan_name: service.plan_name || 'Standard',
       category: service.category_name || 'Other',
       duration: service.duration_minutes || 0,
       price: parseFloat(service.price) || 0,
       description: service.description || `${service.duration_minutes} minutes`,
+      quantity: 1,
     };
 
-    dispatch(addToCart(cartItem));
-
-    toast.success(`${service.name} added to cart!`, {
-      position: "bottom-right",
-      autoClose: 2000,
-      className: "font-body",
-      style: {
-        backgroundColor: "#000000",
-        color: "#fff",
-        fontFamily: "DM Sans, sans-serif",
-      },
-    });
-  };
-
-  // Remove from cart handler
-  const handleRemoveFromCart = (service) => {
-    const cartItem = cart.items.find((item) => item.serviceId === service.id);
-
-    if (cartItem) {
-      dispatch(removeFromCart(cartItem.id));
-      toast.info(`${service.name} removed from cart!`, {
-        position: "bottom-right",
-        autoClose: 2000,
-        className: "font-body",
-        style: {
-          backgroundColor: "#6B7280",
-          color: "#fff",
-          fontFamily: "DM Sans, sans-serif",
-        },
-      });
+    try {
+      await addToCart(cartItem).unwrap();
+      showSuccessToast(`${service.name} added to cart!`);
+    } catch (error) {
+      const errorMessage = error?.data?.detail || 'Failed to add to cart';
+      showErrorToast(errorMessage);
     }
   };
 
-  // Check if service is in cart
-  const isServiceInCart = (service) => {
-    return cart.items.some((item) => item.serviceId === service.id);
+  /**
+   * handleRemoveFromCart - Removes service from cart
+   * Finds cart item by service_id and removes using cart item id
+   */
+  const handleRemoveFromCart = async (service) => {
+    const cartItem = cart?.items?.find((item) => item.service_id === service.id);
+
+    if (cartItem) {
+      try {
+        await removeFromCart(cartItem.id).unwrap();
+        showInfoToast(`${service.name} removed from cart!`);
+      } catch (error) {
+        showErrorToast('Failed to remove from cart');
+      }
+    }
   };
 
-  //Remove old duplicate handler
-  const handleRemoveFromCartOld = () => {};
+  /**
+   * isServiceInCart - Checks if service already exists in cart
+   * Returns boolean for conditional rendering of "Add" vs "Added" button
+   */
+  const isServiceInCart = (service) => {
+    return cart?.items?.some((item) => item.service_id === service.id) || false;
+  };
 
+  // Loading state - shows spinner while fetching data
   if (loading || servicesLoading) {
     return (
       <div className="min-h-screen bg-bg-secondary">
@@ -240,6 +284,7 @@ export default function ServiceBooking() {
     );
   }
 
+  // Error state - shows error message and back button
   if (error || !salon) {
     return (
       <div className="min-h-screen bg-bg-secondary">
@@ -259,7 +304,7 @@ export default function ServiceBooking() {
     );
   }
 
-  // Get services for selected category
+  // Filter services for currently selected category
   const currentServices = selectedCategory ? (groupedServices[selectedCategory] || []) : [];
 
   return (
@@ -431,7 +476,7 @@ export default function ServiceBooking() {
       </div>
 
       {/* Floating Cart Button */}
-      {cart.itemCount > 0 && (
+      {cart?.item_count > 0 && (
         <div className="fixed bottom-6 right-6 z-50">
           <button
             onClick={() => navigate(`/cart`)}
@@ -452,7 +497,7 @@ export default function ServiceBooking() {
                 />
               </svg>
               <span className="absolute -top-2 -right-2 bg-neutral-black text-primary-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                {cart.itemCount}
+                {cart?.item_count || 0}
               </span>
             </div>
             <div className="text-left">
@@ -460,7 +505,7 @@ export default function ServiceBooking() {
                 View Cart
               </span>
               <span className="font-body text-[12px] opacity-90">
-                ₹{cart.totalAmount}
+                ₹{cart?.total_amount || 0}
               </span>
             </div>
           </button>

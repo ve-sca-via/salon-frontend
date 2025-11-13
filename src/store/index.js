@@ -2,16 +2,11 @@
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import authReducer from './slices/authSlice';
-import salonReducer from './slices/salonSlice';
-import bookingReducer from './slices/bookingSlice';
 import notificationReducer from './slices/notificationSlice';
-import cartReducer from './slices/cartSlice';
-import agentReducer from './slices/agentSlice';
-import rmAgentReducer from './slices/rmAgentSlice';
-// Removed: vendorReducer, customerReducer (all thunks migrated to RTK Query)
-import { cartSyncMiddleware } from './middleware/cartSyncMiddleware';
+
 
 // RTK Query APIs
+import { authApi } from '../services/api/authApi';
 import { salonApi } from '../services/api/salonApi';
 import { bookingApi } from '../services/api/bookingApi';
 import { cartApi } from '../services/api/cartApi';
@@ -32,14 +27,10 @@ const persistedAuthReducer = persistReducer(authPersistConfig, authReducer);
 export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
-    salon: salonReducer,
-    booking: bookingReducer,
     notification: notificationReducer,
-    cart: cartReducer,
-    agent: agentReducer,
-    rmAgent: rmAgentReducer,
-    // Removed: vendor, customer (migrated to RTK Query)
+  
     // RTK Query API reducers
+    [authApi.reducerPath]: authApi.reducer,
     [salonApi.reducerPath]: salonApi.reducer,
     [bookingApi.reducerPath]: bookingApi.reducer,
     [cartApi.reducerPath]: cartApi.reducer,
@@ -55,8 +46,8 @@ export const store = configureStore({
         ignoredActions: ['notification/addNotification', 'persist/PERSIST', 'persist/REHYDRATE'],
       },
     })
-      .concat(cartSyncMiddleware)
       // RTK Query middleware for caching, invalidation, polling, etc.
+      .concat(authApi.middleware)
       .concat(salonApi.middleware)
       .concat(bookingApi.middleware)
       .concat(cartApi.middleware)

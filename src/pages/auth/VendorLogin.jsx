@@ -1,10 +1,49 @@
-import React, { useState } from 'react';
+/**
+ * VendorLogin Component (Vendor/Salon Portal)
+ * 
+ * Purpose:
+ * Vendor-only login page for salon owners and partners. Authenticates users,
+ * validates vendor/salon role, and redirects to vendor dashboard.
+ * 
+ * Data Management:
+ * - Form data stored in local state (email, password, rememberMe)
+ * - Authentication via RTK Query (authApi.useLoginMutation)
+ * - User stored in Redux auth slice (minimal state)
+ * - Loading state managed by RTK Query (isLoading)
+ * - Remember me functionality (stores email in localStorage)
+ * 
+ * Key Features:
+ * - Vendor/salon role validation (blocks customer/admin/RM access)
+ * - Remember me functionality (stores email in localStorage)
+ * - Visual feedback (RTK Query loading states, toasts)
+ * - Links to other portals (customer, RM)
+ * - Vendor-specific background and branding
+ * 
+ * Security:
+ * - Role-based access control (vendor/salon only)
+ * - Password field masked
+ * - Input validation (required fields, email format)
+ * - Error handling for invalid credentials
+ * 
+ * User Flow:
+ * 1. Enter email and password
+ * 2. Optionally check "Remember me"
+ * 3. Submit form → validate vendor/salon role
+ * 4. Store tokens in localStorage → store user in Redux
+ * 5. Show success toast → navigate to vendor dashboard
+ * 
+ * Alternative Portals:
+ * - Customer: /login
+ * - Relationship Manager: /rm-login
+ */
+
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import { FiUser, FiMail, FiLock, FiShoppingBag, FiUsers } from 'react-icons/fi';
-import { login as loginApi } from '../../services/backendApi';
-import { loginSuccess } from '../../store/slices/authSlice';
+import { setUser } from '../../store/slices/authSlice';
+import { useLoginMutation } from '../../services/api/authApi';
 import Button from '../../components/shared/Button';
 import InputField from '../../components/shared/InputField';
 import vendorBgImage from '../../assets/images/vendor_portal_bg.jpg';
@@ -12,13 +51,30 @@ import vendorBgImage from '../../assets/images/vendor_portal_bg.jpg';
 const VendorLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const [loading, setLoading] = useState(false);
+  
+  // RTK Query mutation hook - provides loading state automatically
+  const [login, { isLoading }] = useLoginMutation();
+  
+  // Form state with remember me support
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false,
   });
 
+  /**
+   * Load saved email from localStorage if "Remember me" was checked
+   */
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('vendorRememberedEmail');
+    if (savedEmail) {
+      setFormData(prev => ({ ...prev, email: savedEmail, rememberMe: true }));
+    }
+  }, []);
+
+  /**
+   * handleChange - Updates form field values including checkbox
+   */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData({
@@ -27,54 +83,91 @@ const VendorLogin = () => {
     });
   };
 
+  /**
+   * handleSubmit - Validates and submits vendor login credentials
+   * - Validates vendor/salon role
+   * - Stores tokens in localStorage
+   * - Stores user in Redux
+   * - Handles "Remember me" functionality
+   * - Navigates to vendor dashboard on success
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.email || !formData.password) {
-      toast.error('Please enter both email and password');
+    // Basic client-side validation
+    if (!formData.email.trim() || !formData.password) {
+      showErrorToast('Please enter both email and password');
       return;
     }
 
-    setLoading(true);
-
     try {
-      // Call backend login API
-      const data = await loginApi(formData.email, formData.password);
+      // Call RTK Query login mutation (loading state managed automatically)
+      const response = await login({
+        email: formData.email,
+        password: formData.password,
+      }).unwrap();
 
-      // Validate vendor/salon role - only vendors can login here
-      if (data.user.role !== 'vendor' && data.user.role !== 'salon') {
-        toast.error('Access denied. This portal is for salon owners only. Please use the appropriate login page for your role.', {
-          position: 'top-center',
-          autoClose: 3000,
-        });
-        return;
+      // Validate response structure
+      if (!response || !response.user) {
+        throw new Error('Invalid login response from server');
       }
 
-      // Store user in Redux
-      dispatch(loginSuccess(data.user));
+      // Validate user data completeness
+      if (!response.user.id || !response.user.email) {
+        throw new Error('Incomplete user data received');
+      }
 
-      // Success message
-      toast.success(`Welcome back, ${data.user.full_name || data.user.email}!`, {
-        position: 'top-center',
-        autoClose: 2000,
-      });
+      // Vendor/salon role validation - only vendors/salon owners can login here
+      const userRole = response.user.role || '';
+      if (userRole !== 'vendor' && userRole !== 'salon') {
+        throw new Error('Access denied. This portal is for salon owners only.');
+      }
 
-      // Navigate to vendor dashboard
-      navigate('/vendor/dashboard');
+      // Handle "Remember me" functionality
+      if (formData.rememberMe) {
+        localStorage.setItem('vendorRememberedEmail', formData.email);
+      } else {
+        localStorage.removeItem('vendorRememberedEmail');
+      }
+
+      // Store access token and refresh token
+      localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
+
+      // Store authenticated user in Redux
+      dispatch(setUser(response.user));
+
+      showSuccessToast(`Welcome back, ${response.user.full_name || response.user.email}! 🎉`);
+
+      // Slight delay to ensure toast displays before navigation
+      setTimeout(() => {
+        navigate('/vendor/dashboard');
+      }, 500);
+
     } catch (error) {
-      console.error('Login error:', error);
-      toast.error(error.message || 'Login failed. Please try again.', {
-        position: 'top-center',
-        autoClose: 2500,
-      });
-    } finally {
-      setLoading(false);
+      // Only log errors in development
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Vendor login error:', error);
+      }
+
+      // RTK Query errors have a 'data' property
+      const errorMessage = error.data?.detail || error.message || 'Login failed. Please try again.';
+      
+      // Provide specific error messages based on error type
+      let msg = errorMessage;
+      if (errorMessage.includes('Access denied')) {
+        msg = errorMessage;
+      } else if (errorMessage.includes('Invalid')) {
+        msg = 'Invalid email or password';
+      }
+
+      showErrorToast(msg);
     }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background Image */}
+      {/* Background Image with Dark Overlay */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: `url(${vendorBgImage})` }}
@@ -82,16 +175,19 @@ const VendorLogin = () => {
         <div className="absolute inset-0 bg-neutral-black/70" />
       </div>
 
-      {/* Content */}
+      {/* Content Container */}
       <div className="relative z-10 w-full max-w-6xl mx-auto px-4 py-12">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
-          {/* Left - Info Section */}
+          {/* Left Side - Vendor Portal Branding (Desktop Only) */}
           <div className="text-primary-white hidden lg:block">
+            {/* Logo */}
             <Link to="/" className="inline-block mb-8">
               <h1 className="font-display font-bold text-5xl text-primary-white">
                 SalonHub
               </h1>
             </Link>
+            
+            {/* Vendor Portal Header */}
             <h2 className="font-display font-bold text-4xl mb-4">
               Vendor Portal
             </h2>
@@ -99,6 +195,8 @@ const VendorLogin = () => {
               Grow your salon business with our platform. Manage bookings, 
               services, and reach more customers effortlessly.
             </p>
+            
+            {/* Vendor Benefits List */}
             {[
               { title: "Smart Dashboard", text: "Manage all bookings in one place" },
               { title: "Customer Reach", text: "Connect with thousands of customers" },
@@ -118,8 +216,9 @@ const VendorLogin = () => {
             ))}
           </div>
 
-          {/* Right - Login Form */}
+          {/* Right Side - Login Form */}
           <div className="w-full">
+            {/* Mobile Logo */}
             <div className="text-center mb-6 lg:hidden">
               <Link to="/">
                 <h1 className="font-display font-bold text-4xl text-primary-white">
@@ -128,7 +227,9 @@ const VendorLogin = () => {
               </Link>
             </div>
 
+            {/* Vendor Login Form Card */}
             <div className="bg-primary-white rounded-[10px] shadow-2xl p-8 lg:p-10">
+              {/* Form Header */}
               <h2 className="font-display font-bold text-[32px] text-neutral-black mb-2">
                 Vendor Portal Sign In
               </h2>
@@ -136,7 +237,9 @@ const VendorLogin = () => {
                 For Salon Owners & Partners
               </p>
 
+              {/* Login Form */}
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Email Input */}
                 <InputField
                   label="Email Address"
                   name="email"
@@ -145,8 +248,12 @@ const VendorLogin = () => {
                   onChange={handleChange}
                   placeholder="Enter your email"
                   icon={<FiMail />}
+                  disabled={isLoading}
                   required
+                  aria-label="Email address"
                 />
+                
+                {/* Password Input */}
                 <InputField
                   label="Password"
                   name="password"
@@ -155,8 +262,12 @@ const VendorLogin = () => {
                   onChange={handleChange}
                   placeholder="Enter your password"
                   icon={<FiLock />}
+                  disabled={isLoading}
                   required
+                  aria-label="Password"
                 />
+                
+                {/* Remember Me & Forgot Password */}
                 <div className="flex items-center justify-between">
                   <label className="flex items-center cursor-pointer">
                     <input
@@ -164,12 +275,15 @@ const VendorLogin = () => {
                       name="rememberMe"
                       checked={formData.rememberMe}
                       onChange={handleChange}
+                      disabled={isLoading}
                       className="rounded border-neutral-gray-500 text-accent-orange focus:ring-accent-orange"
+                      aria-label="Remember my email"
                     />
                     <span className="ml-2 font-body text-sm text-neutral-gray-500">
                       Remember me
                     </span>
                   </label>
+                  {/* TODO: Implement forgot password functionality */}
                   <Link
                     to="/forgot-password"
                     className="font-body text-sm text-accent-orange hover:opacity-80 transition-opacity"
@@ -178,12 +292,20 @@ const VendorLogin = () => {
                   </Link>
                 </div>
 
-                <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
+                {/* Submit Button */}
+                <Button 
+                  type="submit" 
+                  variant="primary" 
+                  size="lg" 
+                  fullWidth 
+                  loading={isLoading}
+                  disabled={isLoading}
+                >
                   Sign In
                 </Button>
               </form>
 
-              {/* Info Box */}
+              {/* Vendor Verification Info Box */}
               <div className="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <div className="flex items-start">
                   <div className="flex-shrink-0">
@@ -202,12 +324,13 @@ const VendorLogin = () => {
 
               
 
-              {/* Other Login Portals */}
+              {/* Alternative Login Portals */}
               <div className="mt-6 pt-6 border-t border-neutral-gray-600">
                 <p className="text-center text-sm text-neutral-gray-500 mb-3 font-body">
                   Looking for a different portal?
                 </p>
                 <div className="flex flex-col gap-2">
+                  {/* Customer Portal Link */}
                   <Link
                     to="/login"
                     className="font-body text-sm text-neutral-black hover:bg-neutral-gray-600 transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 border border-neutral-gray-600"
@@ -215,6 +338,7 @@ const VendorLogin = () => {
                     <FiUser className="text-lg" />
                     <span>Customer Login</span>
                   </Link>
+                  {/* RM Portal Link */}
                   <Link
                     to="/rm-login"
                     className="font-body text-sm text-neutral-black hover:bg-neutral-gray-600 transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 border border-neutral-gray-600"
@@ -225,6 +349,7 @@ const VendorLogin = () => {
                 </div>
               </div>
 
+              {/* Back to Home Link */}
               <div className="mt-4 text-center">
                 <Link
                   to="/"

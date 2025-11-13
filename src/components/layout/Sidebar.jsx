@@ -68,7 +68,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:sticky top-0 left-0 h-screen bg-white shadow-lg z-40
+          fixed lg:sticky top-0 left-0 h-screen bg-white border-r border-gray-200 z-40
           w-64 transform transition-transform duration-300 ease-in-out
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
@@ -76,25 +76,30 @@ const Sidebar = ({ role, isOpen, onClose }) => {
         <div className="h-full flex flex-col">
           {/* Sidebar Header */}
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900 capitalize">
+            <h2 className="text-lg font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent capitalize">
               {role} Portal
             </h2>
+            <p className="text-xs text-gray-500 mt-1">Manage your account</p>
           </div>
 
           {/* Navigation Links */}
           <nav className="flex-1 overflow-y-auto p-4">
-            <ul className="space-y-2">
+            <ul className="space-y-1">
               {menuItems.map((item) => (
                 <li key={item.path}>
                   <NavLink
                     to={item.path}
                     onClick={onClose}
                     className={({ isActive }) =>
-                      `sidebar-link ${isActive ? 'sidebar-link-active' : ''}`
+                      `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+                        isActive 
+                          ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md' 
+                          : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
+                      }`
                     }
                   >
                     <span className="text-xl">{item.icon}</span>
-                    <span>{item.label}</span>
+                    <span className="font-medium">{item.label}</span>
                   </NavLink>
                 </li>
               ))}
@@ -103,11 +108,11 @@ const Sidebar = ({ role, isOpen, onClose }) => {
 
           {/* Sidebar Footer */}
           <div className="p-4 border-t border-gray-200">
-            <div className="bg-primary-50 rounded-lg p-3">
-              <p className="text-xs text-primary-800 font-medium">
+            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-4 border border-orange-100">
+              <p className="text-xs text-orange-900 font-semibold">
                 Need help?
               </p>
-              <p className="text-xs text-primary-600 mt-1">
+              <p className="text-xs text-orange-700 mt-1">
                 Contact support
               </p>
             </div>

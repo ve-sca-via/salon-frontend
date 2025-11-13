@@ -1,8 +1,37 @@
-import React, { useState } from 'react';
+/**
+ * BookingsManagement Component
+ * 
+ * Purpose:
+ * Comprehensive booking management interface for salon vendors. Allows vendors to view,
+ * filter, search, and manage all customer bookings with status updates and detailed views.
+ * 
+ * Data Management:
+ * - Bookings from RTK Query (useGetVendorBookingsQuery)
+ * - Status updates via RTK Query mutation (useUpdateBookingStatusMutation)
+ * - Local state for filters, search, and modal
+ * 
+ * Key Features:
+ * - Real-time booking statistics (total, pending, confirmed, completed, cancelled, revenue)
+ * - Multi-dimensional filtering (status, date range, search)
+ * - Booking status management (confirm, complete, cancel)
+ * - Detailed booking view modal
+ * - Responsive table layout
+ * - Search by customer, service, or staff name
+ * 
+ * User Flow:
+ * 1. Vendor views all bookings with stats
+ * 2. Can filter by status (pending, confirmed, etc.) or date (today, upcoming, past)
+ * 3. Can search for specific bookings
+ * 4. Clicks "View Details" to see booking modal
+ * 5. Can update status (confirm, complete, cancel) from modal
+ */
+
+import React, { useState, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import Modal from '../../components/shared/Modal';
+import { showSuccessToast, showErrorToast, showInfoToast } from '../../utils/toastConfig';
 import {
   useGetVendorBookingsQuery,
   useUpdateBookingStatusMutation,
@@ -19,68 +48,84 @@ import {
   FiXCircle,
   FiAlertCircle,
 } from 'react-icons/fi';
-import { toast } from 'react-toastify';
 
 const BookingsManagement = () => {
   // RTK Query hooks
   const { data: bookingsData, isLoading: bookingsLoading } = useGetVendorBookingsQuery();
-  const [updateBookingStatus] = useUpdateBookingStatusMutation();
+  const [updateBookingStatus, { isLoading: isUpdating }] = useUpdateBookingStatusMutation();
   
   const bookings = bookingsData?.bookings || [];
 
+  // Local state for filters and modal
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
+  /**
+   * handleStatusUpdate - Updates booking status (confirm, complete, cancel)
+   * Shows success/error toast and closes modal on success
+   */
   const handleStatusUpdate = async (bookingId, newStatus) => {
     try {
       await updateBookingStatus({ bookingId, status: newStatus }).unwrap();
-      toast.success(`Booking ${newStatus} successfully!`);
+      showSuccessToast(`Booking ${newStatus} successfully!`);
       setIsDetailsModalOpen(false);
     } catch (error) {
-      toast.error(error?.message || 'Failed to update booking status');
+      console.error('Status update error:', error);
+      showErrorToast(error?.message || 'Failed to update booking status');
     }
   };
 
+  /**
+   * handleViewDetails - Opens modal with booking details
+   */
   const handleViewDetails = (booking) => {
     setSelectedBooking(booking);
     setIsDetailsModalOpen(true);
   };
 
-  // Filter bookings
-  const filteredBookings = bookings.filter((booking) => {
-    // Search filter
-    const matchesSearch =
-      booking.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.service_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      booking.staff_name?.toLowerCase().includes(searchTerm.toLowerCase());
+  /**
+   * Filter bookings based on search term, status, and date
+   * Memoized to avoid recalculating on every render
+   */
+  const filteredBookings = useMemo(() => {
+    return bookings.filter((booking) => {
+      // Search filter: matches customer, service, or staff name
+      const matchesSearch =
+        booking.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.service_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        booking.staff_name?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    // Status filter
-    const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
+      // Status filter
+      const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
 
-    // Date filter
-    let matchesDate = true;
-    if (dateFilter !== 'all') {
-      const bookingDate = new Date(booking.booking_date);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Date filter: today, upcoming, past, or all
+      let matchesDate = true;
+      if (dateFilter !== 'all') {
+        const bookingDate = new Date(booking.booking_date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-      if (dateFilter === 'today') {
-        matchesDate = bookingDate.toDateString() === today.toDateString();
-      } else if (dateFilter === 'upcoming') {
-        matchesDate = bookingDate >= today;
-      } else if (dateFilter === 'past') {
-        matchesDate = bookingDate < today;
+        if (dateFilter === 'today') {
+          matchesDate = bookingDate.toDateString() === today.toDateString();
+        } else if (dateFilter === 'upcoming') {
+          matchesDate = bookingDate >= today;
+        } else if (dateFilter === 'past') {
+          matchesDate = bookingDate < today;
+        }
       }
-    }
 
-    return matchesSearch && matchesStatus && matchesDate;
-  });
+      return matchesSearch && matchesStatus && matchesDate;
+    });
+  }, [bookings, searchTerm, statusFilter, dateFilter]);
 
-  // Calculate stats
-  const stats = {
+  /**
+   * Calculate booking statistics
+   * Counts by status and total revenue from completed bookings
+   */
+  const stats = useMemo(() => ({
     total: bookings.length,
     pending: bookings.filter((b) => b.status === 'pending').length,
     confirmed: bookings.filter((b) => b.status === 'confirmed').length,
@@ -89,8 +134,11 @@ const BookingsManagement = () => {
     totalRevenue: bookings
       .filter((b) => b.status === 'completed')
       .reduce((sum, b) => sum + (b.total_amount || 0), 0),
-  };
+  }), [bookings]);
 
+  /**
+   * getStatusColor - Returns Tailwind classes for status badges
+   */
   const getStatusColor = (status) => {
     switch (status) {
       case 'pending':
@@ -106,6 +154,9 @@ const BookingsManagement = () => {
     }
   };
 
+  /**
+   * getStatusIcon - Returns appropriate icon for booking status
+   */
   const getStatusIcon = (status) => {
     switch (status) {
       case 'pending':
@@ -121,15 +172,21 @@ const BookingsManagement = () => {
     }
   };
 
+  /**
+   * formatDate - Formats date string to readable format
+   */
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', {
+    return date.toLocaleDateString('en-US', {
       day: 'numeric',
       month: 'short',
       year: 'numeric',
     });
   };
 
+  /**
+   * formatTime - Formats time string to HH:MM format
+   */
   const formatTime = (timeString) => {
     if (!timeString) return 'N/A';
     return timeString.substring(0, 5); // HH:MM format
@@ -149,7 +206,7 @@ const BookingsManagement = () => {
           <Button
             variant="outline"
             className="flex items-center gap-2"
-            onClick={() => toast.info('Export feature coming soon!')}
+            onClick={() => showInfoToast('Export feature coming soon!')}
           >
             <FiDownload />
             Export Bookings
@@ -191,17 +248,17 @@ const BookingsManagement = () => {
           <Card className="hover:shadow-md transition-shadow">
             <div className="text-center">
               <p className="text-sm text-gray-600 font-body mb-1">Revenue</p>
-              <p className="text-2xl font-display font-bold text-purple-600">
+              <p className="text-2xl font-display font-bold text-accent-orange">
                 ₹{stats.totalRevenue.toLocaleString()}
               </p>
             </div>
           </Card>
         </div>
 
-        {/* Filters */}
+        {/* Filters Card */}
         <Card>
           <div className="space-y-4">
-            {/* Search */}
+            {/* Search Input */}
             <div className="relative">
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
@@ -209,12 +266,14 @@ const BookingsManagement = () => {
                 placeholder="Search by customer, service, or staff..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent font-body"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
+                aria-label="Search bookings"
               />
             </div>
 
             {/* Filter Buttons */}
             <div className="flex flex-wrap gap-2">
+              {/* Status Filters */}
               <div className="flex items-center gap-2">
                 <FiFilter className="text-gray-500" />
                 <span className="text-sm text-gray-600 font-body font-semibold">Status:</span>
@@ -255,6 +314,7 @@ const BookingsManagement = () => {
                 </Button>
               </div>
 
+              {/* Date Filters */}
               <div className="border-l pl-2 flex items-center gap-2">
                 <span className="text-sm text-gray-600 font-body font-semibold">Date:</span>
                 <Button
@@ -294,7 +354,7 @@ const BookingsManagement = () => {
         {bookingsLoading ? (
           <div className="flex items-center justify-center min-h-[40vh]">
             <div className="text-center">
-              <div className="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
               <p className="text-gray-600 font-body">Loading bookings...</p>
             </div>
           </div>
@@ -356,8 +416,8 @@ const BookingsManagement = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center">
-                          <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
-                            <FiUser className="text-purple-600 text-sm" />
+                          <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
+                            <FiUser className="text-accent-orange text-sm" />
                           </div>
                           <div>
                             <p className="text-sm font-body font-semibold text-gray-900">
@@ -394,7 +454,7 @@ const BookingsManagement = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center text-sm font-body font-semibold text-purple-600">
+                        <div className="flex items-center text-sm font-body font-semibold text-accent-orange">
                           <FiDollarSign className="mr-1" />
                           ₹{booking.total_amount?.toLocaleString() || 0}
                         </div>
@@ -509,27 +569,29 @@ const BookingsManagement = () => {
                 </div>
                 <div className="flex justify-between pt-2 border-t">
                   <span className="text-sm text-gray-600 font-body">Total Amount:</span>
-                  <span className="text-lg font-display font-bold text-purple-600">
+                  <span className="text-lg font-display font-bold text-accent-orange">
                     ₹{selectedBooking.total_amount?.toLocaleString() || 0}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Actions */}
+            {/* Status Update Actions - Only show for pending/confirmed bookings */}
             {selectedBooking.status === 'pending' && (
               <div className="flex gap-3 pt-4 border-t">
                 <Button
                   variant="primary"
                   className="flex-1"
                   onClick={() => handleStatusUpdate(selectedBooking.id, 'confirmed')}
+                  disabled={isUpdating}
                 >
-                  Confirm Booking
+                  {isUpdating ? 'Processing...' : 'Confirm Booking'}
                 </Button>
                 <Button
                   variant="outline"
                   className="flex-1 text-red-600 hover:bg-red-50 border-red-200"
                   onClick={() => handleStatusUpdate(selectedBooking.id, 'cancelled')}
+                  disabled={isUpdating}
                 >
                   Cancel Booking
                 </Button>
@@ -542,19 +604,22 @@ const BookingsManagement = () => {
                   variant="primary"
                   className="flex-1"
                   onClick={() => handleStatusUpdate(selectedBooking.id, 'completed')}
+                  disabled={isUpdating}
                 >
-                  Mark as Completed
+                  {isUpdating ? 'Processing...' : 'Mark as Completed'}
                 </Button>
                 <Button
                   variant="outline"
                   className="flex-1 text-red-600 hover:bg-red-50 border-red-200"
                   onClick={() => handleStatusUpdate(selectedBooking.id, 'cancelled')}
+                  disabled={isUpdating}
                 >
                   Cancel Booking
                 </Button>
               </div>
             )}
 
+            {/* Show message for completed/cancelled bookings */}
             {(selectedBooking.status === 'completed' || selectedBooking.status === 'cancelled') && (
               <div className="pt-4 border-t">
                 <p className="text-sm text-gray-600 font-body text-center">

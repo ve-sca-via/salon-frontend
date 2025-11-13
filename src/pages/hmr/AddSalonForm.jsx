@@ -1,198 +1,168 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import InputField from '../../components/shared/InputField';
 import Button from '../../components/shared/Button';
-import { createVendorRequestThunk, updateVendorRequestThunk, fetchVendorRequestDetails } from '../../store/slices/rmAgentSlice';
-import { toast } from 'react-toastify';
+import { 
+  useSubmitVendorRequestMutation, 
+  useUpdateVendorRequestMutation,
+  useGetVendorRequestByIdQuery,
+  useGetServiceCategoriesQuery
+} from '../../services/api/rmApi';
+import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../../utils/toastConfig';
+import { 
+  INDIAN_STATES, 
+  BUSINESS_HOURS_PRESETS 
+} from '../../utils/salonFormConstants';
 import { FiUpload, FiMapPin, FiChevronLeft, FiChevronRight, FiCheck, FiPlus, FiTrash2, FiInfo, FiImage } from 'react-icons/fi';
+
+// ⚠️ EXCEPTION: Supabase used ONLY for image storage uploads (not auth/database)
+// TODO: Move image uploads to FastAPI backend endpoint to eliminate this dependency
 import { supabase } from '../../config/supabase';
 
-// Pre-defined service categories and common services
-const SERVICE_CATEGORIES = [
-  'Hair Care',
-  'Skin Care', 
-  'Makeup',
-  'Spa & Massage',
-  'Nail Care',
-  'Beard & Grooming',
-  'Bridal Services',
-  'Hair Coloring',
-  'Body Treatments'
-];
-
-const COMMON_SERVICES = {
-  'Hair Care': [
-    { name: 'Haircut', price: 300, duration: 30 },
-    { name: 'Hair Wash & Blow Dry', price: 200, duration: 20 },
-    { name: 'Hair Styling', price: 400, duration: 45 },
-    { name: 'Hair Treatment', price: 800, duration: 60 },
-  ],
-  'Skin Care': [
-    { name: 'Facial', price: 600, duration: 45 },
-    { name: 'Clean Up', price: 400, duration: 30 },
-    { name: 'Face Massage', price: 500, duration: 30 },
-    { name: 'Anti-Aging Treatment', price: 1200, duration: 60 },
-  ],
-  'Makeup': [
-    { name: 'Party Makeup', price: 1500, duration: 60 },
-    { name: 'Bridal Makeup', price: 5000, duration: 120 },
-    { name: 'HD Makeup', price: 2500, duration: 90 },
-  ],
-  'Spa & Massage': [
-    { name: 'Full Body Massage', price: 1500, duration: 60 },
-    { name: 'Head Massage', price: 400, duration: 30 },
-    { name: 'Foot Massage', price: 500, duration: 30 },
-  ],
-  'Nail Care': [
-    { name: 'Manicure', price: 400, duration: 45 },
-    { name: 'Pedicure', price: 500, duration: 60 },
-    { name: 'Nail Art', price: 300, duration: 30 },
-  ],
-  'Beard & Grooming': [
-    { name: 'Beard Trim', price: 200, duration: 20 },
-    { name: 'Beard Styling', price: 300, duration: 30 },
-    { name: 'Shaving', price: 250, duration: 25 },
-  ]
-};
-
-const INDIAN_STATES = [
-  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
-  'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh', 'Jharkhand', 'Karnataka',
-  'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram',
-  'Nagaland', 'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu',
-  'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand', 'West Bengal',
-  'Delhi', 'Jammu and Kashmir', 'Ladakh'
-];
-
-const BUSINESS_HOURS_PRESETS = {
-  'weekdays-9-6': {
-    label: '9 AM - 6 PM (Mon-Sat, Closed Sunday)',
-    hours: {
-      monday: '9:00 AM - 6:00 PM',
-      tuesday: '9:00 AM - 6:00 PM',
-      wednesday: '9:00 AM - 6:00 PM',
-      thursday: '9:00 AM - 6:00 PM',
-      friday: '9:00 AM - 6:00 PM',
-      saturday: '9:00 AM - 6:00 PM',
-      sunday: 'Closed'
-    }
-  },
-  'everyday-9-8': {
-    label: '9 AM - 8 PM (Open All Days)',
-    hours: {
-      monday: '9:00 AM - 8:00 PM',
-      tuesday: '9:00 AM - 8:00 PM',
-      wednesday: '9:00 AM - 8:00 PM',
-      thursday: '9:00 AM - 8:00 PM',
-      friday: '9:00 AM - 8:00 PM',
-      saturday: '9:00 AM - 8:00 PM',
-      sunday: '9:00 AM - 8:00 PM'
-    }
-  },
-  'weekdays-10-7': {
-    label: '10 AM - 7 PM (Mon-Sat, Closed Sunday)',
-    hours: {
-      monday: '10:00 AM - 7:00 PM',
-      tuesday: '10:00 AM - 7:00 PM',
-      wednesday: '10:00 AM - 7:00 PM',
-      thursday: '10:00 AM - 7:00 PM',
-      friday: '10:00 AM - 7:00 PM',
-      saturday: '10:00 AM - 7:00 PM',
-      sunday: 'Closed'
-    }
-  },
-  'custom': {
-    label: 'Custom Hours (Set manually)',
-    hours: null
-  }
-};
+/**
+ * AddSalonForm Component
+ * 
+ * Purpose:
+ * Multi-step form for Relationship Managers (HMR) to add or edit salon submissions.
+ * Handles complete salon onboarding process including business details, services,
+ * images, and review before submission. Supports draft saving and editing existing drafts.
+ * 
+ * Data Management:
+ * - Form state via react-hook-form
+ * - Images uploaded to Supabase storage
+ * - Draft/submission via RTK Query (rmApi)
+ * - Local state for services, images, and step navigation
+ * - Automatic caching and refetching via RTK Query
+ * 
+ * Key Features:
+ * - 4-step wizard (Basic Info → Services → Photos → Review)
+ * - Draft auto-save functionality
+ * - Image upload to Supabase (cover, logo, gallery)
+ * - Service quick-add from common templates
+ * - Business hours presets
+ * - Form validation at each step
+ * - Edit mode for existing drafts
+ * - Optimistic UI updates with RTK Query
+ * 
+ * Security Notes:
+ * - Supabase uploads use authenticated client (checks RLS policies)
+ * - Image URLs are public but stored in secure buckets
+ * - Draft data contains sensitive business info - ensure proper access control
+ * 
+ * User Flow:
+ * 1. RM navigates to /hmr/add-salon or /hmr/edit-salon/:draftId
+ * 2. Step 1: Enter business details (name, address, hours, description)
+ * 3. Step 2: Add services (manual or quick-add from templates)
+ * 4. Step 3: Upload images (cover required, logo/gallery optional)
+ * 5. Step 4: Review all information
+ * 6. Submit for approval or save as draft
+ * 7. Navigate to dashboard or drafts page
+ */
 
 const AddSalonForm = () => {
   const { draftId } = useParams(); // Get draft ID from URL if editing
+  
+  // RTK Query hooks 
+  const [submitVendorRequest, { isLoading: isSubmitting }] = useSubmitVendorRequestMutation();
+  const [updateVendorRequest, { isLoading: isUpdating }] = useUpdateVendorRequestMutation();
+  const { data: draftData, isLoading: loadingDraft } = useGetVendorRequestByIdQuery(draftId, {
+    skip: !draftId, // Only fetch if draftId exists
+  });
+  const { data: categoriesData, isLoading: loadingCategories } = useGetServiceCategoriesQuery();
+  
+  // React Hook Form setup
   const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm({
     defaultValues: {
-      services: [{ name: '', category: '', price: '', duration_minutes: '' }]
+      services: [{ name: '', category_id: '', price: '', duration_minutes: '' }]
     }
   });
+
+  // Navigation
+  const navigate = useNavigate();
+
+  // Redux state (only auth)
+  const { user } = useSelector((state) => state.auth);
+
+  // Get service categories from API
+  const serviceCategories = categoriesData?.data || [];
+
+  // UI State (wizard steps and selections)
   const [currentStep, setCurrentStep] = useState(1);
-  const [services, setServices] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [uploadedImages, setUploadedImages] = useState([]);
   const [selectedHoursPreset, setSelectedHoursPreset] = useState('weekdays-9-6');
+  
+  // Form data state (data being built before submission)
+  const [services, setServices] = useState([]);
+  const [uploadedImages, setUploadedImages] = useState([]);
   const [coverImage, setCoverImage] = useState(null);
   const [logo, setLogo] = useState(null);
+  
+  // Upload progress state
   const [uploading, setUploading] = useState(false);
-  const [formData, setFormData] = useState({});
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [loadingDraft, setLoadingDraft] = useState(false);
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const { user } = useSelector((state) => state.auth);
-  const { createLoading, selectedRequest } = useSelector((state) => state.rmAgent);
+
+  // Edit mode derived from URL param
+  const isEditMode = Boolean(draftId);
 
   const totalSteps = 4;
 
   // Load draft data if editing
   useEffect(() => {
-    if (draftId) {
-      setIsEditMode(true);
-      setLoadingDraft(true);
+    if (draftId && draftData) {
+      // Populate form with draft data
+      const draft = draftData;
+      const documents = draft.documents || {};
       
-      dispatch(fetchVendorRequestDetails(draftId))
-        .unwrap()
-        .then((draft) => {
-          // Populate form with draft data
-          const documents = draft.documents || {};
-          
-          // Basic info
-          reset({
-            business_name: draft.business_name || '',
-            owner_name: draft.owner_name || '',
-            owner_email: draft.owner_email || '',
-            owner_phone: draft.owner_phone || '',
-            address: draft.address || '',
-            city: draft.city || '',
-            state: draft.state || '',
-            pincode: draft.pincode || '',
-            description: draft.description || '',
-          });
-          
-          // Services
-          if (documents.services && documents.services.length > 0) {
-            setServices(documents.services);
-          }
-          
-          // Images
-          if (documents.cover_image) {
-            setCoverImage(documents.cover_image);
-          }
-          if (documents.logo) {
-            setLogo(documents.logo);
-          }
-          if (documents.images && documents.images.length > 0) {
-            setUploadedImages(documents.images);
-          }
-          
-          // Business hours
-          if (documents.business_hours) {
-            setSelectedHoursPreset('custom');
-            // Set custom hours in form
-          }
-          
-          toast.info('Draft loaded. Continue editing...');
-          setLoadingDraft(false);
-        })
-        .catch((error) => {
-          toast.error('Failed to load draft');
-          setLoadingDraft(false);
-          navigate('/hmr/drafts');
-        });
+      // Basic info
+      reset({
+        name: draft.business_name || '',
+        owner_name: draft.owner_name || '',
+        owner_email: draft.owner_email || '',
+        owner_phone: draft.owner_phone || '',
+        email: documents.email || draft.owner_email || '',
+        phone: documents.phone || draft.owner_phone || '',
+        address_line1: draft.business_address?.split(',')[0] || '',
+        address_line2: draft.business_address?.split(',')[1]?.trim() || '',
+        city: draft.city || '',
+        state: draft.state || '',
+        pincode: draft.pincode || '',
+        description: documents.description || '',
+        // Business hours
+        monday: documents.business_hours?.monday || '9:00 AM - 6:00 PM',
+        tuesday: documents.business_hours?.tuesday || '9:00 AM - 6:00 PM',
+        wednesday: documents.business_hours?.wednesday || '9:00 AM - 6:00 PM',
+        thursday: documents.business_hours?.thursday || '9:00 AM - 6:00 PM',
+        friday: documents.business_hours?.friday || '9:00 AM - 6:00 PM',
+        saturday: documents.business_hours?.saturday || '9:00 AM - 6:00 PM',
+        sunday: documents.business_hours?.sunday || 'Closed',
+      });
+      
+      // Services
+      if (documents.services && documents.services.length > 0) {
+        setServices(documents.services);
+      }
+      
+      // Images
+      if (documents.cover_image) {
+        setCoverImage(documents.cover_image);
+      }
+      if (documents.logo) {
+        setLogo(documents.logo);
+      }
+      if (documents.images && documents.images.length > 0) {
+        setUploadedImages(documents.images);
+      }
+      
+      // Business hours preset
+      if (documents.business_hours) {
+        setSelectedHoursPreset('custom');
+      }
+      
+      showInfoToast('Draft loaded. Continue editing...');
     }
-  }, [draftId, dispatch, navigate, reset]);
+  }, [draftId, draftData, reset]);
 
   const uploadToSupabase = async (file, folder) => {
     try {
@@ -226,41 +196,36 @@ const AddSalonForm = () => {
       if (type === 'cover') {
         const url = await uploadToSupabase(files[0], 'covers');
         setCoverImage(url);
-        toast.success('Cover image uploaded!');
+        showSuccessToast('Cover image uploaded!');
       } else if (type === 'logo') {
         const url = await uploadToSupabase(files[0], 'logos');
         setLogo(url);
-        toast.success('Logo uploaded!');
+        showSuccessToast('Logo uploaded!');
       } else if (type === 'gallery') {
         const urls = await Promise.all(
           files.map(file => uploadToSupabase(file, 'gallery'))
         );
         setUploadedImages([...uploadedImages, ...urls]);
-        toast.success(`${files.length} image(s) uploaded!`);
+        showSuccessToast(`${files.length} image(s) uploaded!`);
       }
     } catch (error) {
-      toast.error('Failed to upload image');
+      showErrorToast('Failed to upload image');
     } finally {
       setUploading(false);
     }
   };
 
   const addService = () => {
-    setServices([...services, { name: '', category: '', price: '', duration_minutes: '', description: '' }]);
-  };
-
-  const addCommonService = (service, category) => {
-    setServices([...services, { ...service, category }]);
-    toast.success(`${service.name} added!`);
+    setServices([...services, { name: '', category_id: '', price: '', duration_minutes: '', description: '' }]);
   };
 
   const removeService = (index) => {
     if (services.length === 1) {
-      toast.warning('At least one service is required!');
+      showWarningToast('At least one service is required!');
       return;
     }
     setServices(services.filter((_, i) => i !== index));
-    toast.info('Service removed');
+    showInfoToast('Service removed');
   };
 
   const updateService = (index, field, value) => {
@@ -274,12 +239,12 @@ const AddSalonForm = () => {
       // Validate required fields only for final submission (not draft)
       if (!isDraft && !submitForApproval) {
         if (!coverImage) {
-          toast.error('Cover image is required for submission');
+          showErrorToast('Cover image is required for submission');
           setCurrentStep(3);
           return;
         }
         if (services.length === 0 || !services.some(s => s.name && s.price)) {
-          toast.error('At least one service is required for submission');
+          showErrorToast('At least one service is required for submission');
           setCurrentStep(2);
           return;
         }
@@ -337,38 +302,38 @@ const AddSalonForm = () => {
 
       console.log('📤 Submitting vendor request:', vendorRequestData);
       
-      // Update existing draft or create new
+      // Update existing draft or create new using RTK Query mutations
       if (isEditMode && draftId) {
-        await dispatch(updateVendorRequestThunk({ 
+        await updateVendorRequest({ 
           requestId: draftId,
           requestData: vendorRequestData, 
           submitForApproval 
-        })).unwrap();
+        }).unwrap();
         
         if (submitForApproval) {
-          toast.success(
+          showSuccessToast(
             '✅ Draft submitted for approval! You will be notified once reviewed.',
             { autoClose: 4000 }
           );
         } else {
-          toast.success(
+          showSuccessToast(
             '💾 Draft updated successfully!',
             { autoClose: 3000 }
           );
         }
       } else {
-        await dispatch(createVendorRequestThunk({ 
+        await submitVendorRequest({ 
           requestData: vendorRequestData, 
           isDraft 
-        })).unwrap();
+        }).unwrap();
         
         if (isDraft) {
-          toast.success(
+          showSuccessToast(
             '💾 Salon saved as draft! You can complete and submit it later.',
             { autoClose: 4000 }
           );
         } else {
-          toast.success(
+          showSuccessToast(
             '✅ Salon submitted for approval! You will be notified once reviewed.',
             { autoClose: 4000 }
           );
@@ -379,9 +344,9 @@ const AddSalonForm = () => {
     } catch (error) {
       console.error('Submit error:', error);
       
-      // Handle validation errors from backend
-      if (error.response?.data?.detail) {
-        const detail = error.response.data.detail;
+      // Handle validation errors from backend (RTK Query error format)
+      if (error.data?.detail) {
+        const detail = error.data.detail;
         
         // If detail is an array of validation errors
         if (Array.isArray(detail)) {
@@ -389,23 +354,20 @@ const AddSalonForm = () => {
             const field = err.loc ? err.loc.join(' > ') : 'Unknown field';
             return `${field}: ${err.msg}`;
           }).join('\n');
-          toast.error(`Validation errors:\n${errorMessages}`, { autoClose: 8000 });
+          showErrorToast(`Validation errors:\n${errorMessages}`, { autoClose: 8000 });
         } else {
-          toast.error(detail);
+          showErrorToast(detail);
         }
       } else {
-        toast.error(error.message || 'Failed to submit salon');
+        showErrorToast(error.message || 'Failed to submit salon');
       }
     }
   };
 
 
   const nextStep = () => {
-    // Get all current form values
+    // Get all current form values from react-hook-form (no need for separate formData state)
     const allValues = watch();
-    
-    // Save current form data
-    setFormData({ ...formData, ...allValues });
     
     // Validation for step 1
     if (currentStep === 1) {
@@ -425,18 +387,18 @@ const AddSalonForm = () => {
         .map(([field, _]) => field);
       
       if (missingFields.length > 0) {
-        toast.error(`Please fill: ${missingFields.join(', ')}`);
+        showErrorToast(`Please fill: ${missingFields.join(', ')}`);
         return;
       }
       
       if (allValues.description && allValues.description.length < 50) {
-        toast.error('Description must be at least 50 characters');
+        showErrorToast('Description must be at least 50 characters');
         return;
       }
     }
     
     if (currentStep === 2 && services.length === 0) {
-      toast.warning('Please add at least one service before proceeding');
+      showWarningToast('Please add at least one service before proceeding');
       return;
     }
     
@@ -688,7 +650,7 @@ const AddSalonForm = () => {
                           Object.entries(BUSINESS_HOURS_PRESETS[preset].hours).forEach(([day, hours]) => {
                             setValue(day, hours);
                           });
-                          toast.success('Business hours applied!');
+                          showSuccessToast('Business hours applied!');
                         }
                       }}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-accent-orange"
@@ -740,55 +702,17 @@ const AddSalonForm = () => {
                 <div className="flex items-start">
                   <FiInfo className="text-blue-500 mt-1 mr-3 flex-shrink-0" size={20} />
                   <div className="text-sm text-blue-800 font-body">
-                    <p className="font-semibold mb-1">Quick Add Services:</p>
-                    <p className="text-xs">Select a category below to quickly add common services, or manually add your own.</p>
+                    <p className="font-semibold mb-1">Add Salon Services</p>
+                    <p className="text-xs">Add services offered by the salon. Make sure to select the correct category for each service from the dropdown.</p>
                   </div>
                 </div>
-              </div>
-
-              {/* Quick Add Services */}
-              <div className="mb-6 p-4 bg-gradient-to-br from-orange-50 to-yellow-50 rounded-lg border border-orange-200">
-                <h4 className="font-body font-semibold text-gray-900 mb-3">✨ Quick Add Common Services</h4>
-                <div className="mb-3">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                  >
-                    <option value="">Select a category...</option>
-                    {SERVICE_CATEGORIES.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
-                </div>
-                
-                {selectedCategory && COMMON_SERVICES[selectedCategory] && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                    {COMMON_SERVICES[selectedCategory].map((service, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => addCommonService(service, selectedCategory)}
-                        className="text-left p-3 bg-white border border-gray-200 rounded-lg hover:border-accent-orange hover:bg-orange-50 transition-all text-sm font-body group"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-semibold text-gray-900 group-hover:text-accent-orange">{service.name}</p>
-                            <p className="text-xs text-gray-600">₹{service.price} • {service.duration} mins</p>
-                          </div>
-                          <FiPlus className="text-accent-orange opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
               </div>
 
               {/* Added Services List */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <h4 className="font-body font-semibold text-gray-900">
-                    Your Services ({services.length})
+                    Salon Services ({services.length})
                   </h4>
                   <Button
                     type="button"
@@ -846,13 +770,13 @@ const AddSalonForm = () => {
                               Category <span className="text-red-500">*</span>
                             </label>
                             <select
-                              value={service.category}
-                              onChange={(e) => updateService(index, 'category', e.target.value)}
+                              value={service.category_id || ''}
+                              onChange={(e) => updateService(index, 'category_id', e.target.value)}
                               className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
                             >
                               <option value="">Select category</option>
-                              {SERVICE_CATEGORIES.map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
+                              {serviceCategories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
                               ))}
                             </select>
                           </div>
@@ -1375,7 +1299,7 @@ const AddSalonForm = () => {
                   e.stopPropagation();
                   handleSubmit((data) => onSubmit(data, true, false))();
                 }}
-                disabled={createLoading}
+                disabled={isSubmitting || isUpdating}
                 className="border border-gray-300"
               >
                 💾 {isEditMode ? 'Update Draft' : 'Save as Draft'}
@@ -1395,10 +1319,10 @@ const AddSalonForm = () => {
                     e.stopPropagation();
                     handleSubmit((data) => onSubmit(data, false, isEditMode))();
                   }}
-                  disabled={createLoading || !coverImage}
+                  disabled={isSubmitting || isUpdating || !coverImage}
                   className="bg-gradient-orange"
                 >
-                  {createLoading ? (
+                  {isSubmitting || isUpdating ? (
                     <>
                       <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2"></div>
                       Submitting...

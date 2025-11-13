@@ -5,6 +5,7 @@
  * Import from here in components and store configuration.
  */
 
+export { authApi } from './authApi';
 export { salonApi } from './salonApi';
 export { bookingApi } from './bookingApi';
 export { cartApi } from './cartApi';
@@ -15,6 +16,7 @@ export { rmApi } from './rmApi';
 export { paymentApi } from './paymentApi';
 
 // Export all hooks for convenience
+export * from './authApi';
 export * from './salonApi';
 export * from './bookingApi';
 export * from './cartApi';

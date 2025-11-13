@@ -1,69 +1,115 @@
-import React, { useState } from 'react';
+/**
+ * RMLogin Component (Relationship Manager Portal)
+ *
+ * Purpose:
+ * Relationship Manager login page. Authenticates users, validates RM role,
+ * and redirects to the RM dashboard.
+ *
+ * Data Management:
+ * - Form data in component state
+ * - Authentication via RTK Query (authApi.useLoginMutation)
+ * - User stored in Redux auth slice (minimal state)
+ * - Loading state managed by RTK Query (isLoading)
+ * - Optional "Remember me" (stores email in localStorage)
+ */
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { loginStart, loginSuccess, loginFailure } from '../../store/slices/authSlice';
-import { login as loginApi } from '../../services/backendApi';
+import { setUser } from '../../store/slices/authSlice';
+import { useLoginMutation } from '../../services/api/authApi';
 import Button from '../../components/shared/Button';
 import InputField from '../../components/shared/InputField';
 import { FiMail, FiLock, FiUser, FiShoppingBag, FiUsers } from 'react-icons/fi';
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import rmBgImage from '../../assets/images/rm_portal_bg.jpg';
 
 const RMLogin = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false });
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  
+  // RTK Query mutation hook - provides loading state automatically
+  const [login, { isLoading }] = useLoginMutation();
 
-  const handleChange = (e) =>
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Load remembered email for RM portal if available
+  useEffect(() => {
+    const saved = localStorage.getItem('rmRememberedEmail');
+    if (saved) setFormData(prev => ({ ...prev, email: saved, rememberMe: true }));
+  }, []);
 
-  const showToast = (message, type = 'info') => {
-    const style = {
-      backgroundColor: type === 'error' ? '#EF4444' : '#10B981',
-      color: '#fff',
-      fontFamily: 'DM Sans, sans-serif',
-    };
-    toast[type](message, { position: 'top-center', autoClose: 2500, style });
+  /**
+   * handleChange - supports text inputs and checkboxes
+   */
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
   };
 
+  /**
+   * handleSubmit - validates, authenticates, and routes RM users
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!formData.email || !formData.password) {
-      showToast('Please fill in all fields', 'error');
+
+    // Basic client-side validation
+    if (!formData.email.trim() || !formData.password) {
+      showErrorToast('Please fill in all fields');
       return;
     }
 
-    setLoading(true);
-    dispatch(loginStart());
-
     try {
-      console.log('🔐 RM Login attempt for:', formData.email);
-      
-      // Call backend API with JWT authentication
-      const data = await loginApi(formData.email, formData.password);
-      
-      console.log('✅ Login response:', data);
-
-      // Verify user has RM role - only relationship managers can login here
-      if (data.user.role !== 'relationship_manager') {
-        throw new Error('Access denied. This portal is for Relationship Managers only. Please use the appropriate login page for your role.');
+      // Dev-only logging
+      if (process.env.NODE_ENV === 'development') {
+        console.log('🔐 RM Login attempt for:', formData.email);
       }
 
+      // Call login mutation (RTK Query handles loading state)
+      const response = await login({
+        email: formData.email,
+        password: formData.password,
+      }).unwrap();
+
+      // Validate response shape
+      if (!response || !response.user) throw new Error('Invalid login response from server');
+      if (!response.user.id || !response.user.email) throw new Error('Incomplete user data received');
+
+      // Role validation
+      const role = response.user.role || '';
+      if (role !== 'relationship_manager') {
+        throw new Error('Access denied. This portal is for Relationship Managers only.');
+      }
+
+      // Remember me handling
+      if (formData.rememberMe) {
+        localStorage.setItem('rmRememberedEmail', formData.email);
+      } else {
+        localStorage.removeItem('rmRememberedEmail');
+      }
+
+      // Store access token and refresh token
+      localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
+
       // Store user in Redux
-      dispatch(loginSuccess(data.user));
-      
-      showToast(`Welcome back, ${data.user.full_name || data.user.email}!`, 'success');
-      
-      // Navigate to RM dashboard
-      navigate('/hmr/dashboard');
+      dispatch(setUser(response.user));
+
+      showSuccessToast(`Welcome back, ${response.user.full_name || response.user.email}!`);
+
+      // Delay navigation to allow toast to show
+      setTimeout(() => navigate('/hmr/dashboard'), 500);
     } catch (error) {
-      console.error('❌ Login error:', error);
-      dispatch(loginFailure(error.message));
-      showToast(error.message || 'Invalid credentials', 'error');
-    } finally {
-      setLoading(false);
+      if (process.env.NODE_ENV === 'development') console.error('RM Login error:', error);
+      
+      // RTK Query errors have a 'data' property
+      const errorMessage = error.data?.detail || error.message || 'Login failed';
+      
+      // Map common errors to user-friendly messages
+      let msg = 'Login failed. Please try again.';
+      if (errorMessage.includes('Access denied')) msg = errorMessage;
+      else if (errorMessage.includes('Invalid')) msg = 'Invalid email or password';
+      else if (errorMessage) msg = errorMessage;
+      
+      showErrorToast(msg);
     }
   };
 
@@ -132,6 +178,7 @@ const RMLogin = () => {
               </p>
 
               <form onSubmit={handleSubmit} className="space-y-5">
+                {/* Email Input */}
                 <InputField
                   label="Email Address"
                   name="email"
@@ -140,8 +187,12 @@ const RMLogin = () => {
                   onChange={handleChange}
                   placeholder="Enter your email"
                   icon={<FiMail />}
+                  disabled={isLoading}
                   required
+                  aria-label="Email address"
                 />
+
+                {/* Password Input */}
                 <InputField
                   label="Password"
                   name="password"
@@ -150,18 +201,28 @@ const RMLogin = () => {
                   onChange={handleChange}
                   placeholder="Enter your password"
                   icon={<FiLock />}
+                  disabled={isLoading}
                   required
+                  aria-label="Password"
                 />
+
+                {/* Remember Me & Forgot Password */}
                 <div className="flex items-center justify-between">
                   <label className="flex items-center cursor-pointer">
                     <input
                       type="checkbox"
+                      name="rememberMe"
+                      checked={formData.rememberMe}
+                      onChange={handleChange}
+                      disabled={isLoading}
                       className="rounded border-neutral-gray-500 text-accent-orange focus:ring-accent-orange"
+                      aria-label="Remember my email"
                     />
                     <span className="ml-2 font-body text-sm text-neutral-gray-500">
                       Remember me
                     </span>
                   </label>
+                  {/* TODO: Implement forgot password functionality */}
                   <Link
                     to="/forgot-password"
                     className="font-body text-sm text-accent-orange hover:opacity-80 transition-opacity"
@@ -170,7 +231,8 @@ const RMLogin = () => {
                   </Link>
                 </div>
 
-                <Button type="submit" variant="primary" size="lg" fullWidth loading={loading}>
+                {/* Submit Button */}
+                <Button type="submit" variant="primary" size="lg" fullWidth loading={isLoading} disabled={isLoading}>
                   Sign In
                 </Button>
               </form>
