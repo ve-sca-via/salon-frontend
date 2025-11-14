@@ -83,6 +83,14 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
+                <Link to="/careers" className="hover:text-white transition-colors flex items-center gap-2">
+                  <span>Careers</span>
+                  <span className="text-xs bg-green-500 text-black px-2 py-0.5 rounded font-semibold">
+                    Hiring
+                  </span>
+                </Link>
+              </li>
+              <li>
                 <a href="#" className="hover:text-white transition-colors">
                   Partner With Us
                 </a>

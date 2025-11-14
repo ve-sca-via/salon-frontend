@@ -52,6 +52,7 @@ const Cart = lazy(() => import('./pages/public/Cart'));
 const Checkout = lazy(() => import('./pages/public/Checkout'));
 const Payment = lazy(() => import('./pages/public/Payment'));
 const BookingConfirmation = lazy(() => import('./pages/public/BookingConfirmation'));
+const Careers = lazy(() => import('./pages/public/Careers'));
 
 // Customer pages
 const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
@@ -106,6 +107,7 @@ function App() {
             <Route path="/checkout" element={<Checkout />} />
             <Route path="/payment" element={<Payment />} />
             <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+            <Route path="/careers" element={<Careers />} />
             
             {/* Authentication pages */}
             <Route path="/login" element={<Login />} />
