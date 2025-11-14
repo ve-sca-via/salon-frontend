@@ -15,6 +15,7 @@ import { reviewApi } from '../services/api/reviewApi';
 import { vendorApi } from '../services/api/vendorApi';
 import { rmApi } from '../services/api/rmApi';
 import { paymentApi } from '../services/api/paymentApi';
+import { configApi } from '../services/api/configApi';
 
 const authPersistConfig = {
   key: 'auth',
@@ -39,6 +40,7 @@ export const store = configureStore({
     [vendorApi.reducerPath]: vendorApi.reducer,
     [rmApi.reducerPath]: rmApi.reducer,
     [paymentApi.reducerPath]: paymentApi.reducer,
+    [configApi.reducerPath]: configApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -55,7 +57,8 @@ export const store = configureStore({
       .concat(reviewApi.middleware)
       .concat(vendorApi.middleware)
       .concat(rmApi.middleware)
-      .concat(paymentApi.middleware),
+      .concat(paymentApi.middleware)
+      .concat(configApi.middleware),
 });
 
 export const persistor = persistStore(store);

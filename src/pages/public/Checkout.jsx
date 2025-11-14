@@ -24,7 +24,8 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetCartQuery } from "../../services/api/cartApi";
-import { getBookingFeePercentage } from "../../services/backendApi";
+import { useGetPublicConfigsQuery } from "../../services/api/configApi";
+import { toast } from "react-toastify";
 import { showInfoToast } from "../../utils/toastConfig";
 
 export default function Checkout() {
@@ -33,10 +34,18 @@ export default function Checkout() {
   // Fetch cart data
   const { data: cart, isLoading, error } = useGetCartQuery();
   
+  // Fetch public configs
+  const { data: configs } = useGetPublicConfigsQuery();
+  
   // State for appointment selection
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimes, setSelectedTimes] = useState([]);
-  const [bookingFeePercentage, setBookingFeePercentage] = useState(10);
+
+  // Get booking fee from config or default to 10
+  const bookingFeePercentage = configs?.convenience_fee_percentage || 10;
+  
+  // Get max advance booking days from config or default to 30
+  const maxAdvanceDays = configs?.max_booking_advance_days || 30;
 
   // Redirect to cart if empty
   useEffect(() => {
@@ -46,26 +55,13 @@ export default function Checkout() {
     }
   }, [cart, isLoading, navigate]);
 
-  // Fetch booking fee percentage
-  useEffect(() => {
-    const fetchFee = async () => {
-      try {
-        const response = await getBookingFeePercentage();
-        setBookingFeePercentage(response.booking_fee_percentage || 10);
-      } catch (error) {
-        console.error("Failed to fetch booking fee:", error);
-      }
-    };
-    fetchFee();
-  }, []);
-
   /**
-   * Generate next 21 days for date selection
+   * Generate date selection based on max_booking_advance_days config
    */
   const generateDates = () => {
     const dates = [];
     const today = new Date();
-    for (let i = 0; i < 21; i++) {
+    for (let i = 0; i < maxAdvanceDays; i++) {
       const date = new Date(today);
       date.setDate(today.getDate() + i);
       dates.push({
