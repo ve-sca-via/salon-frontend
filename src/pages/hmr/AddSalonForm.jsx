@@ -19,10 +19,6 @@ import {
 } from '../../utils/salonFormConstants';
 import { FiUpload, FiMapPin, FiChevronLeft, FiChevronRight, FiCheck, FiPlus, FiTrash2, FiInfo, FiImage } from 'react-icons/fi';
 
-// ⚠️ EXCEPTION: Supabase used ONLY for image storage uploads (not auth/database)
-// TODO: Move image uploads to FastAPI backend endpoint to eliminate this dependency
-import { supabase } from '../../config/supabase';
-
 /**
  * AddSalonForm Component
  * 
@@ -166,21 +162,27 @@ const AddSalonForm = () => {
 
   const uploadToSupabase = async (file, folder) => {
     try {
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
-      const filePath = `${folder}/${fileName}`;
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      // Get auth token
+      const token = localStorage.getItem('access_token');
+      
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/api/upload/salon-image?folder=${folder}`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
 
-      const { data, error } = await supabase.storage
-        .from('salon-images')
-        .upload(filePath, file);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || 'Upload failed');
+      }
 
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('salon-images')
-        .getPublicUrl(filePath);
-
-      return publicUrl;
+      const data = await response.json();
+      return data.url;
     } catch (error) {
       console.error('Upload error:', error);
       throw error;

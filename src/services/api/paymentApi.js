@@ -1,7 +1,7 @@
 /**
  * Payment API - RTK Query
  * 
- * Handles all payment operations including Stripe integration.
+ * Handles all payment operations using Razorpay integration.
  */
 
 import { createApi } from '@reduxjs/toolkit/query/react';
@@ -10,37 +10,50 @@ import axiosBaseQuery from './baseQuery';
 export const paymentApi = createApi({
   reducerPath: 'paymentApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['PaymentHistory', 'PaymentIntent'],
+  tagTypes: ['PaymentHistory', 'VendorEarnings'],
   endpoints: (builder) => ({
-    // Create payment intent for booking
-    createPaymentIntent: builder.mutation({
+    // Booking Payment - Create Razorpay Order
+    createBookingOrder: builder.mutation({
+      query: (bookingId) => ({
+        url: '/api/payments/booking/create-order',
+        method: 'post',
+        data: { booking_id: bookingId },
+      }),
+    }),
+
+    // Booking Payment - Verify Razorpay Signature
+    verifyBookingPayment: builder.mutation({
       query: (paymentData) => ({
-        url: '/api/payments/create-intent',
+        url: '/api/payments/booking/verify',
         method: 'post',
         data: paymentData,
       }),
       invalidatesTags: [{ type: 'PaymentHistory', id: 'LIST' }],
-    }),
-
-    // Confirm payment after client-side Stripe processing
-    confirmPayment: builder.mutation({
-      query: ({ paymentIntentId, ...data }) => ({
-        url: `/api/payments/confirm/${paymentIntentId}`,
-        method: 'post',
-        data,
-      }),
-      invalidatesTags: [
-        { type: 'PaymentHistory', id: 'LIST' },
-        { type: 'PaymentIntent', id: 'ACTIVE' },
-      ],
-      // After payment confirmation, bookings need refresh
+      // After payment verification, bookings need refresh
       async onQueryStarted(arg, { dispatch, queryFulfilled }) {
         try {
           await queryFulfilled;
-          // Invalidate bookings cache since payment creates booking
+          // Invalidate bookings cache since payment confirms booking
           dispatch({ type: 'bookingApi/invalidateTags', payload: ['CustomerBookings'] });
         } catch {}
       },
+    }),
+
+    // Vendor Registration Payment - Create Order
+    createVendorRegistrationOrder: builder.mutation({
+      query: () => ({
+        url: '/api/payments/registration/create-order',
+        method: 'post',
+      }),
+    }),
+
+    // Vendor Registration Payment - Verify
+    verifyVendorRegistrationPayment: builder.mutation({
+      query: (paymentData) => ({
+        url: '/api/payments/registration/verify',
+        method: 'post',
+        data: paymentData,
+      }),
     }),
 
     // Get payment history for customer
@@ -61,37 +74,33 @@ export const paymentApi = createApi({
       refetchOnFocus: true,
     }),
 
-    // Get specific payment details
-    getPaymentById: builder.query({
-      query: (paymentId) => ({
-        url: `/api/payments/${paymentId}`,
-        method: 'get',
-      }),
-      providesTags: (result, error, id) => [{ type: 'PaymentHistory', id }],
-      keepUnusedDataFor: 300, // Cache for 5 minutes
-    }),
-
-    // Request refund for cancelled booking
-    requestRefund: builder.mutation({
-      query: ({ bookingId, reason }) => ({
-        url: '/api/payments/refund',
-        method: 'post',
-        data: { booking_id: bookingId, reason },
-      }),
-      invalidatesTags: (result, error, { bookingId }) => [
-        { type: 'PaymentHistory', id: 'LIST' },
-        { type: 'PaymentHistory', id: bookingId },
+    // Get vendor earnings
+    getVendorEarnings: builder.query({
+      query: ({ vendorId, startDate, endDate }) => {
+        const params = {};
+        if (startDate) params.start_date = startDate;
+        if (endDate) params.end_date = endDate;
+        return {
+          url: `/api/payments/vendor/${vendorId}/earnings`,
+          method: 'get',
+          params,
+        };
+      },
+      providesTags: (result, error, { vendorId }) => [
+        { type: 'VendorEarnings', id: vendorId },
       ],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
     }),
   }),
 });
 
 export const {
-  useCreatePaymentIntentMutation,
-  useConfirmPaymentMutation,
+  useCreateBookingOrderMutation,
+  useVerifyBookingPaymentMutation,
+  useCreateVendorRegistrationOrderMutation,
+  useVerifyVendorRegistrationPaymentMutation,
   useGetPaymentHistoryQuery,
-  useGetPaymentByIdQuery,
-  useRequestRefundMutation,
+  useGetVendorEarningsQuery,
 } = paymentApi;
 
 export default paymentApi;

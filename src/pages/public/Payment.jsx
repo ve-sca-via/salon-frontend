@@ -3,8 +3,8 @@
  * 
  * PURPOSE:
  * - Display payment summary
- * - Process payment with animated modal (3 steps: Initiating → Processing → Success)
- * - Create booking in database after successful payment
+ * - Process payment with Razorpay integration
+ * - Create booking in database after successful payment verification
  * - Clear cart automatically
  * - Navigate to booking confirmation
  * 
@@ -12,14 +12,16 @@
  * 1. Receives checkout data from navigation state
  * 2. Shows payment summary
  * 3. User clicks "Pay Now"
- * 4. Payment modal with 3-step animation (total 4 seconds)
- * 5. Creates booking via RTK Query
- * 6. Clears cart
- * 7. Navigates to /booking-confirmation with booking details
+ * 4. Creates Razorpay order via backend
+ * 5. Opens Razorpay Checkout modal
+ * 6. User completes payment
+ * 7. Verifies payment signature via backend
+ * 8. Clears cart
+ * 9. Navigates to /booking-confirmation with booking details
  * 
  * DATA:
  * - Receives: cart, selectedDate, selectedTimes, pricing from Checkout component
- * - Creates: booking via useCreateBookingMutation
+ * - Creates: Razorpay order, verifies payment, gets booking details
  * - Clears: cart via useClearCartMutation
  */
 
@@ -29,6 +31,7 @@ import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useCreateBookingMutation } from "../../services/api/bookingApi";
 import { useClearCartMutation } from "../../services/api/cartApi";
+import { useCreateBookingOrderMutation, useVerifyBookingPaymentMutation } from "../../services/api/paymentApi";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 
 export default function Payment() {
@@ -42,10 +45,12 @@ export default function Payment() {
   // Mutations
   const [createBooking, { isLoading: isCreatingBooking }] = useCreateBookingMutation();
   const [clearCartMutation] = useClearCartMutation();
+  const [createBookingOrder] = useCreateBookingOrderMutation();
+  const [verifyBookingPayment] = useVerifyBookingPaymentMutation();
   
-  // Payment modal state
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentStep, setPaymentStep] = useState(1); // 1: Initiating, 2: Processing, 3: Success
+  // State
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
 
   // Redirect if no checkout data or user not logged in
   useEffect(() => {
@@ -60,32 +65,47 @@ export default function Payment() {
     }
   }, [checkoutData, user, navigate]);
 
+  // Load Razorpay SDK
+  useEffect(() => {
+    const loadRazorpay = () => {
+      if (window.Razorpay) {
+        setRazorpayLoaded(true);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => setRazorpayLoaded(true);
+      script.onerror = () => {
+        console.error("Failed to load Razorpay SDK");
+        showErrorToast("Failed to load payment gateway", { position: "top-center" });
+      };
+      document.body.appendChild(script);
+    };
+
+    loadRazorpay();
+  }, []);
+
   if (!checkoutData) return null;
 
   const { cart, selectedDate, selectedTimes, bookingFeePercentage, pricing } = checkoutData;
   const { servicesTotalAmount, bookingFee, gst, totalBookingAmount, remainingAmount } = pricing;
 
   /**
-   * Process payment with 3-step animation
-   * Then create booking and navigate to confirmation
+   * Process payment with Razorpay
+   * Flow: Create booking → Create order → Open Razorpay → Verify payment
    */
   const handlePayNow = async () => {
-    setShowPaymentModal(true);
-    setPaymentStep(1);
+    if (!razorpayLoaded) {
+      showErrorToast("Payment gateway not loaded. Please refresh.", { position: "top-center" });
+      return;
+    }
+
+    setIsProcessing(true);
 
     try {
-      // Step 1: Initiating (1 second)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setPaymentStep(2);
-
-      // Step 2: Processing (2 seconds)
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      setPaymentStep(3);
-
-      // Step 3: Success (1 second)
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Prepare booking data
+      // Step 1: Create booking first (with pending payment status)
       const bookingData = {
         salon_id: cart.salon_id,
         booking_date: selectedDate,
@@ -104,37 +124,93 @@ export default function Payment() {
         gst_amount: gst,
         amount_paid: totalBookingAmount,
         remaining_amount: remainingAmount,
-        payment_status: 'paid',
-        payment_method: 'demo',
+        payment_status: 'pending', // Will be updated after payment verification
+        payment_method: 'razorpay',
         notes: `Cart checkout - ${cart.items.length} services | Booking Fee: ${bookingFeePercentage}%`,
       };
 
-      // Create booking
       const newBooking = await createBooking(bookingData).unwrap();
+      console.log("Booking created:", newBooking);
+
+      // Step 2: Create Razorpay order
+      const orderResponse = await createBookingOrder(newBooking.id).unwrap();
+      console.log("Razorpay order created:", orderResponse);
+
+      const { order_id, amount, currency, key_id } = orderResponse;
+
+      // Step 3: Open Razorpay Checkout
+      const options = {
+        key: key_id,
+        amount: amount,
+        currency: currency,
+        order_id: order_id,
+        name: "Vescavia Salon",
+        description: `Booking #${newBooking.id} - ${cart.items.length} service(s)`,
+        handler: async function (response) {
+          console.log("Razorpay payment success:", response);
+          await verifyPayment(response, newBooking);
+        },
+        prefill: {
+          name: user.full_name || user.email,
+          email: user.email,
+          contact: user.phone || "",
+        },
+        theme: {
+          color: "#FF6B35", // accent-orange
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+            showErrorToast("Payment cancelled", { position: "top-center" });
+          },
+        },
+      };
+
+      const razorpayInstance = new window.Razorpay(options);
+      razorpayInstance.open();
+    } catch (error) {
+      console.error("Payment initiation error:", error);
+      setIsProcessing(false);
+      showErrorToast(error?.data?.message || "Failed to initiate payment", {
+        position: "top-center",
+      });
+    }
+  };
+
+  /**
+   * Verify payment signature and update booking status
+   */
+  const verifyPayment = async (razorpayResponse, booking) => {
+    try {
+      const verifyData = {
+        razorpay_order_id: razorpayResponse.razorpay_order_id,
+        razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+        razorpay_signature: razorpayResponse.razorpay_signature,
+      };
+
+      const verifyResult = await verifyBookingPayment(verifyData).unwrap();
+      console.log("Payment verified:", verifyResult);
 
       // Clear cart
       await clearCartMutation().unwrap().catch(err => {
         console.warn("Cart clear failed after booking:", err);
       });
 
-      // Close modal
-      setShowPaymentModal(false);
-
       // Show success toast
-      showSuccessToast("Booking confirmed! 🎉", {
+      showSuccessToast("Payment successful! Booking confirmed 🎉", {
         position: "top-center",
         autoClose: 3000,
       });
 
       // Navigate to confirmation
       navigate("/booking-confirmation", {
-        state: { booking: newBooking },
+        state: { booking: verifyResult.booking },
         replace: true,
       });
     } catch (error) {
-      console.error("Payment/Booking error:", error);
-      setShowPaymentModal(false);
-      showErrorToast(error?.data?.message || "Payment failed. Please try again.", {
+      console.error("Payment verification error:", error);
+      setIsProcessing(false);
+      showErrorToast(error?.data?.message || "Payment verification failed", {
         position: "top-center",
       });
     }
@@ -237,76 +313,23 @@ export default function Payment() {
 
             <button
               onClick={handlePayNow}
-              disabled={isCreatingBooking || showPaymentModal}
+              disabled={isProcessing || !razorpayLoaded}
               className="w-full bg-accent-orange hover:opacity-90 text-primary-white font-body font-semibold text-[16px] py-3 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isCreatingBooking ? "Processing..." : "Pay Now"}
+              {isProcessing ? "Processing..." : razorpayLoaded ? "Pay Now" : "Loading..."}
             </button>
 
-            <p className="text-[11px] text-neutral-gray-500 text-center mt-3">
-              Demo payment - No actual charge
-            </p>
+            <div className="flex items-center justify-center gap-2 mt-3">
+              <svg className="w-4 h-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+              </svg>
+              <p className="text-[11px] text-neutral-gray-500">
+                Secure payment powered by Razorpay
+              </p>
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Payment Processing Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-neutral-black/50 flex items-center justify-center z-50">
-          <div className="bg-primary-white rounded-lg p-8 max-w-md w-full mx-4 text-center">
-            {/* Step 1: Initiating */}
-            {paymentStep === 1 && (
-              <>
-                <div className="w-16 h-16 bg-accent-orange/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-accent-orange"></div>
-                </div>
-                <h3 className="font-display font-bold text-[20px] text-neutral-black mb-2">
-                  Initiating Payment
-                </h3>
-                <p className="font-body text-[14px] text-neutral-gray-500">
-                  Please wait...
-                </p>
-              </>
-            )}
-
-            {/* Step 2: Processing */}
-            {paymentStep === 2 && (
-              <>
-                <div className="w-16 h-16 bg-accent-orange/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <div className="animate-pulse">
-                    <svg className="w-10 h-10 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </div>
-                </div>
-                <h3 className="font-display font-bold text-[20px] text-neutral-black mb-2">
-                  Processing Payment
-                </h3>
-                <p className="font-body text-[14px] text-neutral-gray-500">
-                  Securely processing your payment...
-                </p>
-              </>
-            )}
-
-            {/* Step 3: Success */}
-            {paymentStep === 3 && (
-              <>
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg className="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <h3 className="font-display font-bold text-[20px] text-neutral-black mb-2">
-                  Payment Successful!
-                </h3>
-                <p className="font-body text-[14px] text-neutral-gray-500">
-                  Creating your booking...
-                </p>
-              </>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
