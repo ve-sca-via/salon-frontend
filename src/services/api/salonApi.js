@@ -16,7 +16,7 @@ export const salonApi = createApi({
     // Get all public salons
     getSalons: builder.query({
       query: (filters = {}) => ({
-        url: '/api/salons/public',
+        url: '/api/v1/salons/public',
         method: 'get',
         params: filters,
       }),
@@ -34,7 +34,7 @@ export const salonApi = createApi({
     // Get single salon by ID
     getSalonById: builder.query({
       query: (salonId) => ({
-        url: `/api/salons/${salonId}`,
+        url: `/api/v1/salons/${salonId}`,
         method: 'get',
       }),
       providesTags: (result, error, id) => [{ type: 'SalonDetails', id }],
@@ -44,7 +44,7 @@ export const salonApi = createApi({
     // Search salons
     searchSalons: builder.query({
       query: ({ query, location, serviceType, lat, lon, radius, city, state, service_ids }) => ({
-        url: query ? '/api/salons/search/query' : '/api/salons/search/nearby',
+        url: query ? '/api/v1/salons/search/query' : '/api/v1/salons/search/nearby',
         method: 'get',
         params: { q: query, city: location || city, service_type: serviceType, lat, lon, radius, state, service_ids },
       }),
@@ -55,7 +55,7 @@ export const salonApi = createApi({
     // Get salon services
     getSalonServices: builder.query({
       query: (salonId) => ({
-        url: `/api/salons/${salonId}/services`,
+        url: `/api/v1/salons/${salonId}/services`,
         method: 'get',
       }),
       providesTags: (result, error, salonId) => [{ type: 'SalonServices', id: salonId }],
@@ -65,7 +65,7 @@ export const salonApi = createApi({
     // Get salon staff
     getSalonStaff: builder.query({
       query: (salonId) => ({
-        url: `/api/salons/${salonId}/staff`,
+        url: `/api/v1/salons/${salonId}/staff`,
         method: 'get',
       }),
       providesTags: (result, error, salonId) => [{ type: 'SalonStaff', id: salonId }],
@@ -75,7 +75,7 @@ export const salonApi = createApi({
     // Get salon available slots
     getSalonAvailableSlots: builder.query({
       query: ({ salonId, date, serviceIds }) => ({
-        url: `/api/salons/${salonId}/available-slots`,
+        url: `/api/v1/salons/${salonId}/available-slots`,
         method: 'get',
         params: { date, service_ids: serviceIds },
       }),
@@ -86,7 +86,7 @@ export const salonApi = createApi({
     // Get booking fee percentage
     getBookingFeePercentage: builder.query({
       query: () => ({
-        url: '/api/salons/config/booking-fee-percentage',
+        url: '/api/v1/salons/config/booking-fee-percentage',
         method: 'get',
       }),
       keepUnusedDataFor: 3600, // Cache for 1 hour (config doesn't change often)

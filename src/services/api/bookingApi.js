@@ -16,7 +16,7 @@ export const bookingApi = createApi({
     // Get customer's bookings
     getMyBookings: builder.query({
       query: () => ({
-        url: '/api/customers/bookings/my-bookings',
+        url: '/api/v1/customers/bookings/my-bookings',
         method: 'get',
       }),
       providesTags: (result) =>
@@ -35,7 +35,7 @@ export const bookingApi = createApi({
     // Create a booking
     createBooking: builder.mutation({
       query: (bookingData) => ({
-        url: '/api/bookings',
+        url: '/api/v1/bookings',
         method: 'post',
         data: bookingData,
       }),
@@ -55,7 +55,7 @@ export const bookingApi = createApi({
     // Cancel a booking
     cancelBooking: builder.mutation({
       query: (bookingId) => ({
-        url: `/api/customers/bookings/${bookingId}/cancel`,
+        url: `/api/v1/customers/bookings/${bookingId}/cancel`,
         method: 'put',
       }),
       // Optimistic update - immediately update UI
@@ -83,7 +83,7 @@ export const bookingApi = createApi({
     // Get customer bookings (alternative endpoint)
     getCustomerBookings: builder.query({
       query: () => ({
-        url: '/api/customers/bookings/my-bookings',
+        url: '/api/v1/customers/bookings/my-bookings',
         method: 'get',
       }),
       providesTags: [{ type: 'CustomerBookings', id: 'LIST' }],

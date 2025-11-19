@@ -17,7 +17,7 @@ export const configApi = createApi({
     // Get all public configs
     getPublicConfigs: builder.query({
       query: () => ({
-        url: '/salons/config/public',
+        url: '/api/v1/salons/config/public',
         method: 'get',
       }),
       providesTags: ['Config'],

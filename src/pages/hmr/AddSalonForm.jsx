@@ -12,6 +12,7 @@ import {
   useGetVendorRequestByIdQuery,
   useGetServiceCategoriesQuery
 } from '../../services/api/rmApi';
+import { uploadSalonImage } from '../../services/api/uploadApi';
 import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../../utils/toastConfig';
 import { 
   INDIAN_STATES, 
@@ -160,35 +161,6 @@ const AddSalonForm = () => {
     }
   }, [draftId, draftData, reset]);
 
-  const uploadToSupabase = async (file, folder) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      
-      // Get auth token
-      const token = localStorage.getItem('access_token');
-      
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000'}/api/upload/salon-image?folder=${folder}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || 'Upload failed');
-      }
-
-      const data = await response.json();
-      return data.url;
-    } catch (error) {
-      console.error('Upload error:', error);
-      throw error;
-    }
-  };
-
   const handleImageUpload = async (e, type) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -196,7 +168,7 @@ const AddSalonForm = () => {
     setUploading(true);
     try {
       if (type === 'cover') {
-        const url = await uploadToSupabase(files[0], 'covers');
+        const url = await uploadSalonImage(files[0], 'covers');
         setCoverImage(url);
         showSuccessToast('Cover image uploaded!');
       } else if (type === 'logo') {
@@ -252,11 +224,76 @@ const AddSalonForm = () => {
         }
       }
 
-      // Prepare vendor request data matching backend schema
+      // Helper: Parse business hours to get opening/closing times
+      const parseBusinessHours = () => {
+        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const workingDays = [];
+        let opening_time = null;
+        let closing_time = null;
+        
+        // Helper to convert 12-hour to 24-hour format (HH:MM:SS)
+        const convertTo24Hour = (time12h) => {
+          if (!time12h) return null;
+          
+          const [time, period] = time12h.split(' ');
+          let [hours, minutes] = time.split(':').map(Number);
+          
+          if (period === 'PM' && hours !== 12) {
+            hours += 12;
+          } else if (period === 'AM' && hours === 12) {
+            hours = 0;
+          }
+          
+          return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+        };
+        
+        days.forEach(day => {
+          const hours = data[day];
+          if (hours && hours !== 'Closed') {
+            // Add to working days (capitalize first letter)
+            workingDays.push(day.charAt(0).toUpperCase() + day.slice(1));
+            
+            // Parse time range: "9:00 AM - 6:00 PM"
+            if (hours.includes(' - ')) {
+              const [open, close] = hours.split(' - ').map(t => t.trim());
+              
+              // Use first non-closed day's hours as representative times
+              if (!opening_time) opening_time = convertTo24Hour(open);
+              if (!closing_time) closing_time = convertTo24Hour(close);
+            }
+          }
+        });
+        
+        return { opening_time, closing_time, working_days: workingDays };
+      };
+      
+      const { opening_time, closing_time, working_days } = parseBusinessHours();
+      
+      // Helper: Convert services to services_offered JSONB format
+      const convertServicesToOffered = () => {
+        const offered = {};
+        services
+          .filter(s => s.name && s.price)
+          .forEach(s => {
+            const category = s.category || 'general';
+            if (!offered[category]) {
+              offered[category] = [];
+            }
+            offered[category].push({
+              name: s.name,
+              price: parseFloat(s.price),
+              duration_minutes: parseInt(s.duration_minutes) || 30,
+              description: s.description || '',
+            });
+          });
+        return Object.keys(offered).length > 0 ? offered : null;
+      };
+      
+      // Prepare vendor request data matching NEW backend schema
       const vendorRequestData = {
-        // Required fields matching VendorJoinRequestCreate schema
+        // Required fields
         business_name: data.name,
-        business_type: 'salon', // Default to salon
+        business_type: 'salon',
         owner_name: data.owner_name || user?.name || user?.full_name || 'Owner',
         owner_email: data.owner_email || data.email,
         owner_phone: data.owner_phone || data.phone,
@@ -265,40 +302,32 @@ const AddSalonForm = () => {
         state: data.state,
         pincode: data.pincode,
         
-        // Optional fields
+        // Optional location
         latitude: null,
         longitude: null,
-        gst_number: data.gst_number || null,
-        business_license: data.business_license || null,
         
-        // Store additional data in documents field
+        // Legal
+        gst_number: data.gst_number || null,
+        pan_number: data.pan_number || null,
+        business_license: data.business_license || null,
+        registration_certificate: data.registration_certificate || null,
+        
+        // NEW: Media fields (direct columns)
+        cover_image_url: coverImage || null,
+        gallery_images: uploadedImages.length > 0 ? uploadedImages : null,
+        
+        // NEW: Operations fields (direct columns)
+        services_offered: convertServicesToOffered(),
+        staff_count: data.staff_count ? parseInt(data.staff_count) : 1,
+        opening_time: opening_time,
+        closing_time: closing_time,
+        working_days: working_days.length > 0 ? working_days : null,
+        
+        // Documents JSONB (for additional info only)
         documents: {
           description: data.description || '',
           email: data.email,
           phone: data.phone,
-          cover_image: coverImage || null,
-          logo: logo || null,
-          images: uploadedImages.length > 0 ? uploadedImages : [],
-          business_hours: {
-            monday: data.monday || '9:00 AM - 6:00 PM',
-            tuesday: data.tuesday || '9:00 AM - 6:00 PM',
-            wednesday: data.wednesday || '9:00 AM - 6:00 PM',
-            thursday: data.thursday || '9:00 AM - 6:00 PM',
-            friday: data.friday || '9:00 AM - 6:00 PM',
-            saturday: data.saturday || '9:00 AM - 6:00 PM',
-            sunday: data.sunday || 'Closed',
-          },
-          services: services
-            .filter(s => s.name && s.price)
-            .map(s => ({
-              name: s.name,
-              category: s.category,
-              price: parseFloat(s.price),
-              duration_minutes: parseInt(s.duration_minutes) || 30,
-              description: s.description || '',
-              discounted_price: s.discounted_price ? parseFloat(s.discounted_price) : null,
-            })),
-          specialties: services.map(s => s.category).filter((v, i, a) => a.indexOf(v) === i),
         },
       };
 

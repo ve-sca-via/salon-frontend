@@ -66,6 +66,7 @@ const AddSalonForm = lazy(() => import('./pages/hmr/AddSalonForm'));
 const Drafts = lazy(() => import('./pages/hmr/Drafts'));
 const SubmissionHistory = lazy(() => import('./pages/hmr/SubmissionHistory'));
 const RMProfile = lazy(() => import('./pages/hmr/RMProfile'));
+const RMLeaderboard = lazy(() => import('./pages/hmr/RMLeaderboard'));
 
 // Vendor pages
 const VendorDashboard = lazy(() => import('./pages/vendor/VendorDashboard'));
@@ -135,6 +136,7 @@ function App() {
             <Route path="/hmr/drafts" element={<RMProtectedRoute><Drafts /></RMProtectedRoute>} />
             <Route path="/hmr/submissions" element={<RMProtectedRoute><SubmissionHistory /></RMProtectedRoute>} />
             <Route path="/hmr/profile" element={<RMProtectedRoute><RMProfile /></RMProtectedRoute>} />
+            <Route path="/hmr/leaderboard" element={<RMProtectedRoute><RMLeaderboard /></RMProtectedRoute>} />
 
             {/* ============================================
                 VENDOR PROTECTED ROUTES

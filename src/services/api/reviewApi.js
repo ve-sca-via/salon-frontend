@@ -15,7 +15,7 @@ export const reviewApi = createApi({
     // Get customer's own reviews
     getMyReviews: builder.query({
       query: () => ({
-        url: '/api/customers/reviews/my-reviews',
+        url: '/api/v1/customers/reviews/my-reviews',
         method: 'get',
       }),
       providesTags: ['MyReviews'],
@@ -25,7 +25,7 @@ export const reviewApi = createApi({
     // Create a review
     createReview: builder.mutation({
       query: (reviewData) => ({
-        url: '/api/customers/reviews',
+        url: '/api/v1/customers/reviews',
         method: 'post',
         data: reviewData,
       }),
@@ -35,7 +35,7 @@ export const reviewApi = createApi({
     // Update a review
     updateReview: builder.mutation({
       query: ({ reviewId, ...reviewData }) => ({
-        url: `/api/customers/reviews/${reviewId}`,
+        url: `/api/v1/customers/reviews/${reviewId}`,
         method: 'put',
         data: reviewData,
       }),

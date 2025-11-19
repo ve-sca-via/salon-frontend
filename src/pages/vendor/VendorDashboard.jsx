@@ -10,12 +10,14 @@
  * - Analytics data from RTK Query (useGetVendorAnalyticsQuery)
  * - Recent bookings from RTK Query (useGetVendorBookingsQuery)
  * - Auth state from Redux (user display name)
+ * - Real-time booking updates via Supabase subscription
  * 
  * Key Features:
  * - Payment status check for new vendors (registration fee)
  * - Analytics cards (bookings, revenue, services, staff, rating, pending)
  * - Quick action links (add service, add staff, view bookings)
  * - Recent bookings table (last 5 bookings)
+ * - Real-time notifications for new bookings
  * - Responsive grid layouts
  * 
  * User Flow:
@@ -23,9 +25,10 @@
  * 2. If payment pending: sees payment CTA and limited access
  * 3. If payment complete: sees full analytics and bookings
  * 4. Can navigate to manage services, staff, or bookings
+ * 5. Receives real-time notifications when customers book
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -34,12 +37,15 @@ import Button from '../../components/shared/Button';
 import { 
   useGetVendorAnalyticsQuery, 
   useGetVendorBookingsQuery, 
-  useGetVendorSalonQuery 
+  useGetVendorSalonQuery,
+  useUpdateVendorSalonMutation
 } from '../../services/api/vendorApi';
 import { 
   FiCalendar, FiDollarSign, FiShoppingBag, FiUsers, 
   FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle, FiLock
 } from 'react-icons/fi';
+import { toast } from 'react-toastify';
+import { supabase } from '../../config/supabase';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
@@ -50,7 +56,10 @@ const VendorDashboard = () => {
   // RTK Query hooks for fetching salon data
   const { data: salonData, isLoading: salonLoading, error: salonError } = useGetVendorSalonQuery();
   const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useGetVendorAnalyticsQuery();
-  const { data: bookingsData, isLoading: bookingsLoading } = useGetVendorBookingsQuery({ limit: 5 });
+  const { data: bookingsData, isLoading: bookingsLoading, refetch: refetchBookings } = useGetVendorBookingsQuery({ limit: 5 });
+  
+  // Mutation for updating salon
+  const [updateSalon, { isLoading: isUpdating }] = useUpdateVendorSalonMutation();
   
   // Handle different response formats from API
   const salonProfile = salonData?.salon || salonData;
@@ -58,15 +67,73 @@ const VendorDashboard = () => {
   const analytics = analyticsData?.data || analyticsData;
   const bookings = bookingsData?.bookings || [];
 
-  // Debug logging
-  console.log('🔍 Dashboard Debug:', {
-    salonData: salonData,
-    salonProfile: salonProfile,
-    salonError: salonError,
-    is_verified: salonProfile?.is_verified,
-    is_active: salonProfile?.is_active,
-    registration_fee_paid: salonProfile?.registration_fee_paid,
-  });
+  /**
+   * Real-time subscription for new bookings
+   * Listens to INSERT events on bookings table and refetches data
+   */
+  useEffect(() => {
+    if (!salonProfile?.id) return;
+
+    // Subscribe to new bookings for this salon
+    const bookingSubscription = supabase
+      .channel(`bookings:salon_id=eq.${salonProfile.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'bookings',
+          filter: `salon_id=eq.${salonProfile.id}`
+        },
+        (payload) => {
+          console.log('New booking received!', payload);
+          
+          // Show toast notification
+          toast.success(
+            `🔔 New booking from ${payload.new.customer_name || 'a customer'}!`,
+            {
+              position: 'top-right',
+              autoClose: 5000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+            }
+          );
+          
+          // Refetch bookings and analytics to update dashboard
+          refetchBookings();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(bookingSubscription);
+    };
+  }, [salonProfile?.id, refetchBookings]);
+
+  /**
+   * Toggle accepting_bookings status
+   */
+  const handleToggleAcceptingBookings = async () => {
+    try {
+      const newStatus = !salonProfile.accepting_bookings;
+      await updateSalon({ accepting_bookings: newStatus }).unwrap();
+      toast.success(
+        newStatus 
+          ? 'Bookings enabled! Customers can now book your services.' 
+          : 'Bookings disabled. Customers cannot book until you enable it again.',
+        { position: 'top-center' }
+      );
+    } catch (error) {
+      toast.error(error?.data?.message || 'Failed to update booking status', {
+        position: 'top-center'
+      });
+    }
+  };
+
+
 
   /**
    * Check if vendor needs to complete payment
@@ -74,10 +141,6 @@ const VendorDashboard = () => {
    */
   const isPaymentPending = salonProfile && (!salonProfile.is_active || !salonProfile.registration_fee_paid);
 
-  console.log('� Payment Status:', {
-    isPaymentPending: isPaymentPending,
-    calculation: salonProfile ? `!${salonProfile.is_active} || !${salonProfile.registration_fee_paid}` : 'no salon'
-  });
 
   /**
    * handleMakePayment - Navigate to vendor payment page
@@ -210,6 +273,49 @@ const VendorDashboard = () => {
               </p>
             </div>
           </div>
+
+          {/* Accepting Bookings Toggle Card */}
+          <Card className={`border-2 ${salonProfile?.accepting_bookings ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+                  salonProfile?.accepting_bookings ? 'bg-green-500' : 'bg-orange-500'
+                }`}>
+                  {salonProfile?.accepting_bookings ? (
+                    <FiCheckCircle className="text-white text-3xl" />
+                  ) : (
+                    <FiLock className="text-white text-3xl" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="text-xl font-display font-bold text-gray-900 mb-1">
+                    {salonProfile?.accepting_bookings ? 'Accepting Bookings' : 'Bookings Disabled'}
+                  </h3>
+                  <p className="text-sm text-gray-600 font-body">
+                    {salonProfile?.accepting_bookings 
+                      ? 'Customers can book your services right now' 
+                      : 'Customers cannot book until you enable bookings'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={handleToggleAcceptingBookings}
+                disabled={isUpdating}
+                className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                  salonProfile?.accepting_bookings 
+                    ? 'bg-green-600 focus:ring-green-500' 
+                    : 'bg-gray-300 focus:ring-gray-400'
+                } ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+              >
+                <span className="sr-only">Toggle accepting bookings</span>
+                <span
+                  className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform ${
+                    salonProfile?.accepting_bookings ? 'translate-x-11' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </Card>
 
           {/* Analytics Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

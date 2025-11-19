@@ -62,23 +62,33 @@ function CartItem({ item, onIncrement, onDecrement, onRemove }) {
         {/* Service Details */}
         <div className="flex-1">
           <h4 className="font-body font-semibold text-[16px] text-neutral-black mb-1">
-            {item.service_name}
+            {item.service_details?.name || item.service_name || 'Service'}
           </h4>
           <div className="flex items-center gap-2 mb-1">
-            <span className="px-2 py-1 bg-bg-secondary text-neutral-black font-body text-[12px] rounded">
-              {item.category}
-            </span>
-            <span className="text-neutral-gray-500 font-body text-[12px]">•</span>
+            {item.service_details?.duration_minutes && (
+              <>
+                <span className="px-2 py-1 bg-bg-secondary text-neutral-black font-body text-[12px] rounded">
+                  {item.service_details.duration_minutes} mins
+                </span>
+                <span className="text-neutral-gray-500 font-body text-[12px]">•</span>
+              </>
+            )}
             <span className="text-neutral-gray-500 font-body text-[12px]">
-              {item.plan_name}
+              {item.salon_details?.business_name || 'Salon'}
             </span>
           </div>
-          <p className="font-body text-[13px] text-neutral-gray-500 mb-2">
-            {item.description}
-          </p>
+          {item.salon_details?.city && (
+            <p className="font-body text-[13px] text-neutral-gray-500 mb-2">
+              {item.salon_details.city}, {item.salon_details.state}
+            </p>
+          )}
           <p className="font-body text-[14px] text-accent-orange font-semibold">
-            ₹{item.price}{" "}
-            <span className="text-neutral-gray-500 text-[12px]">+ GST</span>
+            ₹{item.unit_price || item.price}{" "}
+            {item.quantity > 1 && (
+              <span className="text-neutral-gray-500 text-[12px]">
+                x {item.quantity} = ₹{item.line_total}
+              </span>
+            )}
           </p>
         </div>
 

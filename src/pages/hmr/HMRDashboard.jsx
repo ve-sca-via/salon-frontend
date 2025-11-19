@@ -6,7 +6,7 @@ import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import { useGetRMProfileQuery, useGetOwnVendorRequestsQuery } from '../../services/api/rmApi';
 import { showErrorToast, showSuccessToast } from '../../utils/toastConfig';
-import { FiCheckCircle, FiClock, FiXCircle, FiPlusCircle } from 'react-icons/fi';
+import { FiCheckCircle, FiClock, FiXCircle, FiPlusCircle, FiAward } from 'react-icons/fi';
 
 /**
  * HMR Dashboard
@@ -59,11 +59,18 @@ const HMRDashboard = () => {
             Welcome, {user?.full_name || user?.name || 'Agent'}!
           </h1>
           <p className="text-white/90 mb-6">Track your salon submissions and help grow our network</p>
-          <Link to="/hmr/add-salon">
-            <Button variant="secondary" className="bg-neutral-black hover:bg-neutral-gray-400" aria-label="Add new salon">
-              <FiPlusCircle className="mr-2" />Add New Salon
-            </Button>
-          </Link>
+          <div className="flex gap-4">
+            <Link to="/hmr/add-salon">
+              <Button variant="secondary" className="bg-neutral-black hover:bg-neutral-gray-400" aria-label="Add new salon">
+                <FiPlusCircle className="mr-2" />Add New Salon
+              </Button>
+            </Link>
+            <Link to="/hmr/leaderboard">
+              <Button variant="secondary" className="bg-white text-accent-orange hover:bg-gray-100" aria-label="View leaderboard">
+                <FiAward className="mr-2" />View Leaderboard
+              </Button>
+            </Link>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-none shadow-md">

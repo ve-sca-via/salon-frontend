@@ -15,7 +15,7 @@ export const vendorApi = createApi({
     // Get vendor's salon
     getVendorSalon: builder.query({
       query: () => ({
-        url: '/api/vendors/salon',
+        url: '/api/v1/vendors/salon',
         method: 'get',
       }),
       providesTags: ['VendorSalon'],
@@ -25,7 +25,7 @@ export const vendorApi = createApi({
     // Update vendor salon
     updateVendorSalon: builder.mutation({
       query: (salonData) => ({
-        url: '/api/vendors/salon',
+        url: '/api/v1/vendors/salon',
         method: 'put',
         data: salonData,
       }),
@@ -35,7 +35,7 @@ export const vendorApi = createApi({
     // Get service categories
     getServiceCategories: builder.query({
       query: () => ({
-        url: '/api/vendors/service-categories',
+        url: '/api/v1/vendors/service-categories',
         method: 'get',
       }),
       providesTags: ['ServiceCategories'],
@@ -45,7 +45,7 @@ export const vendorApi = createApi({
     // Get vendor's services
     getVendorServices: builder.query({
       query: () => ({
-        url: '/api/vendors/services',
+        url: '/api/v1/vendors/services',
         method: 'get',
       }),
       providesTags: (result) =>
@@ -61,7 +61,7 @@ export const vendorApi = createApi({
     // Create service
     createVendorService: builder.mutation({
       query: (serviceData) => ({
-        url: '/api/vendors/services',
+        url: '/api/v1/vendors/services',
         method: 'post',
         data: serviceData,
       }),
@@ -71,7 +71,7 @@ export const vendorApi = createApi({
     // Update service
     updateVendorService: builder.mutation({
       query: ({ serviceId, ...serviceData }) => ({
-        url: `/api/vendors/services/${serviceId}`,
+        url: `/api/v1/vendors/services/${serviceId}`,
         method: 'put',
         data: serviceData,
       }),
@@ -84,7 +84,7 @@ export const vendorApi = createApi({
     // Delete service
     deleteVendorService: builder.mutation({
       query: (serviceId) => ({
-        url: `/api/vendors/services/${serviceId}`,
+        url: `/api/v1/vendors/services/${serviceId}`,
         method: 'delete',
       }),
       invalidatesTags: [{ type: 'VendorServices', id: 'LIST' }],
@@ -93,7 +93,7 @@ export const vendorApi = createApi({
     // Get vendor's staff
     getVendorStaff: builder.query({
       query: () => ({
-        url: '/api/vendors/staff',
+        url: '/api/v1/vendors/staff',
         method: 'get',
       }),
       providesTags: (result) =>
@@ -109,7 +109,7 @@ export const vendorApi = createApi({
     // Create staff member
     createVendorStaff: builder.mutation({
       query: (staffData) => ({
-        url: '/api/vendors/staff',
+        url: '/api/v1/vendors/staff',
         method: 'post',
         data: staffData,
       }),
@@ -119,7 +119,7 @@ export const vendorApi = createApi({
     // Update staff member
     updateVendorStaff: builder.mutation({
       query: ({ staffId, ...staffData }) => ({
-        url: `/api/vendors/staff/${staffId}`,
+        url: `/api/v1/vendors/staff/${staffId}`,
         method: 'put',
         data: staffData,
       }),
@@ -132,7 +132,7 @@ export const vendorApi = createApi({
     // Delete staff member
     deleteVendorStaff: builder.mutation({
       query: (staffId) => ({
-        url: `/api/vendors/staff/${staffId}`,
+        url: `/api/v1/vendors/staff/${staffId}`,
         method: 'delete',
       }),
       invalidatesTags: [{ type: 'VendorStaff', id: 'LIST' }],
@@ -141,7 +141,7 @@ export const vendorApi = createApi({
     // Get vendor's bookings
     getVendorBookings: builder.query({
       query: ({ status, limit = 50, offset = 0 } = {}) => ({
-        url: '/api/vendors/bookings',
+        url: '/api/v1/vendors/bookings',
         method: 'get',
         params: { status, limit, offset },
       }),
@@ -153,7 +153,7 @@ export const vendorApi = createApi({
     // Update booking status
     updateBookingStatus: builder.mutation({
       query: ({ bookingId, status }) => ({
-        url: `/api/vendors/bookings/${bookingId}/status`,
+        url: `/api/v1/vendors/bookings/${bookingId}/status`,
         method: 'put',
         data: { status },
       }),
@@ -163,7 +163,7 @@ export const vendorApi = createApi({
     // Get vendor analytics
     getVendorAnalytics: builder.query({
       query: () => ({
-        url: '/api/vendors/analytics',
+        url: '/api/v1/vendors/analytics',
         method: 'get',
       }),
       providesTags: ['VendorAnalytics'],
@@ -174,7 +174,7 @@ export const vendorApi = createApi({
     // Process vendor payment (demo)
     processVendorPayment: builder.mutation({
       query: () => ({
-        url: '/api/vendors/process-payment',
+        url: '/api/v1/vendors/process-payment',
         method: 'post',
       }),
       invalidatesTags: ['VendorSalon'],
@@ -183,7 +183,7 @@ export const vendorApi = createApi({
     // Complete vendor registration
     completeVendorRegistration: builder.mutation({
       query: (data) => ({
-        url: '/api/vendors/complete-registration',
+        url: '/api/v1/vendors/complete-registration',
         method: 'post',
         data,
       }),

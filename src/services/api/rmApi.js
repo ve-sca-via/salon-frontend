@@ -15,7 +15,7 @@ export const rmApi = createApi({
     // Submit vendor join request
     submitVendorRequest: builder.mutation({
       query: ({ requestData, isDraft = false }) => ({
-        url: `/api/rm/vendor-requests${isDraft ? '?is_draft=true' : ''}`,
+        url: `/api/v1/rm/vendor-requests${isDraft ? '?is_draft=true' : ''}`,
         method: 'post',
         data: requestData,
       }),
@@ -25,7 +25,7 @@ export const rmApi = createApi({
     // Get RM's own vendor requests
     getOwnVendorRequests: builder.query({
       query: ({ status_filter, limit = 50, offset = 0 } = {}) => ({
-        url: '/api/rm/vendor-requests',
+        url: '/api/v1/rm/vendor-requests',
         method: 'get',
         params: { status_filter: status_filter, limit, offset },
       }),
@@ -43,7 +43,7 @@ export const rmApi = createApi({
     // Get specific vendor request
     getVendorRequestById: builder.query({
       query: (requestId) => ({
-        url: `/api/rm/vendor-requests/${requestId}`,
+        url: `/api/v1/rm/vendor-requests/${requestId}`,
         method: 'get',
       }),
       providesTags: (result, error, id) => [{ type: 'VendorRequest', id }],
@@ -53,7 +53,7 @@ export const rmApi = createApi({
     // Update vendor request
     updateVendorRequest: builder.mutation({
       query: ({ requestId, requestData, submitForApproval = false }) => ({
-        url: `/api/rm/vendor-requests/${requestId}${submitForApproval ? '?submit_for_approval=true' : ''}`,
+        url: `/api/v1/rm/vendor-requests/${requestId}${submitForApproval ? '?submit_for_approval=true' : ''}`,
         method: 'put',
         data: requestData,
       }),
@@ -66,7 +66,7 @@ export const rmApi = createApi({
     // Delete vendor request
     deleteVendorRequest: builder.mutation({
       query: (requestId) => ({
-        url: `/api/rm/vendor-requests/${requestId}`,
+        url: `/api/v1/rm/vendor-requests/${requestId}`,
         method: 'delete',
       }),
       invalidatesTags: [{ type: 'VendorRequests', id: 'LIST' }],
@@ -75,7 +75,7 @@ export const rmApi = createApi({
     // Get RM profile and dashboard stats
     getRMProfile: builder.query({
       query: () => ({
-        url: '/api/rm/dashboard',
+        url: '/api/v1/rm/dashboard',
         method: 'get',
       }),
       providesTags: ['RMProfile'],
@@ -86,7 +86,7 @@ export const rmApi = createApi({
     // Update RM profile
     updateRMProfile: builder.mutation({
       query: (profileData) => ({
-        url: '/api/rm/profile',
+        url: '/api/v1/rm/profile',
         method: 'put',
         data: profileData,
       }),
@@ -96,7 +96,7 @@ export const rmApi = createApi({
     // Get RM score history
     getRMScoreHistory: builder.query({
       query: ({ limit = 50, offset = 0 } = {}) => ({
-        url: '/api/rm/score-history',
+        url: '/api/v1/rm/score-history',
         method: 'get',
         params: { limit, offset },
       }),
@@ -107,11 +107,34 @@ export const rmApi = createApi({
     // Get service categories for dropdown
     getServiceCategories: builder.query({
       query: () => ({
-        url: '/api/rm/service-categories',
+        url: '/api/v1/rm/service-categories',
         method: 'get',
       }),
       keepUnusedDataFor: 600, // Cache for 10 minutes (rarely changes)
       refetchOnFocus: false, // No need to refetch on focus
+    }),
+
+    // Get RM leaderboard
+    getRMLeaderboard: builder.query({
+      query: ({ limit = 20 } = {}) => ({
+        url: '/api/v1/rm/leaderboard',
+        method: 'get',
+        params: { limit },
+      }),
+      keepUnusedDataFor: 300, // Cache for 5 minutes
+      refetchOnFocus: true,
+    }),
+
+    // Get RM's salons list
+    getRMSalons: builder.query({
+      query: ({ includeInactive = false } = {}) => ({
+        url: '/api/v1/rm/salons',
+        method: 'get',
+        params: { include_inactive: includeInactive },
+      }),
+      providesTags: ['RMProfile'],
+      keepUnusedDataFor: 300, // Cache for 5 minutes
+      refetchOnFocus: true,
     }),
   }),
 });
@@ -126,6 +149,8 @@ export const {
   useUpdateRMProfileMutation,
   useGetRMScoreHistoryQuery,
   useGetServiceCategoriesQuery,
+  useGetRMLeaderboardQuery,
+  useGetRMSalonsQuery,
 } = rmApi;
 
 export default rmApi;

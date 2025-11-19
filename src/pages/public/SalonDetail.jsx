@@ -686,10 +686,16 @@ export default function SalonDetail() {
               {/* Book Services Button */}
               <button
                 onClick={() => navigate(`/salons/${salon.id}/book`)}
-                className="w-full bg-accent-orange hover:opacity-90 text-white font-body font-semibold text-[16px] py-3 rounded-lg transition-opacity"
+                disabled={!salon.is_active || !salon.accepting_bookings}
+                className="w-full bg-accent-orange hover:opacity-90 text-white font-body font-semibold text-[16px] py-3 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Book Services
+                {!salon.is_active || !salon.accepting_bookings ? 'Bookings Not Available' : 'Book Services'}
               </button>
+              {(!salon.is_active || !salon.accepting_bookings) && (
+                <p className="text-center text-[12px] text-neutral-gray-500 mt-2">
+                  This salon is not accepting bookings at the moment
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -16,7 +16,7 @@ export const authApi = createApi({
     // Login mutation
     login: builder.mutation({
       query: (credentials) => ({
-        url: '/api/auth/login',
+        url: '/api/v1/auth/login',
         method: 'POST',
         data: credentials,
       }),
@@ -26,7 +26,7 @@ export const authApi = createApi({
     // Signup mutation
     signup: builder.mutation({
       query: (userData) => ({
-        url: '/api/auth/signup',
+        url: '/api/v1/auth/signup',
         method: 'POST',
         data: userData,
       }),
@@ -36,7 +36,7 @@ export const authApi = createApi({
     // Get current user profile
     getCurrentUser: builder.query({
       query: () => ({
-        url: '/api/auth/me',
+        url: '/api/v1/auth/me',
         method: 'GET',
       }),
       providesTags: ['User'],
@@ -47,7 +47,7 @@ export const authApi = createApi({
     // Logout mutation
     logout: builder.mutation({
       query: () => ({
-        url: '/api/auth/logout',
+        url: '/api/v1/auth/logout',
         method: 'POST',
       }),
       // Clear all cache on logout
@@ -67,7 +67,7 @@ export const authApi = createApi({
     // Logout from all devices
     logoutAll: builder.mutation({
       query: (password) => ({
-        url: '/api/auth/logout-all',
+        url: '/api/v1/auth/logout-all',
         method: 'POST',
         data: { password },
       }),
@@ -86,7 +86,7 @@ export const authApi = createApi({
     // Refresh token (manual call - usually handled by apiClient interceptor)
     refreshToken: builder.mutation({
       query: (refreshToken) => ({
-        url: '/api/auth/refresh',
+        url: '/api/v1/auth/refresh',
         method: 'POST',
         data: { refresh_token: refreshToken },
       }),

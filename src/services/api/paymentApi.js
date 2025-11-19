@@ -12,10 +12,18 @@ export const paymentApi = createApi({
   baseQuery: axiosBaseQuery(),
   tagTypes: ['PaymentHistory', 'VendorEarnings'],
   endpoints: (builder) => ({
+    // Cart Checkout Payment - Create Razorpay Order
+    createCartPaymentOrder: builder.mutation({
+      query: () => ({
+        url: '/api/v1/payments/cart/create-order',
+        method: 'post',
+      }),
+    }),
+
     // Booking Payment - Create Razorpay Order
     createBookingOrder: builder.mutation({
       query: (bookingId) => ({
-        url: '/api/payments/booking/create-order',
+        url: '/api/v1/payments/booking/create-order',
         method: 'post',
         data: { booking_id: bookingId },
       }),
@@ -24,7 +32,7 @@ export const paymentApi = createApi({
     // Booking Payment - Verify Razorpay Signature
     verifyBookingPayment: builder.mutation({
       query: (paymentData) => ({
-        url: '/api/payments/booking/verify',
+        url: '/api/v1/payments/booking/verify',
         method: 'post',
         data: paymentData,
       }),
@@ -42,7 +50,7 @@ export const paymentApi = createApi({
     // Vendor Registration Payment - Create Order
     createVendorRegistrationOrder: builder.mutation({
       query: () => ({
-        url: '/api/payments/registration/create-order',
+        url: '/api/v1/payments/registration/create-order',
         method: 'post',
       }),
     }),
@@ -50,7 +58,7 @@ export const paymentApi = createApi({
     // Vendor Registration Payment - Verify
     verifyVendorRegistrationPayment: builder.mutation({
       query: (paymentData) => ({
-        url: '/api/payments/registration/verify',
+        url: '/api/v1/payments/registration/verify',
         method: 'post',
         data: paymentData,
       }),
@@ -59,7 +67,7 @@ export const paymentApi = createApi({
     // Get payment history for customer
     getPaymentHistory: builder.query({
       query: ({ limit = 20, offset = 0 } = {}) => ({
-        url: '/api/payments/history',
+        url: '/api/v1/payments/history',
         method: 'get',
         params: { limit, offset },
       }),
@@ -81,7 +89,7 @@ export const paymentApi = createApi({
         if (startDate) params.start_date = startDate;
         if (endDate) params.end_date = endDate;
         return {
-          url: `/api/payments/vendor/${vendorId}/earnings`,
+          url: `/api/v1/payments/vendor/${vendorId}/earnings`,
           method: 'get',
           params,
         };
@@ -95,6 +103,7 @@ export const paymentApi = createApi({
 });
 
 export const {
+  useCreateCartPaymentOrderMutation,
   useCreateBookingOrderMutation,
   useVerifyBookingPaymentMutation,
   useCreateVendorRegistrationOrderMutation,

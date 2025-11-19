@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   FiHome, FiCalendar, FiShoppingBag, FiClock, FiMapPin,
   FiSettings, FiUsers, FiBarChart2, FiCheckCircle, FiFileText,
-  FiPlusCircle, FiList, FiUser, FiSave
+  FiPlusCircle, FiList, FiUser, FiSave, FiAward
 } from 'react-icons/fi';
 
 const Sidebar = ({ role, isOpen, onClose }) => {
@@ -38,6 +38,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
           { path: '/hmr/add-salon', icon: <FiPlusCircle />, label: 'Add Salon' },
           { path: '/hmr/drafts', icon: <FiSave />, label: 'Drafts' },
           { path: '/hmr/submissions', icon: <FiList />, label: 'My Submissions' },
+          { path: '/hmr/leaderboard', icon: <FiAward />, label: 'Leaderboard' },
           { path: '/hmr/profile', icon: <FiUser />, label: 'My Profile' },
         ];
       case 'admin':

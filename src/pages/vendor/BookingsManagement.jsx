@@ -9,6 +9,7 @@
  * - Bookings from RTK Query (useGetVendorBookingsQuery)
  * - Status updates via RTK Query mutation (useUpdateBookingStatusMutation)
  * - Local state for filters, search, and modal
+ * - Real-time booking updates via Supabase subscription
  * 
  * Key Features:
  * - Real-time booking statistics (total, pending, confirmed, completed, cancelled, revenue)
@@ -17,6 +18,7 @@
  * - Detailed booking view modal
  * - Responsive table layout
  * - Search by customer, service, or staff name
+ * - Real-time notifications for new bookings
  * 
  * User Flow:
  * 1. Vendor views all bookings with stats
@@ -24,9 +26,11 @@
  * 3. Can search for specific bookings
  * 4. Clicks "View Details" to see booking modal
  * 5. Can update status (confirm, complete, cancel) from modal
+ * 6. Receives real-time updates when new bookings arrive
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
@@ -34,6 +38,7 @@ import Modal from '../../components/shared/Modal';
 import { showSuccessToast, showErrorToast, showInfoToast } from '../../utils/toastConfig';
 import {
   useGetVendorBookingsQuery,
+  useGetVendorSalonQuery,
   useUpdateBookingStatusMutation,
 } from '../../services/api/vendorApi';
 import {
@@ -48,13 +53,16 @@ import {
   FiXCircle,
   FiAlertCircle,
 } from 'react-icons/fi';
+import { supabase } from '../../config/supabase';
 
 const BookingsManagement = () => {
   // RTK Query hooks
-  const { data: bookingsData, isLoading: bookingsLoading } = useGetVendorBookingsQuery();
+  const { data: bookingsData, isLoading: bookingsLoading, refetch: refetchBookings } = useGetVendorBookingsQuery();
+  const { data: salonData } = useGetVendorSalonQuery();
   const [updateBookingStatus, { isLoading: isUpdating }] = useUpdateBookingStatusMutation();
   
   const bookings = bookingsData?.bookings || [];
+  const salonProfile = salonData?.salon || salonData;
 
   // Local state for filters and modal
   const [searchTerm, setSearchTerm] = useState('');
@@ -62,6 +70,44 @@ const BookingsManagement = () => {
   const [dateFilter, setDateFilter] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+
+  /**
+   * Real-time subscription for new bookings
+   * Listens to INSERT events on bookings table and refetches data
+   */
+  useEffect(() => {
+    if (!salonProfile?.id) return;
+
+    // Subscribe to new bookings for this salon
+    const bookingSubscription = supabase
+      .channel(`bookings:salon_id=eq.${salonProfile.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'bookings',
+          filter: `salon_id=eq.${salonProfile.id}`
+        },
+        (payload) => {
+          console.log('New booking received!', payload);
+          
+          // Show toast notification with customer name
+          showSuccessToast(
+            `🔔 New booking from ${payload.new.customer_name || 'a customer'}!`
+          );
+          
+          // Refetch bookings to update the list
+          refetchBookings();
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(bookingSubscription);
+    };
+  }, [salonProfile?.id, refetchBookings]);
 
   /**
    * handleStatusUpdate - Updates booking status (confirm, complete, cancel)

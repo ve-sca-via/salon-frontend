@@ -18,7 +18,7 @@ export const cartApi = createApi({
     // Get all cart items
     getCart: builder.query({
       query: () => ({
-        url: '/api/customers/cart',
+        url: '/api/v1/customers/cart',
         method: 'get',
       }),
       providesTags: (result) =>
@@ -36,7 +36,7 @@ export const cartApi = createApi({
     // Add item to cart (or increment quantity if exists)
     addToCart: builder.mutation({
       query: (cartItem) => ({
-        url: '/api/customers/cart',
+        url: '/api/v1/customers/cart',
         method: 'post',
         data: cartItem,
       }),
@@ -47,7 +47,7 @@ export const cartApi = createApi({
     // Update cart item quantity
     updateCartItem: builder.mutation({
       query: ({ itemId, quantity }) => ({
-        url: `/api/customers/cart/${itemId}`,
+        url: `/api/v1/customers/cart/${itemId}`,
         method: 'put',
         data: { quantity },
       }),
@@ -87,7 +87,7 @@ export const cartApi = createApi({
     // Remove item from cart
     removeFromCart: builder.mutation({
       query: (itemId) => ({
-        url: `/api/customers/cart/${itemId}`,
+        url: `/api/v1/customers/cart/${itemId}`,
         method: 'delete',
       }),
       // Optimistic update
@@ -129,10 +129,21 @@ export const cartApi = createApi({
     // Clear entire cart
     clearCart: builder.mutation({
       query: () => ({
-        url: '/api/customers/cart/clear/all',
+        url: '/api/v1/customers/cart/clear/all',
         method: 'delete',
       }),
       // Invalidate all cart cache
+      invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
+    }),
+
+    // Checkout cart - create booking with payment details
+    checkoutCart: builder.mutation({
+      query: (checkoutData) => ({
+        url: '/api/v1/customers/cart/checkout',
+        method: 'post',
+        data: checkoutData,
+      }),
+      // Invalidate cart cache after successful checkout
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
   }),
@@ -144,6 +155,7 @@ export const {
   useUpdateCartItemMutation,
   useRemoveFromCartMutation,
   useClearCartMutation,
+  useCheckoutCartMutation,
 } = cartApi;
 
 export default cartApi;

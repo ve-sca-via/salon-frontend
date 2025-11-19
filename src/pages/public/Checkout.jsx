@@ -4,32 +4,66 @@
  * PURPOSE:
  * - Display cart summary from database
  * - Allow date and time slot selection for appointment
- * - Show pricing breakdown (service total, booking fee, GST, remaining)
- * - Navigate to payment on confirmation
+ * - Show pricing breakdown (service total, booking fee, GST)
+ * - Integrate Razorpay payment
+ * - Complete checkout after payment success
  * 
- * FLOW:
- * 1. User views cart items summary
- * 2. Selects appointment date (next 21 days)
- * 3. Selects time slots (up to 3, 15-min intervals)
- * 4. Reviews pricing breakdown
- * 5. Clicks "Proceed to Payment" → navigates to /payment with state
+ * COMPLETE PAYMENT FLOW (14 Steps):
+ * 1. User adds services to cart → POST /api/v1/customers/cart
+ * 2. User navigates to /checkout
+ * 3. Component fetches cart data → GET /api/v1/customers/cart
+ * 4. User selects appointment date (from config: max_booking_advance_days)
+ * 5. User selects time slots (up to 3, 15-min intervals)
+ * 6. Component displays pricing:
+ *    - Service Total: Sum of all service prices
+ *    - Booking Fee: 10% of service total (from config)
+ *    - GST: 18% of booking fee
+ *    - Pay Now: Booking Fee + GST (convenience fee)
+ *    - Pay at Salon: Service Total (full service amount)
+ * 7. User clicks "Proceed to Payment"
+ * 8. Component calls POST /api/v1/payments/cart/create-order
+ *    - Backend creates Razorpay order
+ *    - Returns: order_id, amount_paise, key_id
+ * 9. Component opens Razorpay modal with order details
+ * 10. User completes payment on Razorpay
+ * 11. Razorpay returns payment response:
+ *     - razorpay_order_id
+ *     - razorpay_payment_id
+ *     - razorpay_signature
+ * 12. Component calls POST /api/v1/customers/cart/checkout with:
+ *     - booking_date, time_slots
+ *     - razorpay_order_id, razorpay_payment_id, razorpay_signature
+ * 13. Backend:
+ *     - Verifies payment signature
+ *     - Creates booking from cart items
+ *     - Creates booking_payment record
+ *     - Clears cart
+ * 14. Component redirects to /customer/bookings
  * 
- * DATA:
- * - Cart data fetched via RTK Query
- * - Booking fee percentage fetched from backend
- * - All selections passed to Payment component via navigation state
+ * PAYMENT SPLIT MODEL:
+ * - Online Payment: Convenience fee (10% + GST) - Platform revenue
+ * - At Salon Payment: Full service amount - Vendor revenue
+ * 
+ * DATA SOURCES:
+ * - Cart data: RTK Query (useGetCartQuery)
+ * - Booking fee %: Backend config (convenience_fee_percentage)
+ * - Max advance days: Backend config (max_booking_advance_days)
+ * - Razorpay key: Backend config (razorpay_key_id)
  */
 
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
-import { useGetCartQuery } from "../../services/api/cartApi";
+import { useGetCartQuery, useCheckoutCartMutation } from "../../services/api/cartApi";
+import { useCreateCartPaymentOrderMutation } from "../../services/api/paymentApi";
 import { useGetPublicConfigsQuery } from "../../services/api/configApi";
 import { toast } from "react-toastify";
 import { showInfoToast } from "../../utils/toastConfig";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const { user } = useSelector((state) => state.auth);
   
   // Fetch cart data
   const { data: cart, isLoading, error } = useGetCartQuery();
@@ -37,9 +71,14 @@ export default function Checkout() {
   // Fetch public configs
   const { data: configs } = useGetPublicConfigsQuery();
   
+  // Mutations
+  const [createPaymentOrder, { isLoading: isCreatingOrder }] = useCreateCartPaymentOrderMutation();
+  const [checkoutCart, { isLoading: isCheckingOut }] = useCheckoutCartMutation();
+  
   // State for appointment selection
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimes, setSelectedTimes] = useState([]);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Get booking fee from config or default to 10
   const bookingFeePercentage = configs?.convenience_fee_percentage || 10;
@@ -125,9 +164,9 @@ export default function Checkout() {
   };
 
   /**
-   * Proceed to payment with all checkout data
+   * Handle Razorpay payment and checkout
    */
-  const handleProceedToPayment = () => {
+  const handleProceedToPayment = async () => {
     // Validate selections
     if (!selectedDate) {
       toast.error("Please select a date for your appointment", {
@@ -142,22 +181,76 @@ export default function Checkout() {
       return;
     }
 
-    // Navigate to payment with checkout data
-    navigate("/payment", {
-      state: {
-        cart,
-        selectedDate,
-        selectedTimes,
-        bookingFeePercentage,
-        pricing: {
-          servicesTotalAmount,
-          bookingFee,
-          gst,
-          totalBookingAmount,
-          remainingAmount,
+    try {
+      setIsProcessingPayment(true);
+      
+      // Step 1: Create Razorpay order
+      const orderData = await createPaymentOrder().unwrap();
+      
+      // Step 2: Open Razorpay checkout
+      const options = {
+        key: orderData.key_id,
+        amount: orderData.amount_paise,
+        currency: 'INR',
+        order_id: orderData.order_id,
+        name: 'Salon Platform',
+        description: 'Booking Convenience Fee',
+        handler: async function (response) {
+          // Step 3: After successful payment, complete checkout
+          await handleCheckoutSuccess(response);
         },
-      },
-    });
+        prefill: {
+          name: user?.name || '',
+          email: user?.email || '',
+          contact: user?.phone || ''
+        },
+        theme: {
+          color: '#FF6B35'
+        },
+        modal: {
+          ondismiss: function() {
+            setIsProcessingPayment(false);
+            toast.info("Payment cancelled", { position: "top-center" });
+          }
+        }
+      };
+      
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      setIsProcessingPayment(false);
+      toast.error(error?.data?.message || 'Failed to initiate payment', {
+        position: "top-center"
+      });
+    }
+  };
+
+  /**
+   * Complete checkout after payment success
+   */
+  const handleCheckoutSuccess = async (paymentResponse) => {
+    try {
+      const result = await checkoutCart({
+        booking_date: selectedDate,
+        time_slots: selectedTimes,
+        razorpay_order_id: paymentResponse.razorpay_order_id,
+        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+        razorpay_signature: paymentResponse.razorpay_signature,
+        payment_method: 'razorpay',
+        notes: ''
+      }).unwrap();
+      
+      setIsProcessingPayment(false);
+      toast.success('Booking confirmed successfully!', { position: "top-center" });
+      
+      // Redirect to bookings page
+      navigate('/customer/bookings');
+    } catch (error) {
+      setIsProcessingPayment(false);
+      toast.error(error?.data?.message || 'Checkout failed. Please contact support.', {
+        position: "top-center"
+      });
+    }
   };
 
   if (isLoading) {
@@ -335,10 +428,17 @@ export default function Checkout() {
               {/* Proceed Button */}
               <button
                 onClick={handleProceedToPayment}
-                disabled={!selectedDate || selectedTimes.length === 0}
-                className="w-full bg-accent-orange hover:opacity-90 text-primary-white font-body font-semibold text-[16px] py-3 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={!selectedDate || selectedTimes.length === 0 || isProcessingPayment || isCreatingOrder || isCheckingOut}
+                className="w-full bg-accent-orange hover:opacity-90 text-primary-white font-body font-semibold text-[16px] py-3 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Proceed to Payment
+                {(isProcessingPayment || isCreatingOrder || isCheckingOut) ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <span>Processing...</span>
+                  </>
+                ) : (
+                  'Proceed to Payment'
+                )}
               </button>
             </div>
           </div>

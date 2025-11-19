@@ -15,7 +15,7 @@ export const favoriteApi = createApi({
     // Get user's favorites
     getFavorites: builder.query({
       query: () => ({
-        url: '/api/customers/favorites',
+        url: '/api/v1/customers/favorites',
         method: 'get',
       }),
       providesTags: ['Favorites'],
@@ -26,7 +26,7 @@ export const favoriteApi = createApi({
     // Add salon to favorites
     addFavorite: builder.mutation({
       query: (salonId) => ({
-        url: '/api/customers/favorites',
+        url: '/api/v1/customers/favorites',
         method: 'post',
         data: { salon_id: salonId },
       }),
@@ -54,7 +54,7 @@ export const favoriteApi = createApi({
     // Remove salon from favorites
     removeFavorite: builder.mutation({
       query: (salonId) => ({
-        url: `/api/customers/favorites/${salonId}`,
+        url: `/api/v1/customers/favorites/${salonId}`,
         method: 'delete',
       }),
       // Optimistic update
