@@ -16,7 +16,8 @@ import { uploadSalonImage } from '../../services/api/uploadApi';
 import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../../utils/toastConfig';
 import { 
   INDIAN_STATES, 
-  BUSINESS_HOURS_PRESETS 
+  BUSINESS_HOURS_PRESETS,
+  BUSINESS_TYPES
 } from '../../utils/salonFormConstants';
 import { FiUpload, FiMapPin, FiChevronLeft, FiChevronRight, FiCheck, FiPlus, FiTrash2, FiInfo, FiImage } from 'react-icons/fi';
 
@@ -115,6 +116,7 @@ const AddSalonForm = () => {
       // Basic info
       reset({
         name: draft.business_name || '',
+        business_type: draft.business_type || 'salon',
         owner_name: draft.owner_name || '',
         owner_email: draft.owner_email || '',
         owner_phone: draft.owner_phone || '',
@@ -293,7 +295,7 @@ const AddSalonForm = () => {
       const vendorRequestData = {
         // Required fields
         business_name: data.name,
-        business_type: 'salon',
+        business_type: data.business_type || 'salon',
         owner_name: data.owner_name || user?.name || user?.full_name || 'Owner',
         owner_email: data.owner_email || data.email,
         owner_phone: data.owner_phone || data.phone,
@@ -381,16 +383,47 @@ const AddSalonForm = () => {
         
         // If detail is an array of validation errors
         if (Array.isArray(detail)) {
+          // Find which step the error belongs to and navigate there
+          const fieldToStep = {
+            'business_name': 1, 'business_type': 1, 'owner_name': 1, 'owner_email': 1,
+            'owner_phone': 1, 'business_address': 1, 'address_line1': 1, 'city': 1, 
+            'state': 1, 'pincode': 1, 'description': 1,
+            'services': 2, 'services_offered': 2,
+            'cover_image_url': 3, 'cover_image': 3
+          };
+          
+          let firstErrorStep = 4;
           const errorMessages = detail.map(err => {
-            const field = err.loc ? err.loc.join(' > ') : 'Unknown field';
-            return `${field}: ${err.msg}`;
+            const field = err.loc && err.loc.length > 0 ? err.loc[err.loc.length - 1] : 'Unknown field';
+            const stepNum = fieldToStep[field];
+            if (stepNum && stepNum < firstErrorStep) {
+              firstErrorStep = stepNum;
+            }
+            
+            // Make error messages more user-friendly
+            let message = err.msg;
+            if (message.includes('at least 10')) {
+              message = 'Address must be at least 10 characters. Please provide a complete street address.';
+            }
+            
+            return `• ${field}: ${message}`;
           }).join('\n');
-          showErrorToast(`Validation errors:\n${errorMessages}`, { autoClose: 8000 });
+          
+          // Navigate to the step with the error
+          if (firstErrorStep < 4) {
+            setCurrentStep(firstErrorStep);
+            showErrorToast(
+              `Please fix the following errors in Step ${firstErrorStep}:\n${errorMessages}`,
+              { autoClose: 10000 }
+            );
+          } else {
+            showErrorToast(`Validation errors:\n${errorMessages}`, { autoClose: 8000 });
+          }
         } else {
           showErrorToast(detail);
         }
       } else {
-        showErrorToast(error.message || 'Failed to submit salon');
+        showErrorToast(error.message || 'Failed to submit salon. Please check all fields and try again.');
       }
     }
   };
@@ -404,8 +437,12 @@ const AddSalonForm = () => {
     if (currentStep === 1) {
       const requiredFields = {
         'Business Name': allValues.name,
-        'Email': allValues.email,
-        'Phone': allValues.phone,
+        'Business Type': allValues.business_type,
+        'Owner Name': allValues.owner_name,
+        'Owner Email': allValues.owner_email,
+        'Owner Phone': allValues.owner_phone,
+        'Salon Email': allValues.email,
+        'Salon Phone': allValues.phone,
         'Address': allValues.address_line1,
         'City': allValues.city,
         'State': allValues.state,
@@ -424,6 +461,12 @@ const AddSalonForm = () => {
       
       if (allValues.description && allValues.description.length < 50) {
         showErrorToast('Description must be at least 50 characters');
+        return;
+      }
+      
+      // Validate address length
+      if (allValues.address_line1 && allValues.address_line1.length < 10) {
+        showErrorToast('Address Line 1 must be at least 10 characters. Please provide a complete address.');
         return;
       }
     }
@@ -532,8 +575,10 @@ const AddSalonForm = () => {
                     <p className="font-semibold mb-1">Tips for filling this form:</p>
                     <ul className="list-disc list-inside space-y-1 text-xs">
                       <li>Enter accurate salon information</li>
-                      <li>Use valid email and phone number</li>
-                      <li>Provide complete address for better visibility</li>
+                      <li>Use valid 10-digit mobile numbers (starting with 6-9)</li>
+                      <li>Provide complete address with at least 10 characters (include shop number, building, street)</li>
+                      <li>Description should be detailed (minimum 50 characters)</li>
+                      <li>All fields marked with <span className="text-red-500">*</span> are required</li>
                     </ul>
                   </div>
                 </div>
@@ -548,8 +593,64 @@ const AddSalonForm = () => {
                   required
                 />
 
+                <div>
+                  <label className="block text-sm font-body font-medium text-gray-700 mb-1">
+                    Business Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    {...register('business_type', { required: 'Business type is required' })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent"
+                  >
+                    <option value="">Select Business Type</option>
+                    {BUSINESS_TYPES.map(type => (
+                      <option key={type.value} value={type.value}>{type.label}</option>
+                    ))}
+                  </select>
+                  {errors.business_type && (
+                    <p className="mt-1 text-sm text-red-600 font-body">{errors.business_type.message}</p>
+                  )}
+                </div>
+
                 <InputField
-                  label="Email"
+                  label="Owner Name"
+                  {...register('owner_name', { required: 'Owner name is required' })}
+                  error={errors.owner_name?.message}
+                  placeholder="e.g., John Doe"
+                  required
+                />
+
+                <InputField
+                  label="Owner Email"
+                  type="email"
+                  {...register('owner_email', { 
+                    required: 'Owner email is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Invalid email address'
+                    }
+                  })}
+                  error={errors.owner_email?.message}
+                  placeholder="owner@example.com"
+                  required
+                />
+
+                <InputField
+                  label="Owner Phone"
+                  type="tel"
+                  {...register('owner_phone', { 
+                    required: 'Owner phone is required',
+                    pattern: {
+                      value: /^[6-9]\d{9}$/,
+                      message: 'Enter valid 10-digit mobile number'
+                    }
+                  })}
+                  error={errors.owner_phone?.message}
+                  placeholder="9876543210"
+                  required
+                />
+
+                <InputField
+                  label="Salon Email"
                   type="email"
                   {...register('email', { 
                     required: 'Email is required',
@@ -564,7 +665,7 @@ const AddSalonForm = () => {
                 />
 
                 <InputField
-                  label="Phone"
+                  label="Salon Phone"
                   type="tel"
                   {...register('phone', { 
                     required: 'Phone is required',
@@ -619,14 +720,35 @@ const AddSalonForm = () => {
                 />
 
                 <div className="md:col-span-2">
-                  <InputField
-                    label="Address Line 1"
-                    {...register('address_line1', { required: 'Address is required' })}
-                    error={errors.address_line1?.message}
-                    placeholder="e.g., Shop No. 5, ABC Complex"
-                    icon={<FiMapPin />}
-                    required
-                  />
+                  <label className="block text-sm font-body font-medium text-gray-700 mb-1">
+                    Address Line 1 <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <FiMapPin />
+                    </div>
+                    <input
+                      {...register('address_line1', { 
+                        required: 'Address is required',
+                        minLength: {
+                          value: 10,
+                          message: 'Address must be at least 10 characters for clarity'
+                        }
+                      })}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent"
+                      placeholder="e.g., Shop No. 5, ABC Complex, Main Road"
+                    />
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    {errors.address_line1 && (
+                      <p className="text-sm text-red-600 font-body">{errors.address_line1.message}</p>
+                    )}
+                    <p className={`text-xs ml-auto ${
+                      (watch('address_line1')?.length || 0) < 10 ? 'text-orange-600' : 'text-green-600'
+                    }`}>
+                      {watch('address_line1')?.length || 0}/10 characters
+                    </p>
+                  </div>
                 </div>
 
                 <div className="md:col-span-2">
@@ -1096,11 +1218,29 @@ const AddSalonForm = () => {
                         <p className="font-semibold text-gray-900">{watch('name') || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-gray-600 text-xs mb-1">Email</p>
+                        <p className="text-gray-600 text-xs mb-1">Business Type</p>
+                        <p className="font-semibold text-gray-900">
+                          {BUSINESS_TYPES.find(t => t.value === watch('business_type'))?.label || watch('business_type') || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-xs mb-1">Owner Name</p>
+                        <p className="font-semibold text-gray-900">{watch('owner_name') || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-xs mb-1">Owner Email</p>
+                        <p className="font-semibold text-gray-900">{watch('owner_email') || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-xs mb-1">Owner Phone</p>
+                        <p className="font-semibold text-gray-900">{watch('owner_phone') || '-'}</p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-xs mb-1">Salon Email</p>
                         <p className="font-semibold text-gray-900">{watch('email') || '-'}</p>
                       </div>
                       <div>
-                        <p className="text-gray-600 text-xs mb-1">Phone</p>
+                        <p className="text-gray-600 text-xs mb-1">Salon Phone</p>
                         <p className="font-semibold text-gray-900">{watch('phone') || '-'}</p>
                       </div>
                       <div>
@@ -1272,13 +1412,13 @@ const AddSalonForm = () => {
                     Submission Checklist
                   </h4>
                   <div className="space-y-2 font-body text-sm">
-                    <div className={`flex items-center gap-2 ${watch('name') && watch('email') && watch('phone') ? 'text-green-700' : 'text-gray-600'}`}>
-                      {watch('name') && watch('email') && watch('phone') ? (
+                    <div className={`flex items-center gap-2 ${watch('name') && watch('business_type') && watch('owner_name') && watch('owner_email') && watch('owner_phone') && watch('email') && watch('phone') ? 'text-green-700' : 'text-gray-600'}`}>
+                      {watch('name') && watch('business_type') && watch('owner_name') && watch('owner_email') && watch('owner_phone') && watch('email') && watch('phone') ? (
                         <FiCheck className="text-green-600" size={16} />
                       ) : (
                         <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
                       )}
-                      <span>Basic information filled</span>
+                      <span>Basic information filled (including owner details)</span>
                     </div>
                     <div className={`flex items-center gap-2 ${services.filter(s => s.name && s.price).length > 0 ? 'text-green-700' : 'text-gray-600'}`}>
                       {services.filter(s => s.name && s.price).length > 0 ? (

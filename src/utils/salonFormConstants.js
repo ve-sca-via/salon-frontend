@@ -5,6 +5,16 @@
  * Used by HMR agents when adding salons and vendors editing profiles.
  */
 
+// Business types for vendor registration
+export const BUSINESS_TYPES = [
+  { value: 'salon', label: 'Salon' },
+  { value: 'spa', label: 'Spa' },
+  { value: 'clinic', label: 'Clinic' },
+  { value: 'unisex_salon', label: 'Unisex Salon' },
+  { value: 'barber_shop', label: 'Barber Shop' },
+  { value: 'beauty_parlor', label: 'Beauty Parlor' }
+];
+
 // Indian states for address forms
 export const INDIAN_STATES = [
   'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh',
