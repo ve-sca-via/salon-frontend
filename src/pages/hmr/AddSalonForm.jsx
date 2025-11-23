@@ -138,19 +138,46 @@ const AddSalonForm = () => {
         sunday: documents.business_hours?.sunday || 'Closed',
       });
       
-      // Services
-      if (documents.services && documents.services.length > 0) {
-        setServices(documents.services);
+      // Services - check both new and old format
+      let loadedServices = [];
+      if (draft.services_offered) {
+        // New format: services_offered is a JSONB object with categories
+        Object.entries(draft.services_offered).forEach(([category, serviceList]) => {
+          if (Array.isArray(serviceList)) {
+            serviceList.forEach(service => {
+              loadedServices.push({
+                name: service.name || '',
+                category: category,
+                price: service.price || '',
+                duration_minutes: service.duration_minutes || 30,
+                description: service.description || ''
+              });
+            });
+          }
+        });
+      } else if (documents.services && documents.services.length > 0) {
+        // Old format: services in documents
+        loadedServices = documents.services;
+      }
+      
+      if (loadedServices.length > 0) {
+        setServices(loadedServices);
       }
       
       // Images
-      if (documents.cover_image) {
+      if (draft.cover_image_url) {
+        setCoverImage(draft.cover_image_url);
+      } else if (documents.cover_image) {
         setCoverImage(documents.cover_image);
       }
+      
       if (documents.logo) {
         setLogo(documents.logo);
       }
-      if (documents.images && documents.images.length > 0) {
+      
+      if (draft.gallery_images && draft.gallery_images.length > 0) {
+        setUploadedImages(draft.gallery_images);
+      } else if (documents.images && documents.images.length > 0) {
         setUploadedImages(documents.images);
       }
       
@@ -159,7 +186,31 @@ const AddSalonForm = () => {
         setSelectedHoursPreset('custom');
       }
       
-      showInfoToast('Draft loaded. Continue editing...');
+      // Determine which step to start on based on filled data
+      let startStep = 1;
+      
+      // Step 1: Check if basic info is complete
+      const hasBasicInfo = draft.business_name && draft.city && draft.state && draft.pincode;
+      
+      if (hasBasicInfo) {
+        // Move to step 2 if basic info is filled
+        startStep = 2;
+        
+        // Step 2: Check if services are added
+        if (loadedServices.length > 0) {
+          // Move to step 3 if services exist
+          startStep = 3;
+          
+          // Step 3: Check if images are uploaded
+          if (draft.cover_image_url || documents.cover_image) {
+            // Move to step 4 (review) if cover image exists
+            startStep = 4;
+          }
+        }
+      }
+      
+      setCurrentStep(startStep);
+      showInfoToast(`Draft loaded. Starting from Step ${startStep}...`);
     }
   }, [draftId, draftData, reset]);
 
