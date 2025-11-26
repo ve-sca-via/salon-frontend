@@ -218,25 +218,26 @@ const AddSalonForm = () => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
 
-    setUploading(true);
+    setUploading(type); // Set uploading to specific type to show correct loading state
     try {
       if (type === 'cover') {
         const url = await uploadSalonImage(files[0], 'covers');
         setCoverImage(url);
         showSuccessToast('Cover image uploaded!');
       } else if (type === 'logo') {
-        const url = await uploadToSupabase(files[0], 'logos');
+        const url = await uploadSalonImage(files[0], 'logos');
         setLogo(url);
         showSuccessToast('Logo uploaded!');
       } else if (type === 'gallery') {
         const urls = await Promise.all(
-          files.map(file => uploadToSupabase(file, 'gallery'))
+          files.map(file => uploadSalonImage(file, 'gallery'))
         );
         setUploadedImages([...uploadedImages, ...urls]);
         showSuccessToast(`${files.length} image(s) uploaded!`);
       }
     } catch (error) {
-      showErrorToast('Failed to upload image');
+      console.error('Image upload error:', error);
+      showErrorToast(error?.message || 'Failed to upload image');
     } finally {
       setUploading(false);
     }
@@ -322,27 +323,21 @@ const AddSalonForm = () => {
       
       const { opening_time, closing_time, working_days } = parseBusinessHours();
       
-      // Helper: Convert services to services_offered JSONB format
-      const convertServicesToOffered = () => {
-        const offered = {};
-        services
-          .filter(s => s.name && s.price)
-          .forEach(s => {
-            const category = s.category || 'general';
-            if (!offered[category]) {
-              offered[category] = [];
-            }
-            offered[category].push({
-              name: s.name,
-              price: parseFloat(s.price),
-              duration_minutes: parseInt(s.duration_minutes) || 30,
-              description: s.description || '',
-            });
-          });
-        return Object.keys(offered).length > 0 ? offered : null;
+      // Helper: Convert services to array format for documents.services
+      // Backend reads from documents.services and needs category_id
+      const prepareServicesArray = () => {
+        return services
+          .filter(s => s.name && s.price && s.category_id)
+          .map(s => ({
+            name: s.name,
+            category_id: s.category_id,
+            price: parseFloat(s.price),
+            duration_minutes: parseInt(s.duration_minutes) || 30,
+            description: s.description || '',
+          }));
       };
       
-      // Prepare vendor request data matching NEW backend schema
+      // Prepare vendor request data matching backend schema
       const vendorRequestData = {
         // Required fields
         business_name: data.name,
@@ -365,22 +360,23 @@ const AddSalonForm = () => {
         business_license: data.business_license || null,
         registration_certificate: data.registration_certificate || null,
         
-        // NEW: Media fields (direct columns)
+        // Media fields (direct columns)
         cover_image_url: coverImage || null,
         gallery_images: uploadedImages.length > 0 ? uploadedImages : null,
         
-        // NEW: Operations fields (direct columns)
-        services_offered: convertServicesToOffered(),
+        // Operations fields (direct columns)
         staff_count: data.staff_count ? parseInt(data.staff_count) : 1,
         opening_time: opening_time,
         closing_time: closing_time,
         working_days: working_days.length > 0 ? working_days : null,
         
-        // Documents JSONB (for additional info only)
+        // Documents JSONB - Store services here for backend to read
         documents: {
           description: data.description || '',
           email: data.email,
           phone: data.phone,
+          logo: logo || null,
+          services: prepareServicesArray(),
         },
       };
 

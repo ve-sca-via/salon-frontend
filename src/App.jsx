@@ -53,6 +53,9 @@ const Checkout = lazy(() => import('./pages/public/Checkout'));
 const Payment = lazy(() => import('./pages/public/Payment'));
 const BookingConfirmation = lazy(() => import('./pages/public/BookingConfirmation'));
 const Careers = lazy(() => import('./pages/public/Careers'));
+const About = lazy(() => import('./pages/public/About'));
+const PrivacyPolicy = lazy(() => import('./pages/public/PrivacyPolicy'));
+const FAQ = lazy(() => import('./pages/public/FAQ'));
 
 // Customer pages
 const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
@@ -101,6 +104,9 @@ function App() {
                 PUBLIC ROUTES (No authentication required)
                 ============================================ */}
             <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/faq" element={<FAQ />} />
             <Route path="/salons" element={<PublicSalonListing />} />
             <Route path="/salons/:id" element={<SalonDetail />} />
             <Route path="/salons/:id/book" element={<ServiceBooking />} />

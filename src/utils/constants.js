@@ -1,6 +1,6 @@
 
 // App configuration
-export const APP_NAME = 'Salon Manager';
+export const APP_NAME = 'Lubist';
 export const APP_VERSION = '1.0.0';
 
 // User roles

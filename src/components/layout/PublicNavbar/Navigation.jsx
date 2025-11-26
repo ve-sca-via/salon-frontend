@@ -10,7 +10,7 @@ export function Navigation({ onMenuToggle, isMenuOpen }) {
         to="/"
         className="font-display font-bold leading-[24px] relative shrink-0 text-[20px] text-black text-center text-nowrap whitespace-pre"
       >
-        SalonHub
+        Lubist
       </Link>
       <Menu />
       <Actions />

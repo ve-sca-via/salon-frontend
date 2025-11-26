@@ -197,13 +197,13 @@ function HeroSection() {
         <div className="max-w-2xl flex flex-col gap-6">
           {/* Main Heading */}
           <h1 className="font-display font-bold text-[52px] leading-[64px] text-white">
-            Your Beauty, Our Priority
+            Beauty. Booking. Simplified.
           </h1>
 
           {/* Description */}
           <p className="font-body font-normal text-[16px] leading-[24px] text-white max-w-xl">
-            Book appointments with top-rated salons in your area. Hair and SPA
-            Salons fully integrated with easy booking system.
+            Discover verified salons, check real-time availability, and book appointments 
+            within seconds. No calls, no confusion — just a delightful booking experience.
           </p>
 
           {/* CTA Buttons */}
@@ -266,10 +266,10 @@ const Home = () => {
       <section className="py-20 bg-black text-white">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <h2 className="text-4xl font-display font-bold mb-6">
-            Ready to Transform Your Look?
+            Ready to Experience Beauty, Simplified?
           </h2>
           <p className="text-xl mb-8 text-neutral-gray-500">
-            Join thousands of happy customers who trust our platform
+            Join thousands who trust Lubist for stress-free salon bookings
           </p>
           <Link
             to="/salons"

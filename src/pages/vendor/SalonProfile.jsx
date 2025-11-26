@@ -66,8 +66,7 @@ const SalonProfile = () => {
     pincode: '',
     description: '',
     logo_url: '',
-    cover_image_url: '',
-    images: [],
+    cover_images: [],
     business_hours: {
       monday: '',
       tuesday: '',
@@ -95,8 +94,7 @@ const SalonProfile = () => {
         pincode: salonProfile.pincode || '',
         description: salonProfile.description || '',
         logo_url: salonProfile.logo_url || '',
-        cover_image_url: salonProfile.cover_image_url || '',
-        images: salonProfile.images || [],
+        cover_images: salonProfile.cover_images || [],
         business_hours: salonProfile.business_hours || {
           monday: '',
           tuesday: '',
@@ -206,8 +204,7 @@ const SalonProfile = () => {
         pincode: salonProfile.pincode || '',
         description: salonProfile.description || '',
         logo_url: salonProfile.logo_url || '',
-        cover_image_url: salonProfile.cover_image_url || '',
-        images: salonProfile.images || [],
+        cover_images: salonProfile.cover_images || [],
         business_hours: salonProfile.business_hours || {},
       });
     }
@@ -534,10 +531,10 @@ const SalonProfile = () => {
                 <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
                   Cover Image
                 </label>
-                {salonProfile?.cover_image_url ? (
+                {salonProfile?.cover_images && salonProfile.cover_images.length > 0 ? (
                   <div className="relative">
                     <img
-                      src={salonProfile.cover_image_url}
+                      src={salonProfile.cover_images[0]}
                       alt="Cover"
                       className="w-full h-32 object-cover rounded-lg"
                     />
@@ -599,11 +596,11 @@ const SalonProfile = () => {
               {/* Gallery Images */}
               <div>
                 <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                  Salon Gallery ({salonProfile?.images?.length || 0} images)
+                  Salon Gallery ({salonProfile?.cover_images?.length > 1 ? salonProfile.cover_images.length - 1 : 0} images)
                 </label>
-                {salonProfile?.images && salonProfile.images.length > 0 ? (
+                {salonProfile?.cover_images && salonProfile.cover_images.length > 1 ? (
                   <div className="grid grid-cols-2 gap-2">
-                    {salonProfile.images.map((image, index) => (
+                    {salonProfile.cover_images.slice(1).map((image, index) => (
                       <div key={index} className="relative group">
                         <img
                           src={image}

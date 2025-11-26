@@ -54,7 +54,7 @@ function Header() {
       <div className="flex flex-col gap-2 items-center">
         {/* Title */}
         <h2 className="font-display font-bold text-[32px] leading-[48px] text-neutral-black">
-          Why Choose SalonHub?
+          Why Choose Lubist?
         </h2>
 
         {/* Icon with Lines */}
@@ -66,7 +66,7 @@ function Header() {
 
         {/* Description */}
         <p className="font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
-          Everything you need for your perfect salon experience
+          Making beauty and wellness accessible, reliable, and delightful for everyone
         </p>
       </div>
     </div>
@@ -188,27 +188,27 @@ export default function WhyChooseUs() {
   const features = [
     {
       icon: <SearchIcon />,
-      title: "Find Local Salons",
+      title: "Discover Verified Salons",
       description:
-        "Search and discover the best salons near you with advanced filters and ratings",
+        "Find trusted, verified salons near you with authentic reviews and real-time availability",
     },
     {
       icon: <CalendarCheckIcon />,
-      title: "Easy Booking",
+      title: "Book in Seconds",
       description:
-        "Book appointments instantly online with real-time availability and confirmation",
+        "No calls, no confusion. Book appointments instantly and manage them easily online",
     },
     {
       icon: <StarIcon />,
-      title: "Verified Reviews",
+      title: "Compare & Choose",
       description:
-        "Read authentic customer reviews and ratings to make informed decisions",
+        "Compare services, prices, and reviews to make the best decision for your needs",
     },
     {
       icon: <MapPinIcon />,
-      title: "Location Based",
+      title: "Stress-Free Experience",
       description:
-        "Find salons based on your location with accurate maps and directions",
+        "Remove waiting lines and uncertainty with our simple, fast booking platform",
     },
   ];
 
