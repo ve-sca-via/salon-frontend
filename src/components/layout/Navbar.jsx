@@ -49,6 +49,22 @@ const Navbar = ({ onMenuClick }) => {
     }
   };
 
+  const getRoleBasedProfile = () => {
+    switch (user?.role) {
+      case 'customer':
+        return '/customer/profile';
+      case 'vendor':
+      case 'salon':
+        return '/vendor/profile';
+      case 'relationship_manager':
+        return '/hmr/profile';
+      case 'admin':
+        return '/admin/profile';
+      default:
+        return '/profile';
+    }
+  };
+
   return (
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
       <div className="px-4 sm:px-6 lg:px-8">
@@ -108,7 +124,7 @@ const Navbar = ({ onMenuClick }) => {
                   ></div>
                   <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-2 z-20">
                     <Link
-                      to={`/${user?.role}/profile`}
+                      to={getRoleBasedProfile()}
                       className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-orange-50 hover:text-orange-600 transition-colors"
                       onClick={() => setShowUserMenu(false)}
                     >
