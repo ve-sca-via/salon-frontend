@@ -107,17 +107,18 @@ CREATE TABLE public.reviews (
 CREATE TABLE public.rm_profiles (
   id uuid NOT NULL,
   employee_id character varying NOT NULL UNIQUE,
-  total_score integer DEFAULT 0,
+  assigned_territories text[],
+  performance_score integer DEFAULT 0,
   total_salons_added integer DEFAULT 0,
   total_approved_salons integer DEFAULT 0,
   joining_date date DEFAULT CURRENT_DATE,
-  is_active boolean DEFAULT true,
   manager_notes text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT rm_profiles_pkey PRIMARY KEY (id),
-  CONSTRAINT rm_profiles_id_fkey FOREIGN KEY (id) REFERENCES public.profiles(id)
+  CONSTRAINT rm_profiles_id_fkey FOREIGN KEY (id) REFERENCES public.profiles(id) ON DELETE CASCADE
 );
+COMMENT ON TABLE public.rm_profiles IS 'Relationship Manager specific data. User data (name, email, phone, is_active) stored in profiles table.';
 CREATE TABLE public.rm_score_history (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   rm_id uuid NOT NULL,

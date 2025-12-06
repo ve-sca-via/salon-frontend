@@ -50,7 +50,7 @@ const RMProfile = () => {
   const { data: profileData, isLoading: profileLoading } = useGetRMProfileQuery();
   const [updateRMProfile, { isLoading: isUpdating }] = useUpdateRMProfileMutation();
   
-  // Extract data - backend returns { profile: {...}, statistics: {...} }
+  // Extract data - backend returns { profile: {...}, statistics: {...}, recent_scores: [...] }
   const profile = profileData?.profile;
   const stats = profileData?.statistics || {};
   
@@ -63,8 +63,8 @@ const RMProfile = () => {
   useEffect(() => {
     if (profile) {
       setFormData({
-        full_name: profile.full_name || user?.full_name || '',
-        phone: profile.phone || user?.phone || '',
+        full_name: profile.profiles?.full_name || profile.full_name || user?.full_name || '',
+        phone: profile.profiles?.phone || profile.phone || user?.phone || '',
       });
     }
   }, [profile, user]);
@@ -93,8 +93,8 @@ const RMProfile = () => {
 
   const handleCancel = () => {
     setFormData({
-      full_name: profile?.full_name || user?.full_name || '',
-      phone: profile?.phone || user?.phone || '',
+      full_name: profile?.profiles?.full_name || profile?.full_name || user?.full_name || '',
+      phone: profile?.profiles?.phone || profile?.phone || user?.phone || '',
     });
     setIsEditing(false);
   };
@@ -112,7 +112,7 @@ const RMProfile = () => {
     );
   }
 
-  const scorePercentage = profile?.total_score ? Math.min((profile.total_score / 1000) * 100, 100) : 0;
+  const scorePercentage = profile?.performance_score ? Math.min((profile.performance_score / 1000) * 100, 100) : 0;
 
   return (
     <DashboardLayout role="hmr">
@@ -172,18 +172,18 @@ const RMProfile = () => {
                 <div className="flex items-center space-x-4 pb-5 border-b border-gray-200">
                   <div className="w-20 h-20 bg-gradient-to-br from-accent-orange to-orange-600 rounded-full flex items-center justify-center shadow-lg">
                     <span className="text-white text-3xl font-display font-bold">
-                      {(profile?.full_name || user?.email || 'U')[0].toUpperCase()}
+                      {(profile?.profiles?.full_name || user?.full_name || user?.email || 'U')[0].toUpperCase()}
                     </span>
                   </div>
                   <div>
                     <h3 className="text-xl font-display font-bold text-gray-900">
-                      {profile?.full_name || user?.full_name || 'Relationship Manager'}
+                      {profile?.profiles?.full_name || user?.full_name || 'Relationship Manager'}
                     </h3>
-                    <p className="text-gray-600 font-body text-sm">RM ID: {profile?.id || user?.id}</p>
+                    <p className="text-gray-600 font-body text-sm">Employee ID: {profile?.employee_id || 'Not assigned'}</p>
                     <div className="flex items-center mt-1">
-                      <div className={`w-2 h-2 rounded-full mr-2 ${profile?.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                      <span className={`text-xs font-body font-medium ${profile?.is_active ? 'text-green-700' : 'text-red-700'}`}>
-                        {profile?.is_active ? 'Active' : 'Inactive'}
+                      <div className={`w-2 h-2 rounded-full mr-2 ${profile?.profiles?.is_active ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                      <span className={`text-xs font-body font-medium ${profile?.profiles?.is_active ? 'text-green-700' : 'text-red-700'}`}>
+                        {profile?.profiles?.is_active ? 'Active' : 'Inactive'}
                       </span>
                     </div>
                   </div>
@@ -225,7 +225,11 @@ const RMProfile = () => {
                     Member Since
                   </label>
                   <p className="text-gray-900 font-body">
-                    {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', {
+                    {profile?.joining_date ? new Date(profile.joining_date).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    }) : profile?.profiles?.created_at ? new Date(profile.profiles.created_at).toLocaleDateString('en-US', {
                       year: 'numeric',
                       month: 'long',
                       day: 'numeric'
@@ -242,9 +246,9 @@ const RMProfile = () => {
             <Card className="bg-gradient-to-br from-accent-orange to-orange-600 text-white border-none shadow-xl">
               <div className="text-center">
                 <FiAward className="text-white text-5xl mx-auto mb-3" />
-                <h3 className="text-sm font-body font-medium opacity-90 mb-2">Current Score</h3>
+                <h3 className="text-sm font-body font-medium opacity-90 mb-2">Performance Score</h3>
                 <div className="text-5xl font-display font-bold mb-4">
-                  {profile?.total_score || 0}
+                  {profile?.performance_score || 0}
                 </div>
                 
                 {/* Progress Bar */}
@@ -272,7 +276,7 @@ const RMProfile = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-600 font-body">Total Submissions</p>
-                      <p className="text-2xl font-display font-bold text-gray-900">{stats.totalSubmissions}</p>
+                      <p className="text-2xl font-display font-bold text-gray-900">{stats.total_salons_added || 0}</p>
                     </div>
                   </div>
                 </div>
@@ -284,7 +288,7 @@ const RMProfile = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-600 font-body">Approved</p>
-                      <p className="text-2xl font-display font-bold text-green-600">{stats.approvedSubmissions}</p>
+                      <p className="text-2xl font-display font-bold text-green-600">{stats.total_approved_salons || 0}</p>
                     </div>
                   </div>
                 </div>
@@ -296,7 +300,7 @@ const RMProfile = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-600 font-body">Pending</p>
-                      <p className="text-2xl font-display font-bold text-yellow-600">{stats.pendingSubmissions}</p>
+                      <p className="text-2xl font-display font-bold text-yellow-600">{stats.pending_requests || 0}</p>
                     </div>
                   </div>
                 </div>
@@ -308,7 +312,7 @@ const RMProfile = () => {
                     </div>
                     <div>
                       <p className="text-xs text-gray-600 font-body">Rejected</p>
-                      <p className="text-2xl font-display font-bold text-red-600">{stats.rejectedSubmissions}</p>
+                      <p className="text-2xl font-display font-bold text-red-600">{stats.rejected_requests || 0}</p>
                     </div>
                   </div>
                 </div>
@@ -320,12 +324,12 @@ const RMProfile = () => {
               <h3 className="text-lg font-display font-bold text-gray-900 mb-4">Approval Rate</h3>
               <div className="text-center">
                 <div className="text-4xl font-display font-bold text-accent-orange mb-2">
-                  {stats.totalSubmissions > 0
-                    ? Math.round((stats.approvedSubmissions / stats.totalSubmissions) * 100)
+                  {stats.total_salons_added > 0
+                    ? Math.round((stats.total_approved_salons / stats.total_salons_added) * 100)
                     : 0}%
                 </div>
                 <p className="text-sm text-gray-600 font-body">
-                  {stats.approvedSubmissions} out of {stats.totalSubmissions} submissions approved
+                  {stats.total_approved_salons || 0} out of {stats.total_salons_added || 0} submissions approved
                 </p>
               </div>
             </Card>

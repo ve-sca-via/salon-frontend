@@ -167,7 +167,7 @@ const RMLeaderboard = () => {
                     const rank = index + 1;
                     const isCurrentUser = rm.id === user?.id;
                     const approvalRate = rm.total_salons_added > 0
-                      ? Math.round((rm.approved_requests / rm.total_salons_added) * 100)
+                      ? Math.round(((rm.approved_requests_count || rm.total_approved_salons || 0) / rm.total_salons_added) * 100)
                       : 0;
 
                     return (
@@ -195,14 +195,14 @@ const RMLeaderboard = () => {
                           <div className="flex items-center gap-3">
                             <div>
                               <p className="font-body font-semibold text-gray-900">
-                                {rm.full_name}
+                                {rm.profiles?.full_name || rm.full_name || 'Unknown RM'}
                                 {isCurrentUser && (
                                   <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
                                     You
                                   </span>
                                 )}
                               </p>
-                              <p className="text-sm text-gray-500 font-body">{rm.email}</p>
+                              <p className="text-sm text-gray-500 font-body">{rm.profiles?.email || rm.email || 'N/A'}</p>
                             </div>
                           </div>
                         </td>
@@ -226,7 +226,7 @@ const RMLeaderboard = () => {
                         {/* Approved */}
                         <td className="py-4 px-4 text-center">
                           <span className="inline-flex items-center justify-center w-10 h-10 bg-green-100 text-green-700 rounded-full font-bold">
-                            {rm.approved_requests || 0}
+                            {rm.approved_requests_count || rm.total_approved_salons || 0}
                           </span>
                         </td>
 
