@@ -76,12 +76,7 @@ const Sidebar = ({ role, isOpen, onClose }) => {
       >
         <div className="h-full flex flex-col">
           {/* Sidebar Header */}
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent capitalize">
-              {role} Portal
-            </h2>
-            <p className="text-xs text-gray-500 mt-1">Manage your account</p>
-          </div>
+         
 
           {/* Navigation Links */}
           <nav className="flex-1 overflow-y-auto p-4">

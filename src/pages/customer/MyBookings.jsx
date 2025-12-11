@@ -72,19 +72,21 @@ function BookingCard({ booking, onCancel }) {
       await onCancel(booking.id);
       setShowCancelConfirm(false);
     } catch (error) {
-      console.error("Cancel error:", error);
+      // Cancel failed
     } finally {
       setCancelling(false);
     }
   };
 
+  // Upcoming: pending, confirmed only
+  // Past: completed, cancelled, no_show
   const isUpcoming =
-    booking.status !== "completed" && booking.status !== "cancelled";
+    booking.status === "pending" || booking.status === "confirmed";
 
   return (
     <div className="bg-primary-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden mb-6">
       {/* Header with Salon Info */}
-      <div className="bg-gradient-orange p-4">
+      <div className="bg-neutral-black p-4">
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <h3 className="font-display font-bold text-[20px] text-primary-white mb-1">
@@ -161,27 +163,26 @@ function BookingCard({ booking, onCancel }) {
                 >
                   <div className="flex-1">
                     <p className="font-body text-[14px] text-neutral-black font-semibold">
-                      {service.service_name || service.serviceName || "Service"}
+                      {service.service_name}
                     </p>
-                    {(service.plan_name || service.planName) && (
+                    {service.quantity > 1 && (
                       <p className="font-body text-[12px] text-neutral-gray-500 mt-0.5">
-                        {service.plan_name || service.planName}
-                        {service.category && ` • ${service.category}`}
+                        Quantity: {service.quantity}
                       </p>
                     )}
-                    {service.duration && (
+                    {service.duration_minutes && (
                       <p className="font-body text-[11px] text-accent-orange mt-1">
-                        {service.duration} mins
+                        {service.duration_minutes} mins
                       </p>
                     )}
                   </div>
                   <div className="text-right">
                     <p className="font-body text-[16px] text-accent-orange font-bold">
-                      ₹{service.price * (service.quantity || 1)}
+                      ₹{(service.unit_price * service.quantity).toFixed(2)}
                     </p>
                     {service.quantity > 1 && (
                       <p className="font-body text-[11px] text-neutral-gray-500">
-                        ₹{service.price} × {service.quantity}
+                        ₹{service.unit_price.toFixed(2)} × {service.quantity}
                       </p>
                     )}
                   </div>
@@ -214,55 +215,41 @@ function BookingCard({ booking, onCancel }) {
                 Services Total
               </span>
               <span className="font-body text-[13px] text-neutral-black font-semibold">
-                ₹{booking.total_amount || booking.service_price}
+                ₹{(booking.service_price || 0).toFixed(2)}
               </span>
             </div>
-            {booking.booking_fee > 0 && (
-              <>
-                <div className="flex justify-between items-center">
-                  <span className="font-body text-[13px] text-neutral-gray-500">
-                    Booking Fee
-                  </span>
-                  <span className="font-body text-[13px] text-neutral-black">
-                    ₹{booking.booking_fee}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="font-body text-[13px] text-neutral-gray-500">
-                    GST (18%)
-                  </span>
-                  <span className="font-body text-[13px] text-neutral-black">
-                    ₹{booking.gst_amount}
-                  </span>
-                </div>
-              </>
+            {booking.convenience_fee > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="font-body text-[13px] text-neutral-gray-500">
+                  Booking Fee (Paid Online)
+                </span>
+                <span className="font-body text-[13px] text-neutral-black">
+                  ₹{(booking.convenience_fee || 0).toFixed(2)}
+                </span>
+              </div>
             )}
             <div className="flex justify-between items-center pt-2 border-t border-neutral-gray-600">
               <span className="font-body text-[15px] text-neutral-black font-bold">
                 Total Paid
               </span>
               <span className="font-body text-[20px] text-accent-orange font-bold">
-                ₹{booking.amount_paid || booking.final_amount || booking.total_amount}
+                ₹{(booking.total_amount || 0).toFixed(2)}
               </span>
             </div>
-            {booking.remaining_amount > 0 && (
-              <div className="flex justify-between items-center pt-2 border-t border-neutral-gray-600 bg-amber-50 -m-4 mt-2 p-3 rounded-b-lg">
-                <span className="font-body text-[13px] text-amber-700 font-semibold">
-                  Pay at Salon
-                </span>
-                <span className="font-body text-[16px] text-amber-700 font-bold">
-                  ₹{booking.remaining_amount}
-                </span>
-              </div>
-            )}
           </div>
-        </div>
-
+          {/* Payment Instructions */}
+          {booking.status !== 'cancelled' && booking.status !== 'completed' && booking.service_price > 0 && (
+            <div className="bg-blue-50 mt-3 p-3 rounded-lg">
+              <p className="font-body text-[13px] text-blue-700 font-semibold">
+                💰 Pay ₹{(booking.service_price || 0).toFixed(2)} at salon after service
+              </p>
+            </div>
+          )}
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="flex gap-3 items-center">
           <button
-            onClick={() => navigate(`/salon/${booking.salon_id}`)}
-            className="flex items-center justify-center gap-2 bg-neutral-gray-600 hover:bg-neutral-gray-500 text-neutral-black font-body font-semibold text-[14px] py-3 rounded-lg transition-colors"
+            onClick={() => navigate(`/salons/${booking.salon_id}`)}
+            className="flex-1 flex items-center justify-center gap-2 bg-accent-orange hover:opacity-90 text-primary-white font-body font-semibold text-[14px] py-3 rounded-lg transition-opacity"
           >
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -270,20 +257,10 @@ function BookingCard({ booking, onCancel }) {
             View Salon
           </button>
           
-          {isUpcoming ? (
+          {!isUpcoming && (
             <button
-              onClick={() => setShowCancelConfirm(true)}
-              className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-primary-white font-body font-semibold text-[14px] py-3 rounded-lg transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-              Cancel Booking
-            </button>
-          ) : (
-            <button
-              onClick={() => navigate(`/salon/${booking.salon_id}/book`)}
-              className="flex items-center justify-center gap-2 bg-accent-orange hover:opacity-90 text-primary-white font-body font-semibold text-[14px] py-3 rounded-lg transition-opacity"
+              onClick={() => navigate(`/salons/${booking.salon_id}`)}
+              className="flex-1 flex items-center justify-center gap-2 bg-neutral-gray-600 hover:bg-neutral-gray-500 text-neutral-black font-body font-semibold text-[14px] py-3 rounded-lg transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -291,6 +268,22 @@ function BookingCard({ booking, onCancel }) {
               Book Again
             </button>
           )}
+          
+          {/* Three Dot Menu for Cancel */}
+          {isUpcoming && (
+            <div className="relative">
+              <button
+                onClick={() => setShowCancelConfirm(true)}
+                className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-neutral-gray-600 transition-colors"
+                title="More options"
+              >
+                <svg className="w-5 h-5 text-neutral-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
         </div>
       </div>
 
@@ -337,8 +330,8 @@ export default function MyBookings() {
   
   const bookings = bookingsData?.data || [];
   
-  // Local UI state
-  const [activeTab, setActiveTab] = useState("all"); // all, upcoming, past
+  // Local UI state - default to upcoming
+  const [activeTab, setActiveTab] = useState("upcoming"); // upcoming, past
 
   /**
    * handleCancelBooking - Cancels booking via API mutation
@@ -350,28 +343,47 @@ export default function MyBookings() {
         position: "top-center",
       });
     } catch (error) {
-      console.error("Cancel error:", error);
       showErrorToast(error?.message || "Failed to cancel booking");
     }
   };
 
   /**
-   * filterBookings - Filters bookings based on active tab
+   * filterAndSortBookings - Filters and intelligently sorts bookings
+   * Upcoming: confirmed first, then by date (earliest first)
+   * Past: latest first (most recent completed/cancelled)
    */
-  const filterBookings = () => {
+  const filterAndSortBookings = () => {
+    let filtered;
+    
     if (activeTab === "upcoming") {
-      return bookings.filter(
-        (b) => b.status !== "completed" && b.status !== "cancelled"
+      // Upcoming: pending, confirmed only
+      filtered = bookings.filter(
+        (b) => b.status === "pending" || b.status === "confirmed"
       );
-    } else if (activeTab === "past") {
-      return bookings.filter(
-        (b) => b.status === "completed" || b.status === "cancelled"
+      
+      // Sort: confirmed first, then by date (earliest upcoming first)
+      filtered.sort((a, b) => {
+        // Confirmed bookings come first
+        if (a.status === "confirmed" && b.status !== "confirmed") return -1;
+        if (a.status !== "confirmed" && b.status === "confirmed") return 1;
+        
+        // Then sort by date (earliest first)
+        return new Date(a.booking_date) - new Date(b.booking_date);
+      });
+    } else {
+      // Past: completed, cancelled, no_show
+      filtered = bookings.filter(
+        (b) => b.status === "completed" || b.status === "cancelled" || b.status === "no_show"
       );
+      
+      // Sort by date descending (latest first)
+      filtered.sort((a, b) => new Date(b.booking_date) - new Date(a.booking_date));
     }
-    return bookings;
+    
+    return filtered;
   };
 
-  const filteredBookings = filterBookings();
+  const filteredBookings = filterAndSortBookings();
 
   return (
     <div className="min-h-screen bg-bg-primary">
@@ -391,18 +403,8 @@ export default function MyBookings() {
         {/* Tabs */}
         <div className="flex gap-4 mb-6 border-b border-neutral-gray-600">
           <button
-            onClick={() => setActiveTab("all")}
-            className={`font-body font-medium text-[16px] px-4 py-2 transition-colors ${
-              activeTab === "all"
-                ? "text-accent-orange border-b-2 border-accent-orange"
-                : "text-neutral-gray-500 hover:text-neutral-black"
-            }`}
-          >
-            All ({bookings.length})
-          </button>
-          <button
             onClick={() => setActiveTab("upcoming")}
-            className={`font-body font-medium text-[16px] px-4 py-2 transition-colors ${
+            className={`font-body font-medium text-[16px] px-6 py-3 transition-colors ${
               activeTab === "upcoming"
                 ? "text-accent-orange border-b-2 border-accent-orange"
                 : "text-neutral-gray-500 hover:text-neutral-black"
@@ -411,14 +413,14 @@ export default function MyBookings() {
             Upcoming (
             {
               bookings.filter(
-                (b) => b.status !== "completed" && b.status !== "cancelled"
+                (b) => b.status === "pending" || b.status === "confirmed"
               ).length
             }
             )
           </button>
           <button
             onClick={() => setActiveTab("past")}
-            className={`font-body font-medium text-[16px] px-4 py-2 transition-colors ${
+            className={`font-body font-medium text-[16px] px-6 py-3 transition-colors ${
               activeTab === "past"
                 ? "text-accent-orange border-b-2 border-accent-orange"
                 : "text-neutral-gray-500 hover:text-neutral-black"
@@ -427,7 +429,7 @@ export default function MyBookings() {
             Past (
             {
               bookings.filter(
-                (b) => b.status === "completed" || b.status === "cancelled"
+                (b) => b.status === "completed" || b.status === "cancelled" || b.status === "no_show"
               ).length
             }
             )
@@ -463,9 +465,7 @@ export default function MyBookings() {
               No bookings found
             </h3>
             <p className="font-body text-[14px] text-neutral-gray-500 mb-6">
-              {activeTab === "all"
-                ? "You haven't made any bookings yet"
-                : activeTab === "upcoming"
+              {activeTab === "upcoming"
                 ? "You have no upcoming bookings"
                 : "You have no past bookings"}
             </p>

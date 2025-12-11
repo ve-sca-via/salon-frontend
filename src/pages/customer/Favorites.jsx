@@ -176,7 +176,6 @@ export default function Favorites() {
       await removeFavorite(salonId).unwrap();
       showSuccessToast("Removed from favorites");
     } catch (error) {
-      console.error("Remove favorite error:", error);
       showErrorToast(error?.message || "Failed to remove from favorites");
     }
   };

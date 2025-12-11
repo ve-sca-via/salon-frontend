@@ -26,12 +26,7 @@ const SubmissionHistory = () => {
 
   // Debug log to check admin_notes
   React.useEffect(() => {
-    if (submissionsArray.length > 0) {
-      console.log('Submission History - Sample submission:', submissionsArray[0]);
-      console.log('Admin notes field:', submissionsArray[0]?.admin_notes);
-      console.log('Reviewed at:', submissionsArray[0]?.reviewed_at);
-      console.log('Reviewed by:', submissionsArray[0]?.reviewed_by);
-    }
+    // Submission data loaded
   }, [submissionsArray]);
 
   const getStatusColor = (status) => {

@@ -79,6 +79,51 @@ const SalonProfile = () => {
   });
 
   /**
+   * Helper: Convert database format to business_hours object
+   * Database has: opening_time, closing_time, working_days array
+   * UI needs: { monday: "9:00 AM - 6:00 PM", tuesday: "Closed", ... }
+   */
+  const convertDbToBusinessHours = (salon) => {
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const businessHours = {};
+    
+    // If business_hours JSONB exists, use it directly (new format)
+    if (salon.business_hours && typeof salon.business_hours === 'object') {
+      return salon.business_hours;
+    }
+    
+    // Otherwise, convert from opening_time/closing_time/working_days (legacy format)
+    if (salon.opening_time && salon.closing_time) {
+      // Convert 24-hour to 12-hour format
+      const formatTime = (time24) => {
+        if (!time24) return '';
+        const [hours24, minutes] = time24.split(':').map(Number);
+        const period = hours24 >= 12 ? 'PM' : 'AM';
+        const hours12 = hours24 % 12 || 12;
+        return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+      };
+      
+      const openTime = formatTime(salon.opening_time);
+      const closeTime = formatTime(salon.closing_time);
+      const hoursStr = `${openTime} - ${closeTime}`;
+      
+      // Set hours for working days, "Closed" for others
+      const workingDays = (salon.working_days || []).map(d => d.toLowerCase());
+      
+      days.forEach(day => {
+        businessHours[day] = workingDays.includes(day) ? hoursStr : 'Closed';
+      });
+    } else {
+      // No data, set all to empty
+      days.forEach(day => {
+        businessHours[day] = '';
+      });
+    }
+    
+    return businessHours;
+  };
+
+  /**
    * Sync form data with salon profile when it loads or changes
    */
   useEffect(() => {
@@ -95,15 +140,7 @@ const SalonProfile = () => {
         description: salonProfile.description || '',
         logo_url: salonProfile.logo_url || '',
         cover_images: salonProfile.cover_images || [],
-        business_hours: salonProfile.business_hours || {
-          monday: '',
-          tuesday: '',
-          wednesday: '',
-          thursday: '',
-          friday: '',
-          saturday: '',
-          sunday: '',
-        },
+        business_hours: convertDbToBusinessHours(salonProfile),
       });
     }
   }, [salonProfile]);

@@ -236,7 +236,6 @@ const AddSalonForm = () => {
         showSuccessToast(`${files.length} image(s) uploaded!`);
       }
     } catch (error) {
-      console.error('Image upload error:', error);
       showErrorToast(error?.message || 'Failed to upload image');
     } finally {
       setUploading(false);
@@ -287,14 +286,29 @@ const AddSalonForm = () => {
         
         // Helper to convert 12-hour to 24-hour format (HH:MM:SS)
         const convertTo24Hour = (time12h) => {
-          if (!time12h) return null;
+          if (!time12h || time12h === 'Closed') return null;
           
-          const [time, period] = time12h.split(' ');
-          let [hours, minutes] = time.split(':').map(Number);
+          // Handle edge cases
+          const trimmed = time12h.trim();
+          if (!trimmed.includes(' ')) return null; // No AM/PM
           
-          if (period === 'PM' && hours !== 12) {
+          const parts = trimmed.split(' ');
+          if (parts.length !== 2) return null;
+          
+          const [time, period] = parts;
+          if (!time.includes(':')) return null;
+          
+          const timeParts = time.split(':');
+          if (timeParts.length < 2) return null;
+          
+          let hours = parseInt(timeParts[0]);
+          let minutes = parseInt(timeParts[1]) || 0;
+          
+          if (isNaN(hours) || isNaN(minutes)) return null;
+          
+          if (period.toUpperCase() === 'PM' && hours !== 12) {
             hours += 12;
-          } else if (period === 'AM' && hours === 12) {
+          } else if (period.toUpperCase() === 'AM' && hours === 12) {
             hours = 0;
           }
           
@@ -303,7 +317,8 @@ const AddSalonForm = () => {
         
         days.forEach(day => {
           const hours = data[day];
-          if (hours && hours !== 'Closed') {
+          
+          if (hours && hours !== 'Closed' && hours.trim() !== '') {
             // Add to working days (capitalize first letter)
             workingDays.push(day.charAt(0).toUpperCase() + day.slice(1));
             
@@ -312,8 +327,12 @@ const AddSalonForm = () => {
               const [open, close] = hours.split(' - ').map(t => t.trim());
               
               // Use first non-closed day's hours as representative times
-              if (!opening_time) opening_time = convertTo24Hour(open);
-              if (!closing_time) closing_time = convertTo24Hour(close);
+              if (!opening_time) {
+                opening_time = convertTo24Hour(open);
+              }
+              if (!closing_time) {
+                closing_time = convertTo24Hour(close);
+              }
             }
           }
         });
@@ -335,6 +354,31 @@ const AddSalonForm = () => {
             duration_minutes: parseInt(s.duration_minutes) || 30,
             description: s.description || '',
           }));
+      };
+      
+      // Helper: Group services by category for services_offered JSONB column
+      const groupServicesByCategory = () => {
+        const servicesArray = prepareServicesArray();
+        const grouped = {};
+        
+        servicesArray.forEach(service => {
+          // Find category name from serviceCategories
+          const category = serviceCategories.find(cat => cat.id === service.category_id);
+          const categoryName = category ? category.name : 'Uncategorized';
+          
+          if (!grouped[categoryName]) {
+            grouped[categoryName] = [];
+          }
+          
+          grouped[categoryName].push({
+            name: service.name,
+            price: service.price,
+            duration_minutes: service.duration_minutes,
+            description: service.description
+          });
+        });
+        
+        return Object.keys(grouped).length > 0 ? grouped : null;
       };
       
       // Prepare vendor request data matching backend schema
@@ -364,11 +408,14 @@ const AddSalonForm = () => {
         cover_image_url: coverImage || null,
         gallery_images: uploadedImages.length > 0 ? uploadedImages : null,
         
-        // Operations fields (direct columns)
+        // Operations fields (direct columns) - BUSINESS HOURS FIX
         staff_count: data.staff_count ? parseInt(data.staff_count) : 1,
-        opening_time: opening_time,
-        closing_time: closing_time,
-        working_days: working_days.length > 0 ? working_days : null,
+        opening_time: opening_time,  // From parseBusinessHours()
+        closing_time: closing_time,  // From parseBusinessHours()
+        working_days: working_days.length > 0 ? working_days : null,  // From parseBusinessHours()
+        
+        // Services - Store in BOTH places for full compatibility
+        services_offered: groupServicesByCategory(),  // Grouped by category for database column
         
         // Documents JSONB - Store services here for backend to read
         documents: {
@@ -380,8 +427,6 @@ const AddSalonForm = () => {
         },
       };
 
-      console.log('📤 Submitting vendor request:', vendorRequestData);
-      
       // Update existing draft or create new using RTK Query mutations
       if (isEditMode && draftId) {
         await updateVendorRequest({ 
@@ -422,8 +467,6 @@ const AddSalonForm = () => {
       
       navigate(isEditMode ? '/hmr/drafts' : '/hmr/dashboard');
     } catch (error) {
-      console.error('Submit error:', error);
-      
       // Handle validation errors from backend (RTK Query error format)
       if (error.data?.detail) {
         const detail = error.data.detail;
@@ -708,6 +751,7 @@ const AddSalonForm = () => {
                   })}
                   error={errors.email?.message}
                   placeholder="salon@example.com"
+                  helperText="This email will receive account creation and login credentials"
                   required
                 />
 

@@ -338,10 +338,12 @@ const StaffManagement = () => {
                   : 'Get started by adding your first staff member'}
               </p>
               {!searchTerm && (
-                <Button variant="primary" onClick={() => handleOpenModal()}>
-                  <FiPlus className="mr-2" />
-                  Add Your First Staff Member
-                </Button>
+                <div className="flex justify-center">
+                  <Button variant="primary" onClick={() => handleOpenModal()}>
+                    <FiPlus className="mr-2" />
+                    Add Your First Staff Member
+                  </Button>
+                </div>
               )}
             </div>
           </Card>

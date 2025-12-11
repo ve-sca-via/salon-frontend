@@ -19,21 +19,18 @@ export function AuthButton() {
 
   const handleLogout = async () => {
     try {
-      console.log("Logout button clicked");
       setShowDropdown(false);
 
       // Call logout API (invalidates token on backend)
       try {
         await logoutApi().unwrap();
-        console.log("Backend logout successful");
       } catch (apiError) {
-        console.warn("Backend logout failed, continuing with local cleanup:", apiError);
+        // Backend logout failed, continuing with local cleanup
       }
 
       // Clear tokens from localStorage
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
-      console.log("Tokens cleared from localStorage");
 
       // Clear user from Redux
       dispatch(clearUser());
@@ -41,10 +38,9 @@ export function AuthButton() {
       // Clear cart from database (only if authenticated)
       if (isAuthenticated) {
         await clearCart().unwrap().catch(err => {
-          console.warn("Cart clear failed on logout:", err);
+          // Cart clear failed
         });
       }
-      console.log("Redux state cleared");
 
       toast.success("Logged out successfully", {
         position: "top-center",
@@ -57,9 +53,7 @@ export function AuthButton() {
       });
 
       navigate("/");
-      console.log("Navigated to home");
     } catch (error) {
-      console.error("Logout error:", error);
       toast.error("Error logging out", {
         position: "top-center",
         autoClose: 2000,

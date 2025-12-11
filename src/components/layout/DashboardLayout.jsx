@@ -7,7 +7,7 @@ const DashboardLayout = ({ children, role }) => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+      <Navbar onMenuClick={() => setSidebarOpen(!sidebarOpen)} role={role} />
       
       <div className="flex">
         <Sidebar 

@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { clearUser } from '../../store/slices/authSlice';
 import { useLogoutMutation } from '../../services/api/authApi';
-import { FiMenu, FiBell, FiUser, FiLogOut } from 'react-icons/fi';
+import { useGetVendorSalonQuery, useUpdateVendorSalonMutation } from '../../services/api/vendorApi';
+import { FiMenu, FiBell, FiUser, FiLogOut, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { showSuccessToast } from '../../utils/toastConfig';
 
-const Navbar = ({ onMenuClick }) => {
+const Navbar = ({ onMenuClick, role }) => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -13,6 +15,28 @@ const Navbar = ({ onMenuClick }) => {
   
   // RTK Query logout mutation
   const [logoutApi] = useLogoutMutation();
+  
+  // Vendor-specific: Get salon data and update mutation
+  const isVendor = role === 'vendor' || user?.role === 'vendor' || user?.role === 'salon';
+  const { data: salonData } = useGetVendorSalonQuery(undefined, { skip: !isVendor });
+  const [updateSalon, { isLoading: isUpdating }] = useUpdateVendorSalonMutation();
+  const salonProfile = salonData?.salon || salonData;
+  
+  // Toggle accepting bookings
+  const handleToggleAcceptingBookings = async () => {
+    try {
+      const newStatus = !salonProfile.accepting_bookings;
+      await updateSalon({ accepting_bookings: newStatus }).unwrap();
+      showSuccessToast(
+        newStatus 
+          ? '✅ Bookings enabled! Customers can now book your services.' 
+          : '🔒 Bookings disabled temporarily.',
+        { position: 'top-center' }
+      );
+    } catch (error) {
+      // Toggle failed
+    }
+  };
 
   const handleLogout = async () => {
     try {
@@ -20,7 +44,6 @@ const Navbar = ({ onMenuClick }) => {
       await logoutApi().unwrap();
     } catch (error) {
       // Continue with logout even if backend call fails
-      console.error('Logout API error:', error);
     }
     
     // Clear tokens from localStorage
@@ -66,7 +89,13 @@ const Navbar = ({ onMenuClick }) => {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-40 shadow-sm">
+    <nav className={`${
+      isVendor && salonProfile
+        ? salonProfile.accepting_bookings
+          ? 'bg-gradient-to-r from-green-50 via-white to-green-50 border-b-2 border-green-200'
+          : 'bg-gradient-to-r from-red-50 via-white to-red-50 border-b-2 border-red-200'
+        : 'bg-white border-b border-gray-200'
+    } sticky top-0 z-40 shadow-sm transition-all duration-300`}>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left side */}
@@ -80,7 +109,9 @@ const Navbar = ({ onMenuClick }) => {
             
             <Link to={getRoleBasedHome()} className="flex items-center gap-3">
               <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-xl">S</span>
+                <span className="text-white font-bold text-xl">
+                  {user?.role === 'relationship_manager' ? 'A' : 'S'}
+                </span>
               </div>
               <div className="hidden sm:block">
                 <span className="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
@@ -93,6 +124,34 @@ const Navbar = ({ onMenuClick }) => {
 
           {/* Right side */}
           <div className="flex items-center gap-2">
+            {/* Vendor: Accepting Bookings Toggle */}
+            {isVendor && salonProfile && (
+              <div className="flex items-center gap-2 mr-2">
+                <button
+                  onClick={handleToggleAcceptingBookings}
+                  disabled={isUpdating}
+                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                    salonProfile.accepting_bookings
+                      ? 'bg-green-500 hover:bg-green-600 text-white shadow-md'
+                      : 'bg-red-500 hover:bg-red-600 text-white shadow-md'
+                  } ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  title={salonProfile.accepting_bookings ? 'Click to disable bookings' : 'Click to enable bookings'}
+                >
+                  {salonProfile.accepting_bookings ? (
+                    <>
+                      <FiCheckCircle size={16} />
+                      <span className="hidden sm:inline">Accepting Bookings</span>
+                    </>
+                  ) : (
+                    <>
+                      <FiXCircle size={16} />
+                      <span className="hidden sm:inline">Bookings Disabled</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
+            
             {/* Notifications */}
             <button className="relative p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
               <FiBell size={22} />

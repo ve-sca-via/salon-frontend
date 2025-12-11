@@ -58,7 +58,6 @@ export const authApi = createApi({
           dispatch(authApi.util.resetApiState());
         } catch (err) {
           // Logout failed, but still clear local state
-          console.error('Logout error:', err);
         }
       },
       invalidatesTags: ['Auth', 'User'],
@@ -77,7 +76,7 @@ export const authApi = createApi({
           await queryFulfilled;
           dispatch(authApi.util.resetApiState());
         } catch (err) {
-          console.error('Logout all error:', err);
+          // Logout failed
         }
       },
       invalidatesTags: ['Auth', 'User'],

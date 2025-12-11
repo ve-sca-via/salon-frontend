@@ -344,7 +344,7 @@ export default function ServiceBooking() {
         {/* Service Categories with Navigation Arrows */}
         <div className="bg-primary-white rounded-[10px] p-6 shadow-lg mb-6">
           <div className="relative">
-            <div className="flex items-center justify-between gap-4 overflow-x-auto pb-2 scrollbar-hide">
+            <div className="flex items-center justify-between gap-4">
               <button className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-bg-secondary rounded-full hover:bg-neutral-gray-600 transition-colors">
                 <svg
                   className="w-5 h-5 text-neutral-black"
@@ -361,7 +361,7 @@ export default function ServiceBooking() {
                 </svg>
               </button>
 
-              <div className="flex gap-6 overflow-x-auto scrollbar-hide">
+              <div className="flex gap-6 overflow-x-auto scrollbar-hide py-2 px-1">
                 {serviceCategories.map((category) => (
                   <ServiceCategoryCard
                     key={category.id}
@@ -426,6 +426,11 @@ export default function ServiceBooking() {
                       <h3 className="font-display font-semibold text-[18px] text-neutral-black mb-1">
                         {service.name}
                       </h3>
+                      {service.description && (
+                        <p className="font-body text-[14px] text-neutral-gray-500 mb-2 line-clamp-2">
+                          {service.description}
+                        </p>
+                      )}
                       <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1">
                           <svg

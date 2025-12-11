@@ -61,13 +61,16 @@ const BookingsManagement = () => {
   const { data: salonData } = useGetVendorSalonQuery();
   const [updateBookingStatus, { isLoading: isUpdating }] = useUpdateBookingStatusMutation();
   
-  const bookings = bookingsData?.bookings || [];
+  // Backend returns array directly, not wrapped in object
+  const bookings = bookingsData || [];
   const salonProfile = salonData?.salon || salonData;
 
-  // Local state for filters and modal
+  // Local state for filters, sorting, and modal
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
+  const [sortBy, setSortBy] = useState('date'); // 'date', 'customer', 'status', 'amount'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' or 'desc'
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
@@ -90,8 +93,6 @@ const BookingsManagement = () => {
           filter: `salon_id=eq.${salonProfile.id}`
         },
         (payload) => {
-          console.log('New booking received!', payload);
-          
           // Show toast notification with customer name
           showSuccessToast(
             `🔔 New booking from ${payload.new.customer_name || 'a customer'}!`
@@ -118,9 +119,9 @@ const BookingsManagement = () => {
       await updateBookingStatus({ bookingId, status: newStatus }).unwrap();
       showSuccessToast(`Booking ${newStatus} successfully!`);
       setIsDetailsModalOpen(false);
+      refetchBookings(); // Refresh the bookings list
     } catch (error) {
-      console.error('Status update error:', error);
-      showErrorToast(error?.message || 'Failed to update booking status');
+      showErrorToast(error?.data?.detail || error?.message || 'Failed to update booking status');
     }
   };
 
@@ -133,16 +134,30 @@ const BookingsManagement = () => {
   };
 
   /**
-   * Filter bookings based on search term, status, and date
+   * Handle column sorting
+   */
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortOrder('desc');
+    }
+  };
+
+  /**
+   * Filter and sort bookings based on search term, status, date, and sort preferences
    * Memoized to avoid recalculating on every render
    */
   const filteredBookings = useMemo(() => {
-    return bookings.filter((booking) => {
-      // Search filter: matches customer, service, or staff name
+    let filtered = bookings.filter((booking) => {
+      // Search filter: matches customer, booking number, or phone
+      const searchLower = searchTerm.toLowerCase();
       const matchesSearch =
-        booking.customer_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.service_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        booking.staff_name?.toLowerCase().includes(searchTerm.toLowerCase());
+        booking.customer_name?.toLowerCase().includes(searchLower) ||
+        booking.booking_number?.toLowerCase().includes(searchLower) ||
+        booking.customer_phone?.includes(searchTerm) ||
+        booking.customer_email?.toLowerCase().includes(searchLower);
 
       // Status filter
       const matchesStatus = statusFilter === 'all' || booking.status === statusFilter;
@@ -165,7 +180,35 @@ const BookingsManagement = () => {
 
       return matchesSearch && matchesStatus && matchesDate;
     });
-  }, [bookings, searchTerm, statusFilter, dateFilter]);
+
+    // Sort bookings
+    filtered.sort((a, b) => {
+      let compareValue = 0;
+      
+      switch (sortBy) {
+        case 'date':
+          const dateA = new Date(a.booking_date + ' ' + (a.booking_time || '00:00'));
+          const dateB = new Date(b.booking_date + ' ' + (b.booking_time || '00:00'));
+          compareValue = dateA - dateB;
+          break;
+        case 'customer':
+          compareValue = (a.customer_name || '').localeCompare(b.customer_name || '');
+          break;
+        case 'status':
+          compareValue = (a.status || '').localeCompare(b.status || '');
+          break;
+        case 'amount':
+          compareValue = (a.service_price || 0) - (b.service_price || 0);
+          break;
+        default:
+          compareValue = 0;
+      }
+
+      return sortOrder === 'asc' ? compareValue : -compareValue;
+    });
+
+    return filtered;
+  }, [bookings, searchTerm, statusFilter, dateFilter, sortBy, sortOrder]);
 
   /**
    * Calculate booking statistics
@@ -177,10 +220,20 @@ const BookingsManagement = () => {
     confirmed: bookings.filter((b) => b.status === 'confirmed').length,
     completed: bookings.filter((b) => b.status === 'completed').length,
     cancelled: bookings.filter((b) => b.status === 'cancelled').length,
+    no_show: bookings.filter((b) => b.status === 'no_show').length,
     totalRevenue: bookings
       .filter((b) => b.status === 'completed')
       .reduce((sum, b) => sum + (b.total_amount || 0), 0),
   }), [bookings]);
+
+  /**
+   * Format status label for display
+   */
+  const formatStatus = (status) => {
+    if (!status) return 'Unknown';
+    if (status === 'no_show') return 'No Show';
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
 
   /**
    * getStatusColor - Returns Tailwind classes for status badges
@@ -195,9 +248,86 @@ const BookingsManagement = () => {
         return 'bg-green-100 text-green-700 border-green-200';
       case 'cancelled':
         return 'bg-red-100 text-red-700 border-red-200';
+      case 'no_show':
+        return 'bg-orange-100 text-orange-700 border-orange-200';
       default:
         return 'bg-gray-100 text-gray-700 border-gray-200';
     }
+  };
+
+  /**
+   * Parse services from booking - handles string, array, or object formats
+   */
+  const parseServices = (booking) => {
+    try {
+      let services = [];
+      
+      // Handle services field (JSONB array)
+      if (booking.services) {
+        if (typeof booking.services === 'string') {
+          services = JSON.parse(booking.services);
+        } else if (Array.isArray(booking.services)) {
+          services = booking.services;
+        }
+      }
+      
+      return services;
+    } catch (error) {
+      return [];
+    }
+  };
+
+  /**
+   * Format services for display - shows first service + count if multiple
+   */
+  const formatServicesDisplay = (booking) => {
+    const services = parseServices(booking);
+    
+    if (services.length === 0) {
+      return booking.service_name || 'N/A';
+    }
+    
+    // Get first service name from various possible fields
+    const firstName = services[0].service_name || 
+                     services[0].name || 
+                     (services[0].service_id ? `Service #${services[0].service_id.substring(0, 8)}` : 'Service');
+    
+    if (services.length === 1) {
+      return firstName;
+    }
+    
+    return `${firstName} +${services.length - 1} more`;
+  };
+
+  /**
+   * Parse time slots from booking
+   */
+  const parseTimeSlots = (booking) => {
+    try {
+      if (booking.time_slots) {
+        if (typeof booking.time_slots === 'string') {
+          return JSON.parse(booking.time_slots);
+        } else if (Array.isArray(booking.time_slots)) {
+          return booking.time_slots;
+        }
+      }
+      return [];
+    } catch (error) {
+      return [];
+    }
+  };
+
+  /**
+   * Format time slots for display
+   */
+  const formatTimeDisplay = (booking) => {
+    const timeSlots = parseTimeSlots(booking);
+    
+    if (timeSlots.length > 0) {
+      return timeSlots.join(', ');
+    }
+    
+    return booking.booking_time || 'N/A';
   };
 
   /**
@@ -260,7 +390,7 @@ const BookingsManagement = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
           <Card className="hover:shadow-md transition-shadow">
             <div className="text-center">
               <p className="text-sm text-gray-600 font-body mb-1">Total</p>
@@ -283,6 +413,12 @@ const BookingsManagement = () => {
             <div className="text-center">
               <p className="text-sm text-gray-600 font-body mb-1">Completed</p>
               <p className="text-2xl font-display font-bold text-green-600">{stats.completed}</p>
+            </div>
+          </Card>
+          <Card className="hover:shadow-md transition-shadow">
+            <div className="text-center">
+              <p className="text-sm text-gray-600 font-body mb-1">No Show</p>
+              <p className="text-2xl font-display font-bold text-orange-600">{stats.no_show}</p>
             </div>
           </Card>
           <Card className="hover:shadow-md transition-shadow">
@@ -350,6 +486,13 @@ const BookingsManagement = () => {
                   onClick={() => setStatusFilter('completed')}
                 >
                   Completed
+                </Button>
+                <Button
+                  variant={statusFilter === 'no_show' ? 'primary' : 'outline'}
+                  size="sm"
+                  onClick={() => setStatusFilter('no_show')}
+                >
+                  No Show
                 </Button>
                 <Button
                   variant={statusFilter === 'cancelled' ? 'primary' : 'outline'}
@@ -479,7 +622,7 @@ const BookingsManagement = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span className="text-sm font-body text-gray-900">
-                          {booking.service_name || 'N/A'}
+                          {formatServicesDisplay(booking)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -494,15 +637,18 @@ const BookingsManagement = () => {
                             <p>{formatDate(booking.booking_date)}</p>
                             <p className="text-xs text-gray-500">
                               <FiClock className="inline mr-1" />
-                              {formatTime(booking.booking_time)}
+                              {formatTimeDisplay(booking)}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center text-sm font-body font-semibold text-accent-orange">
-                          <FiDollarSign className="mr-1" />
-                          ₹{booking.total_amount?.toLocaleString() || 0}
+                        <div>
+                          <div className="flex items-center text-sm font-body font-semibold text-green-600">
+                            <FiDollarSign className="mr-1" />
+                            ₹{booking.service_price?.toLocaleString() || 0}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">To collect</p>
                         </div>
                       </td>
                       <td className="px-4 py-3">
@@ -512,7 +658,7 @@ const BookingsManagement = () => {
                           )}`}
                         >
                           {getStatusIcon(booking.status)}
-                          {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1)}
+                          {formatStatus(booking.status)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -555,8 +701,7 @@ const BookingsManagement = () => {
                 )}`}
               >
                 {getStatusIcon(selectedBooking.status)}
-                {selectedBooking.status?.charAt(0).toUpperCase() +
-                  selectedBooking.status?.slice(1)}
+                {formatStatus(selectedBooking.status)}
               </span>
             </div>
 
@@ -583,18 +728,43 @@ const BookingsManagement = () => {
               </div>
             </div>
 
+            {/* Services List */}
+            <div>
+              <h3 className="text-sm font-body font-semibold text-gray-700 mb-3">
+                Services Requested
+              </h3>
+              <div className="space-y-2 mb-4">
+                {parseServices(selectedBooking).length > 0 ? (
+                  parseServices(selectedBooking).map((service, index) => (
+                    <div key={index} className="flex justify-between items-center py-2 px-3 bg-gray-50 rounded-lg">
+                      <div className="flex-1">
+                        <p className="text-sm font-body font-semibold text-gray-900">
+                          {service.service_name || service.name || (service.service_id ? `Service #${service.service_id.substring(0, 8)}` : 'Service')}
+                        </p>
+                        {service.quantity > 1 && (
+                          <p className="text-xs text-gray-500">Qty: {service.quantity}</p>
+                        )}
+                        {service.service_id && !service.service_name && (
+                          <p className="text-xs text-gray-400 font-mono">ID: {service.service_id.substring(0, 8)}</p>
+                        )}
+                      </div>
+                      <span className="text-sm font-body font-semibold text-gray-900">
+                        ₹{(service.unit_price * (service.quantity || 1))?.toLocaleString()}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500 font-body italic py-2 px-3 bg-gray-50 rounded-lg\">{selectedBooking.service_name || 'No services listed'}</p>
+                )}
+              </div>
+            </div>
+
             {/* Booking Details */}
             <div>
               <h3 className="text-sm font-body font-semibold text-gray-700 mb-3">
-                Booking Details
+                Appointment Details
               </h3>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 font-body">Service:</span>
-                  <span className="text-sm font-body font-semibold text-gray-900">
-                    {selectedBooking.service_name || 'N/A'}
-                  </span>
-                </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 font-body">Staff:</span>
                   <span className="text-sm font-body font-semibold text-gray-900">
@@ -608,68 +778,118 @@ const BookingsManagement = () => {
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 font-body">Time:</span>
+                  <span className="text-sm text-gray-600 font-body">Time Slots:</span>
                   <span className="text-sm font-body font-semibold text-gray-900">
-                    {formatTime(selectedBooking.booking_time)}
-                  </span>
-                </div>
-                <div className="flex justify-between pt-2 border-t">
-                  <span className="text-sm text-gray-600 font-body">Total Amount:</span>
-                  <span className="text-lg font-display font-bold text-accent-orange">
-                    ₹{selectedBooking.total_amount?.toLocaleString() || 0}
+                    {formatTimeDisplay(selectedBooking)}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Status Update Actions - Only show for pending/confirmed bookings */}
+            {/* Payment Breakdown */}
+            <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-4 rounded-lg border border-orange-200">
+              <h3 className="text-sm font-body font-semibold text-gray-700 mb-3">
+                Payment Details
+              </h3>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 font-body">Services Total:</span>
+                  <span className="text-sm font-body font-semibold text-gray-900">
+                    ₹{selectedBooking.service_price?.toLocaleString() || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-gray-600 font-body">Booking Fee (Paid Online):</span>
+                  <span className="text-sm font-body text-gray-500 line-through">
+                    ₹{selectedBooking.convenience_fee?.toLocaleString() || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-orange-200">
+                  <span className="text-sm font-body font-semibold text-gray-700">Total Amount:</span>
+                  <span className="text-sm font-body font-semibold text-gray-900">
+                    ₹{selectedBooking.total_amount?.toLocaleString() || 0}
+                  </span>
+                </div>
+                <div className="flex justify-between pt-2 mt-2 border-t-2 border-green-500">
+                  <span className="text-base font-display font-bold text-green-700">To Collect at Salon:</span>
+                  <span className="text-lg font-display font-bold text-green-600">
+                    ₹{selectedBooking.service_price?.toLocaleString() || 0}
+                  </span>
+                </div>
+              </div>
+              <p className="text-xs text-gray-600 font-body mt-3 p-2 bg-white/60 rounded">
+                💡 Customer already paid ₹{selectedBooking.convenience_fee?.toLocaleString() || 0} booking fee online. 
+                Collect ₹{selectedBooking.service_price?.toLocaleString() || 0} after completing the service.
+              </p>
+            </div>
+
+            {/* Status Update Actions */}
             {selectedBooking.status === 'pending' && (
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  variant="primary"
-                  className="flex-1"
-                  onClick={() => handleStatusUpdate(selectedBooking.id, 'confirmed')}
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? 'Processing...' : 'Confirm Booking'}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 text-red-600 hover:bg-red-50 border-red-200"
-                  onClick={() => handleStatusUpdate(selectedBooking.id, 'cancelled')}
-                  disabled={isUpdating}
-                >
-                  Cancel Booking
-                </Button>
+              <div className="pt-4 border-t">
+                <p className="text-xs text-gray-600 font-body mb-3">Update booking status:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    variant="primary"
+                    className="w-full bg-blue-600 hover:bg-blue-700"
+                    onClick={() => handleStatusUpdate(selectedBooking.id, 'confirmed')}
+                    disabled={isUpdating}
+                  >
+                    <FiCheckCircle className="mr-2" />
+                    {isUpdating ? 'Processing...' : 'Confirm'}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full text-red-600 hover:bg-red-50 border-red-200"
+                    onClick={() => handleStatusUpdate(selectedBooking.id, 'cancelled')}
+                    disabled={isUpdating}
+                  >
+                    <FiXCircle className="mr-2" />
+                    Cancel
+                  </Button>
+                </div>
               </div>
             )}
 
             {selectedBooking.status === 'confirmed' && (
-              <div className="flex gap-3 pt-4 border-t">
-                <Button
-                  variant="primary"
-                  className="flex-1"
-                  onClick={() => handleStatusUpdate(selectedBooking.id, 'completed')}
-                  disabled={isUpdating}
-                >
-                  {isUpdating ? 'Processing...' : 'Mark as Completed'}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 text-red-600 hover:bg-red-50 border-red-200"
-                  onClick={() => handleStatusUpdate(selectedBooking.id, 'cancelled')}
-                  disabled={isUpdating}
-                >
-                  Cancel Booking
-                </Button>
+              <div className="pt-4 border-t">
+                <p className="text-xs text-gray-600 font-body mb-3">Update booking status:</p>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    variant="primary"
+                    className="w-full bg-green-600 hover:bg-green-700 text-xs"
+                    onClick={() => handleStatusUpdate(selectedBooking.id, 'completed')}
+                    disabled={isUpdating}
+                  >
+                    <FiCheckCircle className="mr-1" />
+                    Completed
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full text-orange-600 hover:bg-orange-50 border-orange-200 text-xs"
+                    onClick={() => handleStatusUpdate(selectedBooking.id, 'no_show')}
+                    disabled={isUpdating}
+                  >
+                    <FiAlertCircle className="mr-1" />
+                    No Show
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full text-red-600 hover:bg-red-50 border-red-200 text-xs"
+                    onClick={() => handleStatusUpdate(selectedBooking.id, 'cancelled')}
+                    disabled={isUpdating}
+                  >
+                    <FiXCircle className="mr-1" />
+                    Cancel
+                  </Button>
+                </div>
               </div>
             )}
 
-            {/* Show message for completed/cancelled bookings */}
-            {(selectedBooking.status === 'completed' || selectedBooking.status === 'cancelled') && (
+            {/* Show message for completed/cancelled/no_show bookings */}
+            {(selectedBooking.status === 'completed' || selectedBooking.status === 'cancelled' || selectedBooking.status === 'no_show') && (
               <div className="pt-4 border-t">
                 <p className="text-sm text-gray-600 font-body text-center">
-                  This booking has been {selectedBooking.status}
+                  This booking has been marked as <span className="font-semibold">{selectedBooking.status.replace('_', ' ')}</span>
                 </p>
               </div>
             )}

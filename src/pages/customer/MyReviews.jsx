@@ -303,7 +303,6 @@ export default function MyReviews() {
       await updateReview({ reviewId, ...updatedData }).unwrap();
       showSuccessToast("Review updated successfully");
     } catch (error) {
-      console.error("Update review error:", error);
       showErrorToast(error?.message || "Failed to update review");
     }
   };

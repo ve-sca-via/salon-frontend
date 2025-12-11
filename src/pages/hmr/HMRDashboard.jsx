@@ -45,10 +45,9 @@ const HMRDashboard = () => {
     }
   };
 
-  // Minor defensive UI: if fetching profile failed, show a console message and allow the page to render minimal data
+  // Minor defensive UI: if fetching profile failed, allow the page to render minimal data
   if (profileData === undefined && submissionsData === undefined) {
-    // don't flood users with toasts on initial load; use console.debug for developers
-    console.debug('HMRDashboard: profile and submissions data not available yet');
+    // Data not available yet
   }
 
   return (
@@ -59,14 +58,14 @@ const HMRDashboard = () => {
             Welcome, {user?.full_name || user?.name || 'Agent'}!
           </h1>
           <p className="text-white/90 mb-6">Track your salon submissions and help grow our network</p>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <Link to="/hmr/add-salon">
               <Button variant="secondary" className="bg-neutral-black hover:bg-neutral-gray-400" aria-label="Add new salon">
                 <FiPlusCircle className="mr-2" />Add New Salon
               </Button>
             </Link>
             <Link to="/hmr/leaderboard">
-              <Button variant="secondary" className="bg-white text-accent-orange hover:bg-gray-100" aria-label="View leaderboard">
+              <Button className="bg-white text-accent-orange hover:bg-gray-100 shadow-md border border-white/20" aria-label="View leaderboard">
                 <FiAward className="mr-2" />View Leaderboard
               </Button>
             </Link>

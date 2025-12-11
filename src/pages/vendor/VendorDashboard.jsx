@@ -65,7 +65,10 @@ const VendorDashboard = () => {
   const salonProfile = salonData?.salon || salonData;
   // TODO: Standardize analytics response structure in API (sometimes {data: {...}}, sometimes direct)
   const analytics = analyticsData?.data || analyticsData;
-  const bookings = bookingsData?.bookings || [];
+  // Backend returns array directly for bookings
+  const recentBookings = Array.isArray(bookingsData) 
+    ? bookingsData.slice(0, 5).sort((a, b) => new Date(b.created_at || b.booking_date) - new Date(a.created_at || a.booking_date))
+    : (bookingsData?.bookings || []).slice(0, 5);
 
   /**
    * Real-time subscription for new bookings
@@ -86,8 +89,6 @@ const VendorDashboard = () => {
           filter: `salon_id=eq.${salonProfile.id}`
         },
         (payload) => {
-          console.log('New booking received!', payload);
-          
           // Show toast notification
           toast.success(
             `🔔 New booking from ${payload.new.customer_name || 'a customer'}!`,
@@ -147,6 +148,31 @@ const VendorDashboard = () => {
    */
   const handleMakePayment = () => {
     navigate('/vendor/payment');
+  };
+
+  /**
+   * getServiceNames - Parse services JSONB array and return formatted names
+   */
+  const getServiceNames = (booking) => {
+    try {
+      // Services can be a JSONB array
+      const services = booking.services;
+      
+      if (!services || !Array.isArray(services) || services.length === 0) {
+        return 'N/A';
+      }
+      
+      // Get first service name and show count if multiple
+      const firstName = services[0].service_name || services[0].name || 'Service';
+      
+      if (services.length === 1) {
+        return firstName;
+      } else {
+        return `${firstName} +${services.length - 1} more`;
+      }
+    } catch (error) {
+      return 'N/A';
+    }
   };
 
   /**
@@ -274,49 +300,6 @@ const VendorDashboard = () => {
             </div>
           </div>
 
-          {/* Accepting Bookings Toggle Card */}
-          <Card className={`border-2 ${salonProfile?.accepting_bookings ? 'border-green-200 bg-green-50' : 'border-orange-200 bg-orange-50'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
-                  salonProfile?.accepting_bookings ? 'bg-green-500' : 'bg-orange-500'
-                }`}>
-                  {salonProfile?.accepting_bookings ? (
-                    <FiCheckCircle className="text-white text-3xl" />
-                  ) : (
-                    <FiLock className="text-white text-3xl" />
-                  )}
-                </div>
-                <div>
-                  <h3 className="text-xl font-display font-bold text-gray-900 mb-1">
-                    {salonProfile?.accepting_bookings ? 'Accepting Bookings' : 'Bookings Disabled'}
-                  </h3>
-                  <p className="text-sm text-gray-600 font-body">
-                    {salonProfile?.accepting_bookings 
-                      ? 'Customers can book your services right now' 
-                      : 'Customers cannot book until you enable bookings'}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleToggleAcceptingBookings}
-                disabled={isUpdating}
-                className={`relative inline-flex h-10 w-20 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                  salonProfile?.accepting_bookings 
-                    ? 'bg-green-600 focus:ring-green-500' 
-                    : 'bg-gray-300 focus:ring-gray-400'
-                } ${isUpdating ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-              >
-                <span className="sr-only">Toggle accepting bookings</span>
-                <span
-                  className={`inline-block h-8 w-8 transform rounded-full bg-white shadow-lg transition-transform ${
-                    salonProfile?.accepting_bookings ? 'translate-x-11' : 'translate-x-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </Card>
-
           {/* Analytics Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {stats.map((stat, index) => (
@@ -408,7 +391,7 @@ const VendorDashboard = () => {
             <div className="text-center py-8">
               <div className="animate-spin h-8 w-8 border-2 border-accent-orange border-t-transparent rounded-full mx-auto"></div>
             </div>
-          ) : bookings && bookings.length > 0 ? (
+          ) : recentBookings && recentBookings.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -431,13 +414,13 @@ const VendorDashboard = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {bookings.map((booking) => (
+                  {recentBookings.map((booking) => (
                     <tr key={booking.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-900">
                         {booking.customer_name || 'N/A'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-900">
-                        {booking.service_name || 'N/A'}
+                      <td className="px-6 py-4 text-sm font-body text-gray-900">
+                        {getServiceNames(booking)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-600">
                         {booking.booking_date

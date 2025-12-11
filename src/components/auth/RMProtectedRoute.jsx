@@ -36,20 +36,17 @@ const RMProtectedRoute = ({ children }) => {
       
       // Verify user is RM
       if (userData.role !== 'relationship_manager') {
-        console.error('❌ User is not an RM:', userData.role);
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         return;
       }
       
-      console.log('✅ RM verified:', userData.email);
       dispatch(setUser(userData));
     }
   }, [currentUserData, user, dispatch]);
 
   // No token - redirect to login
   if (!token) {
-    console.log('❌ No access token found, redirecting to login');
     return <Navigate to="/rm-login" state={{ from: location }} replace />;
   }
 
@@ -67,7 +64,6 @@ const RMProtectedRoute = ({ children }) => {
 
   // User fetch failed - redirect to login
   if (userError) {
-    console.error('❌ Token verification failed');
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     return <Navigate to="/rm-login" state={{ from: location }} replace />;
@@ -75,7 +71,6 @@ const RMProtectedRoute = ({ children }) => {
 
   // User loaded but not an RM - redirect with error
   if (user.role !== 'relationship_manager') {
-    console.error('❌ Access denied: User is not an RM');
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     return <Navigate to="/rm-login" state={{ from: location, error: 'Access denied. RM role required.' }} replace />;
@@ -113,7 +108,6 @@ const RMProtectedRoute = ({ children }) => {
   }
 
   // All checks passed - render protected content
-  console.log('✅ RM access granted:', user.email);
   return <>{children}</>;
 };
 

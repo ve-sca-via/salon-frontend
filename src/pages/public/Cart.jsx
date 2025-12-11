@@ -83,10 +83,10 @@ function CartItem({ item, onIncrement, onDecrement, onRemove }) {
             </p>
           )}
           <p className="font-body text-[14px] text-accent-orange font-semibold">
-            ₹{item.unit_price || item.price}{" "}
+            ₹{item.unit_price || item.price || 0}
             {item.quantity > 1 && (
               <span className="text-neutral-gray-500 text-[12px]">
-                x {item.quantity} = ₹{item.line_total}
+                {" "}x {item.quantity}
               </span>
             )}
           </p>
@@ -139,7 +139,7 @@ function CartItem({ item, onIncrement, onDecrement, onRemove }) {
 
           {/* Subtotal */}
           <p className="font-body font-bold text-[16px] text-neutral-black">
-            ₹{item.price * item.quantity}
+            ₹{(item.unit_price || item.price || 0) * item.quantity}
           </p>
 
           {/* Remove Button */}

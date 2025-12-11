@@ -352,10 +352,12 @@ const ServicesManagement = () => {
                   : 'Get started by adding your first service'}
               </p>
               {!searchTerm && (
-                <Button variant="primary" onClick={() => handleOpenModal()}>
-                  <FiPlus className="mr-2" />
-                  Add Your First Service
-                </Button>
+                <div className="flex justify-center">
+                  <Button variant="primary" onClick={() => handleOpenModal()}>
+                    <FiPlus className="mr-2" />
+                    Add Your First Service
+                  </Button>
+                </div>
               )}
             </div>
           </Card>

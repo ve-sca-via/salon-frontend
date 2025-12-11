@@ -69,15 +69,15 @@ export default function CustomerProfile() {
    * TODO: Implement edit profile, change password, and notification preferences
    */
   const handleEditProfile = () => {
-    console.log("Edit profile - Not yet implemented");
+    // Not yet implemented
   };
 
   const handleChangePassword = () => {
-    console.log("Change password - Not yet implemented");
+    // Not yet implemented
   };
 
   const handleNotificationPreferences = () => {
-    console.log("Notification preferences - Not yet implemented");
+    // Not yet implemented
   };
 
   return (

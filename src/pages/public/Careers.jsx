@@ -163,7 +163,6 @@ const Careers = () => {
         throw new Error(data.detail || 'Failed to submit application');
       }
     } catch (error) {
-      console.error('Error submitting application:', error);
       alert('Failed to submit application. Please try again.');
     } finally {
       setLoading(false);

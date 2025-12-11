@@ -95,7 +95,6 @@ const CompleteRegistration = () => {
       const decoded = JSON.parse(jsonPayload);
       setTokenData(decoded);
     } catch (error) {
-      console.error('Error decoding token:', error);
       showErrorToast('Invalid registration token');
       // Still allow form to render - server will validate token on submit
     }
@@ -185,7 +184,6 @@ const CompleteRegistration = () => {
         navigate('/vendor/dashboard');
       }
     } catch (error) {
-      console.error('Registration error:', error);
       showErrorToast(error.message || 'Registration failed. Please try again.');
     }
   };
@@ -406,7 +404,7 @@ const CompleteRegistration = () => {
           <p className="text-sm text-gray-600 font-body">
             Need help?{' '}
             <a 
-              href="mailto:support@salonhub.com"
+              href="mailto:support@lubist.com"
               className="text-[#F89C02] hover:text-orange-700 font-semibold"
             >
               Contact Support

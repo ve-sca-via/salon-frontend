@@ -151,11 +151,6 @@ const Login = () => {
       }, 500);
 
     } catch (error) {
-      // Only log errors in development
-      if (process.env.NODE_ENV === 'development') {
-        console.error('Login error:', error);
-      }
-
       // RTK Query errors have a 'data' property
       const errorMessage = error.data?.detail || error.message || 'Login failed';
       showErrorToast(errorMessage);
@@ -179,7 +174,7 @@ const Login = () => {
           <div className="text-primary-white hidden lg:block">
             <Link to="/" className="inline-block mb-8">
               <h1 className="font-display font-bold text-5xl text-primary-white">
-                SalonHub
+                Lubist
               </h1>
             </Link>
             <h2 className="font-display font-bold text-4xl mb-4">
@@ -214,7 +209,7 @@ const Login = () => {
             <div className="text-center mb-6 lg:hidden">
               <Link to="/">
                 <h1 className="font-display font-bold text-4xl text-primary-white">
-                  SalonHub
+                  Lubist
                 </h1>
               </Link>
             </div>

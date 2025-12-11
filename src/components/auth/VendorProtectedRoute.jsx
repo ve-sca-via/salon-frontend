@@ -49,7 +49,6 @@ const VendorProtectedRoute = ({ children }) => {
   // Handle user fetch error
   useEffect(() => {
     if (userError) {
-      console.error('Error fetching user:', userError);
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       dispatch(clearUser());

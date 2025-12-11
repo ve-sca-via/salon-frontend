@@ -33,15 +33,6 @@ const PaymentProtectionWrapper = ({ children }) => {
   const { data: salonData, isLoading } = useGetVendorSalonQuery();
   const salonProfile = salonData?.salon || salonData;
 
-  // Debug logging
-  console.log('🔒 Payment Protection Check:', {
-    salonData,
-    salonProfile,
-    is_active: salonProfile?.is_active,
-    registration_fee_paid: salonProfile?.registration_fee_paid,
-    currentPath: location.pathname
-  });
-
   // Loading state
   if (isLoading) {
     return (

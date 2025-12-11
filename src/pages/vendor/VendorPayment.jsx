@@ -124,8 +124,6 @@ const VendorPayment = () => {
           navigate('/vendor/dashboard');
         }, PAYMENT_CONFIG.SUCCESS_SCREEN_DURATION);
       } catch (error) {
-        console.error('Payment error:', error);
-        
         // Differentiate error types for better user feedback
         const errorMessage = error?.data?.message || error?.message || 'Payment processing failed';
         showErrorToast(`Payment failed: ${errorMessage}`);

@@ -80,8 +80,8 @@ export default function Checkout() {
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  // Get booking fee from config or default to 10
-  const bookingFeePercentage = configs?.convenience_fee_percentage || 10;
+  // Get booking fee from config (dynamically set by admin, no hardcoded fallback)
+  const bookingFeePercentage = configs?.convenience_fee_percentage;
   
   // Get max advance booking days from config or default to 30
   const maxAdvanceDays = configs?.max_booking_advance_days || 30;
@@ -93,6 +93,15 @@ export default function Checkout() {
       navigate("/cart");
     }
   }, [cart, isLoading, navigate]);
+
+  // Check if required config is loaded
+  useEffect(() => {
+    if (configs && !bookingFeePercentage) {
+      toast.error("Payment configuration not available. Please contact support.", {
+        position: "top-center"
+      });
+    }
+  }, [configs, bookingFeePercentage]);
 
   /**
    * Generate date selection based on max_booking_advance_days config
@@ -139,12 +148,12 @@ export default function Checkout() {
   const dates = generateDates();
   const timeSlots = generateTimeSlots();
 
-  // Calculate pricing
+  // Calculate pricing (only if config is loaded)
   const servicesTotalAmount = cart?.total_amount || 0;
-  const bookingFee = Math.round((servicesTotalAmount * bookingFeePercentage) / 100);
+  const bookingFee = bookingFeePercentage ? Math.round((servicesTotalAmount * bookingFeePercentage) / 100) : 0;
   const gst = Math.round(bookingFee * 0.18);
   const totalBookingAmount = bookingFee + gst;
-  const remainingAmount = servicesTotalAmount - bookingFee;
+  const remainingAmount = servicesTotalAmount;
 
   /**
    * Handle time slot selection (max 3 slots)
@@ -181,6 +190,14 @@ export default function Checkout() {
       return;
     }
 
+    // Validate config is loaded (critical for payment calculation)
+    if (!bookingFeePercentage) {
+      toast.error("Payment configuration not available. Please refresh the page or contact support.", {
+        position: "top-center",
+      });
+      return;
+    }
+
     try {
       setIsProcessingPayment(true);
       
@@ -196,8 +213,15 @@ export default function Checkout() {
         name: 'Salon Platform',
         description: 'Booking Convenience Fee',
         handler: async function (response) {
-          // Step 3: After successful payment, complete checkout
-          await handleCheckoutSuccess(response);
+          try {
+            // Step 3: After successful payment, complete checkout
+            await handleCheckoutSuccess(response);
+          } catch (error) {
+            setIsProcessingPayment(false);
+            toast.error('Failed to complete booking. Please contact support with your payment ID.', {
+              position: "top-center"
+            });
+          }
         },
         prefill: {
           name: user?.name || '',
@@ -243,8 +267,10 @@ export default function Checkout() {
       setIsProcessingPayment(false);
       toast.success('Booking confirmed successfully!', { position: "top-center" });
       
-      // Redirect to bookings page
-      navigate('/customer/bookings');
+      // Small delay to ensure user sees the success message
+      setTimeout(() => {
+        navigate('/my-bookings');
+      }, 1500);
     } catch (error) {
       setIsProcessingPayment(false);
       toast.error(error?.data?.message || 'Checkout failed. Please contact support.', {

@@ -105,21 +105,21 @@ function StarRating({ rating = 5, size = "small" }) {
  */
 function Breadcrumb({ city, salonName }) {
   return (
-    <nav className="flex items-center gap-2 text-sm font-body mb-6">
-      <Link to="/" className="text-neutral-gray-600 hover:text-accent-orange">
+    <nav className="flex items-center gap-2 text-sm font-body mb-6 bg-white px-4 py-3 rounded-lg shadow-sm">
+      <Link to="/" className="text-gray-700 hover:text-accent-orange font-medium transition-colors">
         Home
       </Link>
-      <span className="text-neutral-gray-400">/</span>
+      <span className="text-gray-400">/</span>
       <Link
         to="/salons"
-        className="text-neutral-gray-600 hover:text-accent-orange"
+        className="text-gray-700 hover:text-accent-orange font-medium transition-colors"
       >
         Salons
       </Link>
-      <span className="text-neutral-gray-400">/</span>
-      <span className="text-neutral-gray-600">{city}</span>
-      <span className="text-neutral-gray-400">/</span>
-      <span className="text-neutral-black font-medium">{salonName}</span>
+      <span className="text-gray-400">/</span>
+      <span className="text-gray-700 font-medium">{city}</span>
+      <span className="text-gray-400">/</span>
+      <span className="text-neutral-black font-semibold">{salonName}</span>
     </nav>
   );
 }
@@ -245,6 +245,7 @@ export default function SalonDetail() {
   // Local UI state
   const [activeTab, setActiveTab] = useState("services");
   const [selectedImage, setSelectedImage] = useState(0);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [serviceCategories, setServiceCategories] = useState([]);
 
   // Extract categories from services when they load
@@ -316,47 +317,78 @@ export default function SalonDetail() {
     );
   }
 
-  // Parse salon images - handle different data formats
+  // Parse salon images from database - use cover_images array
   let salonImages = [];
-  if (salon.cover_image_url) {
-    salonImages.push(salon.cover_image_url);
+  
+  // Add logo first if available
+  if (salon.logo_url) {
+    salonImages.push(salon.logo_url);
   }
-  if (salon.images) {
-    if (Array.isArray(salon.images)) {
-      salonImages = [...salonImages, ...salon.images];
-    } else if (typeof salon.images === 'object' && salon.images.gallery) {
-      salonImages = [...salonImages, ...salon.images.gallery];
-    }
+  
+  // Add cover images from database
+  if (salon.cover_images && Array.isArray(salon.cover_images)) {
+    salonImages = [...salonImages, ...salon.cover_images];
   }
+  
   // Fallback image if no images available
   if (salonImages.length === 0) {
     salonImages = ["https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=600&fit=crop"];
   }
 
-  // Parse business hours
+  // Parse business hours - handle both formats
   const getBusinessHours = () => {
-    if (!salon.business_hours || typeof salon.business_hours !== 'object') {
-      return [
-        ["Monday", "9:00 AM - 8:00 PM"],
-        ["Tuesday", "9:00 AM - 8:00 PM"],
-        ["Wednesday", "9:00 AM - 8:00 PM"],
-        ["Thursday", "9:00 AM - 8:00 PM"],
-        ["Friday", "9:00 AM - 8:00 PM"],
-        ["Saturday", "10:00 AM - 6:00 PM"],
-        ["Sunday", "10:00 AM - 6:00 PM"],
-      ];
-    }
+    // Helper to format time from 24-hour to 12-hour
+    const formatTime = (time24) => {
+      if (!time24) return '';
+      const [hours24, minutes] = time24.split(':').map(Number);
+      const period = hours24 >= 12 ? 'PM' : 'AM';
+      const hours12 = hours24 % 12 || 12;
+      return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+    };
 
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-    return days.map(day => {
-      const dayData = salon.business_hours[day] || {};
-      const hours = dayData.closed 
-        ? "Closed" 
-        : dayData.open && dayData.close
-        ? `${dayData.open} - ${dayData.close}`
-        : "9:00 AM - 8:00 PM";
-      return [day.charAt(0).toUpperCase() + day.slice(1), hours];
-    });
+    // Check if new business_hours JSONB field exists
+    if (salon.business_hours && typeof salon.business_hours === 'object') {
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      return days.map(day => {
+        const dayData = salon.business_hours[day] || {};
+        const hours = dayData.closed 
+          ? "Closed" 
+          : dayData.open && dayData.close
+          ? `${dayData.open} - ${dayData.close}`
+          : "9:00 AM - 8:00 PM";
+        return [day.charAt(0).toUpperCase() + day.slice(1), hours];
+      });
+    }
+    
+    // Use database fields: opening_time, closing_time, working_days
+    if (salon.opening_time && salon.closing_time) {
+      const openTime = formatTime(salon.opening_time);
+      const closeTime = formatTime(salon.closing_time);
+      const hours = `${openTime} - ${closeTime}`;
+      
+      // Get working days (normalize to lowercase for comparison)
+      const workingDays = (salon.working_days || []).map(d => d.toLowerCase());
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      
+      return days.map(day => {
+        const isWorking = workingDays.includes(day);
+        return [
+          day.charAt(0).toUpperCase() + day.slice(1),
+          isWorking ? hours : "Closed"
+        ];
+      });
+    }
+    
+    // Default hours if no data available
+    return [
+      ["Monday", "9:00 AM - 8:00 PM"],
+      ["Tuesday", "9:00 AM - 8:00 PM"],
+      ["Wednesday", "9:00 AM - 8:00 PM"],
+      ["Thursday", "9:00 AM - 8:00 PM"],
+      ["Friday", "9:00 AM - 8:00 PM"],
+      ["Saturday", "10:00 AM - 6:00 PM"],
+      ["Sunday", "10:00 AM - 6:00 PM"],
+    ];
   };
 
   // Sample reviews (will be replaced with real reviews from API later)
@@ -402,23 +434,43 @@ export default function SalonDetail() {
           <div className="lg:col-span-2 space-y-6">
             {/* Image Gallery */}
             <div className="bg-white rounded-xl overflow-hidden shadow-lg">
-              <div className="relative h-[400px]">
+              <div 
+                className="relative h-[500px] bg-gray-100 cursor-pointer group"
+                onClick={() => setIsImagePreviewOpen(true)}
+              >
                 <img
                   src={salonImages[selectedImage]}
                   alt={salon.business_name || salon.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain"
                 />
+                {/* Preview Overlay */}
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="bg-white text-gray-800 px-4 py-2 rounded-lg shadow-lg font-body font-medium flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                      </svg>
+                      Click to preview
+                    </div>
+                  </div>
+                </div>
+                {/* Image counter badge */}
+                {salonImages.length > 1 && (
+                  <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm font-body">
+                    {selectedImage + 1} / {salonImages.length}
+                  </div>
+                )}
               </div>
               {salonImages.length > 1 && (
-                <div className="flex gap-2 p-4 overflow-x-auto">
+                <div className="flex gap-2 p-4 overflow-x-auto bg-gray-50">
                   {salonImages.map((image, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedImage(index)}
-                      className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
+                      className={`flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
                         selectedImage === index
-                          ? "border-accent-orange"
-                          : "border-transparent"
+                          ? "border-accent-orange shadow-md"
+                          : "border-gray-300 hover:border-gray-400"
                       }`}
                     >
                       <img
@@ -431,6 +483,67 @@ export default function SalonDetail() {
                 </div>
               )}
             </div>
+
+            {/* Image Preview Modal */}
+            {isImagePreviewOpen && (
+              <div 
+                className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+                onClick={() => setIsImagePreviewOpen(false)}
+              >
+                <button
+                  onClick={() => setIsImagePreviewOpen(false)}
+                  className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
+                  aria-label="Close preview"
+                >
+                  <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                
+                {/* Navigation arrows */}
+                {salonImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedImage((prev) => (prev > 0 ? prev - 1 : salonImages.length - 1));
+                      }}
+                      className="absolute left-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-3"
+                      aria-label="Previous image"
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedImage((prev) => (prev < salonImages.length - 1 ? prev + 1 : 0));
+                      }}
+                      className="absolute right-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-3"
+                      aria-label="Next image"
+                    >
+                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
+                
+                <img
+                  src={salonImages[selectedImage]}
+                  alt={salon.business_name || salon.name}
+                  className="max-w-full max-h-full object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+                
+                {/* Image counter */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 bg-black/70 text-white px-4 py-2 rounded-full text-sm font-body">
+                  {selectedImage + 1} of {salonImages.length}
+                </div>
+              </div>
+            )}
+
 
             {/* Salon Info */}
             <div className="bg-white rounded-xl p-6 shadow-lg">

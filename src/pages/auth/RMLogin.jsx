@@ -58,11 +58,6 @@ const RMLogin = () => {
     }
 
     try {
-      // Dev-only logging
-      if (process.env.NODE_ENV === 'development') {
-        console.log('🔐 RM Login attempt for:', formData.email);
-      }
-
       // Call login mutation (RTK Query handles loading state)
       const response = await login({
         email: formData.email,
@@ -98,8 +93,6 @@ const RMLogin = () => {
       // Delay navigation to allow toast to show
       setTimeout(() => navigate('/hmr/dashboard'), 500);
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') console.error('RM Login error:', error);
-      
       // RTK Query errors have a 'data' property
       const errorMessage = error.data?.detail || error.message || 'Login failed';
       
@@ -130,7 +123,7 @@ const RMLogin = () => {
           <div className="text-primary-white hidden lg:block">
             <Link to="/" className="inline-block mb-8">
               <h1 className="font-display font-bold text-5xl text-primary-white">
-                SalonHub
+                Lubist
               </h1>
             </Link>
             <h2 className="font-display font-bold text-4xl mb-4">
@@ -164,7 +157,7 @@ const RMLogin = () => {
             <div className="text-center mb-6 lg:hidden">
               <Link to="/">
                 <h1 className="font-display font-bold text-4xl text-primary-white">
-                  SalonHub
+                  Lubist
                 </h1>
               </Link>
             </div>

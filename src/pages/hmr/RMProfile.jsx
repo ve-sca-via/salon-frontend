@@ -268,69 +268,53 @@ const RMProfile = () => {
                 <FiTrendingUp className="mr-2 text-accent-orange" />
                 Performance
               </h3>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-                      <FiCheckCircle className="text-blue-600" size={20} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600 font-body">Total Submissions</p>
-                      <p className="text-2xl font-display font-bold text-gray-900">{stats.total_salons_added || 0}</p>
-                    </div>
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <FiCheckCircle className="text-blue-600" size={20} />
                   </div>
+                  <p className="text-xs text-gray-600 font-body mb-1">Total Submissions</p>
+                  <p className="text-2xl font-display font-bold text-gray-900">{stats.total_salons_added || 0}</p>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
-                      <FiCheckCircle className="text-green-600" size={20} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600 font-body">Approved</p>
-                      <p className="text-2xl font-display font-bold text-green-600">{stats.total_approved_salons || 0}</p>
-                    </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <FiCheckCircle className="text-green-600" size={20} />
                   </div>
+                  <p className="text-xs text-gray-600 font-body mb-1">Approved</p>
+                  <p className="text-2xl font-display font-bold text-green-600">{stats.total_approved_salons || 0}</p>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
-                      <FiClock className="text-yellow-600" size={20} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600 font-body">Pending</p>
-                      <p className="text-2xl font-display font-bold text-yellow-600">{stats.pending_requests || 0}</p>
-                    </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <FiClock className="text-yellow-600" size={20} />
                   </div>
+                  <p className="text-xs text-gray-600 font-body mb-1">Pending</p>
+                  <p className="text-2xl font-display font-bold text-yellow-600">{stats.pending_requests || 0}</p>
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center mr-3">
-                      <FiXCircle className="text-red-600" size={20} />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600 font-body">Rejected</p>
-                      <p className="text-2xl font-display font-bold text-red-600">{stats.rejected_requests || 0}</p>
-                    </div>
+                <div className="text-center">
+                  <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mx-auto mb-2">
+                    <FiXCircle className="text-red-600" size={20} />
                   </div>
+                  <p className="text-xs text-gray-600 font-body mb-1">Rejected</p>
+                  <p className="text-2xl font-display font-bold text-red-600">{stats.rejected_requests || 0}</p>
                 </div>
               </div>
-            </Card>
 
-            {/* Approval Rate */}
-            <Card>
-              <h3 className="text-lg font-display font-bold text-gray-900 mb-4">Approval Rate</h3>
-              <div className="text-center">
-                <div className="text-4xl font-display font-bold text-accent-orange mb-2">
-                  {stats.total_salons_added > 0
-                    ? Math.round((stats.total_approved_salons / stats.total_salons_added) * 100)
-                    : 0}%
+              {/* Approval Rate */}
+              <div className="pt-4 mt-4 border-t border-gray-200">
+                <div className="text-center">
+                  <p className="text-xs text-gray-600 font-body mb-1">Approval Rate</p>
+                  <div className="text-3xl font-display font-bold text-accent-orange mb-1">
+                    {stats.total_salons_added > 0
+                      ? Math.round((stats.total_approved_salons / stats.total_salons_added) * 100)
+                      : 0}%
+                  </div>
+                  <p className="text-xs text-gray-500 font-body">
+                    {stats.total_approved_salons || 0} out of {stats.total_salons_added || 0} approved
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600 font-body">
-                  {stats.total_approved_salons || 0} out of {stats.total_salons_added || 0} submissions approved
-                </p>
               </div>
             </Card>
           </div>

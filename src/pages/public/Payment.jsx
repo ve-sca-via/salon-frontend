@@ -78,7 +78,6 @@ export default function Payment() {
       script.async = true;
       script.onload = () => setRazorpayLoaded(true);
       script.onerror = () => {
-        console.error("Failed to load Razorpay SDK");
         showErrorToast("Failed to load payment gateway", { position: "top-center" });
       };
       document.body.appendChild(script);
@@ -130,11 +129,9 @@ export default function Payment() {
       };
 
       const newBooking = await createBooking(bookingData).unwrap();
-      console.log("Booking created:", newBooking);
 
       // Step 2: Create Razorpay order
       const orderResponse = await createBookingOrder(newBooking.id).unwrap();
-      console.log("Razorpay order created:", orderResponse);
 
       const { order_id, amount, currency, key_id } = orderResponse;
 
@@ -147,7 +144,6 @@ export default function Payment() {
         name: "Vescavia Salon",
         description: `Booking #${newBooking.id} - ${cart.items.length} service(s)`,
         handler: async function (response) {
-          console.log("Razorpay payment success:", response);
           await verifyPayment(response, newBooking);
         },
         prefill: {
@@ -169,7 +165,6 @@ export default function Payment() {
       const razorpayInstance = new window.Razorpay(options);
       razorpayInstance.open();
     } catch (error) {
-      console.error("Payment initiation error:", error);
       setIsProcessing(false);
       showErrorToast(error?.data?.message || "Failed to initiate payment", {
         position: "top-center",
@@ -189,11 +184,10 @@ export default function Payment() {
       };
 
       const verifyResult = await verifyBookingPayment(verifyData).unwrap();
-      console.log("Payment verified:", verifyResult);
 
       // Clear cart
       await clearCartMutation().unwrap().catch(err => {
-        console.warn("Cart clear failed after booking:", err);
+        // Cart clear failed, continue anyway
       });
 
       // Show success toast
@@ -208,7 +202,6 @@ export default function Payment() {
         replace: true,
       });
     } catch (error) {
-      console.error("Payment verification error:", error);
       setIsProcessing(false);
       showErrorToast(error?.data?.message || "Payment verification failed", {
         position: "top-center",

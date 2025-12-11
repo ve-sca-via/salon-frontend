@@ -306,7 +306,7 @@ const PublicSalonListing = () => {
                 className={`h-[48px] px-6 py-3 rounded-lg transition-colors font-body font-semibold text-[16px] leading-[24px] flex items-center gap-2 whitespace-nowrap ${
                   userLocation
                     ? 'bg-green-600 text-white cursor-default'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
+                    : 'bg-neutral-gray-400 text-primary-white hover:bg-neutral-black/80 active:bg-neutral-black'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 {locationLoading ? (
@@ -366,23 +366,27 @@ const PublicSalonListing = () => {
           ) : (
             <div className="grid md:grid-cols-3 gap-8">
               {filteredSalons.map((salon) => {
-                // Parse images from JSONB if available
-                let coverImage = salon.cover_image_url;
-                let businessHours = {};
+                // Use logo_url from database for list view
+                let logoImage = salon.logo_url;
+                // First cover image as fallback
+                let coverImage = salon.cover_images && salon.cover_images.length > 0 ? salon.cover_images[0] : null;
                 
-                // Parse business hours if available
+                // Get today's hours - handle both business_hours JSONB and legacy fields
+                let hoursDisplay = '9:00 AM - 9:00 PM'; // Default
+                
                 if (salon.business_hours && typeof salon.business_hours === 'object') {
-                  businessHours = salon.business_hours;
+                  // New format: business_hours JSONB
+                  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+                  const todayHours = salon.business_hours[today] || salon.business_hours.monday || {};
+                  hoursDisplay = todayHours.closed 
+                    ? 'Closed' 
+                    : todayHours.open && todayHours.close
+                    ? `${todayHours.open} - ${todayHours.close}`
+                    : '9:00 AM - 9:00 PM';
+                } else if (salon.opening_time && salon.closing_time) {
+                  // Legacy format: opening_time and closing_time
+                  hoursDisplay = `${salon.opening_time} - ${salon.closing_time}`;
                 }
-                
-                // Get today's hours (example: Monday)
-                const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-                const todayHours = businessHours[today] || businessHours.monday || {};
-                const hoursDisplay = todayHours.closed 
-                  ? 'Closed' 
-                  : todayHours.open && todayHours.close
-                  ? `${todayHours.open} - ${todayHours.close}`
-                  : '9:00 AM - 9:00 PM';
 
                 return (
                   <Link
@@ -390,13 +394,18 @@ const PublicSalonListing = () => {
                     to={`/salons/${salon.id}`}
                     className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group block"
                   >
-                    {/* Image Section */}
+                    {/* Image Section - Show Logo or Cover Image */}
                     <div className="relative h-[300px] w-full overflow-hidden">
-                      {coverImage ? (
+                      {logoImage || coverImage ? (
                         <img
-                          src={coverImage}
+                          src={logoImage || coverImage}
                           alt={salon.business_name}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          onError={(e) => {
+                            // Fallback to gradient if image fails to load
+                            e.target.style.display = 'none';
+                            e.target.parentElement.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600"></div>';
+                          }}
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600"></div>

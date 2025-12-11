@@ -165,18 +165,13 @@ const Signup = () => {
       // Store user in Redux auth slice
       dispatch(setUser(response.user));
 
-      showSuccessToast("Account created successfully! Welcome to SalonHub! 🎉");
+      showSuccessToast("Account created successfully! Welcome to Lubist! 🎉");
 
       // Slight delay to ensure toast displays before navigation
       setTimeout(() => {
         navigate("/");
       }, 500);
     } catch (error) {
-      // Only log errors in development environment
-      if (process.env.NODE_ENV === 'development') {
-        console.error("Signup error:", error);
-      }
-
       // RTK Query errors have a 'data' property
       const errorMessage = error.data?.detail || error.message || "An error occurred during signup. Please try again.";
       
@@ -210,7 +205,7 @@ const Signup = () => {
             {/* Logo */}
             <Link to="/" className="inline-block mb-8">
               <h1 className="font-display font-bold text-5xl text-primary-white">
-                SalonHub
+                Lubist
               </h1>
             </Link>
             
@@ -284,7 +279,7 @@ const Signup = () => {
             <div className="text-center mb-6 lg:hidden">
               <Link to="/" className="inline-block">
                 <h1 className="font-display font-bold text-4xl text-primary-white">
-                  SalonHub
+                  Lubist
                 </h1>
               </Link>
             </div>
