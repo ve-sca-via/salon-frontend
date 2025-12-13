@@ -95,7 +95,7 @@ const Navbar = ({ onMenuClick, role }) => {
           ? 'bg-gradient-to-r from-green-50 via-white to-green-50 border-b-2 border-green-200'
           : 'bg-gradient-to-r from-red-50 via-white to-red-50 border-b-2 border-red-200'
         : 'bg-white border-b border-gray-200'
-    } sticky top-0 z-40 shadow-sm transition-all duration-300`}>
+    } fixed top-0 left-0 right-0 z-50 shadow-sm transition-all duration-300`}>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left side */}
@@ -126,11 +126,11 @@ const Navbar = ({ onMenuClick, role }) => {
           <div className="flex items-center gap-2">
             {/* Vendor: Accepting Bookings Toggle */}
             {isVendor && salonProfile && (
-              <div className="flex items-center gap-2 mr-2">
+              <div className="flex items-center gap-2 mr-1 sm:mr-2">
                 <button
                   onClick={handleToggleAcceptingBookings}
                   disabled={isUpdating}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                  className={`flex items-center gap-1 sm:gap-2 px-2 sm:px-3 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 ${
                     salonProfile.accepting_bookings
                       ? 'bg-green-500 hover:bg-green-600 text-white shadow-md'
                       : 'bg-red-500 hover:bg-red-600 text-white shadow-md'
@@ -139,12 +139,12 @@ const Navbar = ({ onMenuClick, role }) => {
                 >
                   {salonProfile.accepting_bookings ? (
                     <>
-                      <FiCheckCircle size={16} />
+                      <FiCheckCircle size={14} className="sm:w-4 sm:h-4" />
                       <span className="hidden sm:inline">Accepting Bookings</span>
                     </>
                   ) : (
                     <>
-                      <FiXCircle size={16} />
+                      <FiXCircle size={14} className="sm:w-4 sm:h-4" />
                       <span className="hidden sm:inline">Bookings Disabled</span>
                     </>
                   )}

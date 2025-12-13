@@ -289,9 +289,9 @@ const VendorDashboard = () => {
       {!isPaymentPending && (
         <div className="space-y-6">
           {/* Header */}
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-display font-bold text-gray-900">
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">
                 Welcome back, {user?.full_name || 'Vendor'}! 👋
               </h1>
               <p className="text-gray-600 font-body mt-1">
@@ -392,63 +392,98 @@ const VendorDashboard = () => {
               <div className="animate-spin h-8 w-8 border-2 border-accent-orange border-t-transparent rounded-full mx-auto"></div>
             </div>
           ) : recentBookings && recentBookings.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                      Customer
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                      Service
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                      Date & Time
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                      Amount
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {recentBookings.map((booking) => (
-                    <tr key={booking.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-900">
-                        {booking.customer_name || 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 text-sm font-body text-gray-900">
-                        {getServiceNames(booking)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-600">
+            <>
+              {/* Desktop Table View */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
+                        Customer
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
+                        Service
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
+                        Date & Time
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
+                        Amount
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {recentBookings.map((booking) => (
+                      <tr key={booking.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-900">
+                          {booking.customer_name || 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 text-sm font-body text-gray-900">
+                          {getServiceNames(booking)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-600">
+                          {booking.booking_date
+                            ? new Date(booking.booking_date).toLocaleDateString("en-US", {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                              }) + ` at ${booking.booking_time || ''}`
+                            : 'N/A'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-body font-semibold ${
+                              statusColors[booking.status] || 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
+                            {booking.status || 'pending'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-body font-semibold text-gray-900">
+                          ₹{booking.total_amount || 0}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Card View */}
+              <div className="md:hidden space-y-4">
+                {recentBookings.map((booking) => (
+                  <div key={booking.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="font-semibold text-gray-900">{booking.customer_name || 'N/A'}</p>
+                        <p className="text-sm text-gray-600 mt-1">{getServiceNames(booking)}</p>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-body font-semibold ${
+                          statusColors[booking.status] || 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
+                        {booking.status || 'pending'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center text-sm">
+                      <span className="text-gray-600">
                         {booking.booking_date
                           ? new Date(booking.booking_date).toLocaleDateString("en-US", {
-                              weekday: "short",
                               month: "short",
                               day: "numeric",
-                              year: "numeric",
                             }) + ` at ${booking.booking_time || ''}`
                           : 'N/A'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-body font-semibold ${
-                            statusColors[booking.status] || 'bg-gray-100 text-gray-800'
-                          }`}
-                        >
-                          {booking.status || 'pending'}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-body font-semibold text-gray-900">
-                        ₹{booking.total_amount || 0}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                      </span>
+                      <span className="font-semibold text-gray-900">₹{booking.total_amount || 0}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
           ) : (
             <div className="text-center py-8">
               <FiCalendar className="text-gray-400 text-4xl mx-auto mb-2" />

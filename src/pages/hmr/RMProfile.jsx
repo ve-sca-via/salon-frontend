@@ -118,9 +118,9 @@ const RMProfile = () => {
     <DashboardLayout role="hmr">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-display font-bold text-gray-900">My Profile</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">My Profile</h1>
             <p className="text-gray-600 font-body mt-1">Manage your account and track performance</p>
           </div>
         </div>

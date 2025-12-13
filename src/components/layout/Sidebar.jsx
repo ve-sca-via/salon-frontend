@@ -69,8 +69,8 @@ const Sidebar = ({ role, isOpen, onClose }) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:sticky top-0 left-0 h-screen bg-white border-r border-gray-200 z-40
-          w-64 transform transition-transform duration-300 ease-in-out
+          fixed lg:fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 z-40
+          w-64 transform transition-transform duration-300 ease-in-out overflow-y-auto
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >

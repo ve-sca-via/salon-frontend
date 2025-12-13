@@ -277,9 +277,9 @@ const SalonProfile = () => {
     <DashboardLayout role="vendor">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-display font-bold text-gray-900">Salon Profile</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">Salon Profile</h1>
             <p className="text-gray-600 font-body mt-1">Manage your salon information and settings</p>
           </div>
         </div>
@@ -489,13 +489,13 @@ const SalonProfile = () => {
                   }
                   
                   return (
-                    <div key={day.key} className="flex items-center gap-4">
-                      <div className="w-28">
+                    <div key={day.key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <div className="w-full sm:w-28">
                         <span className="text-sm font-body font-semibold text-gray-700">
                           {day.label}
                         </span>
                       </div>
-                      <div className="flex-1 flex items-center gap-2">
+                      <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         {isClosed ? (
                           <div className="flex-1 px-4 py-2 bg-gray-100 rounded-lg flex items-center justify-between">
                             <span className="text-sm text-gray-600 font-body">Closed</span>
@@ -511,7 +511,7 @@ const SalonProfile = () => {
                             )}
                           </div>
                         ) : (
-                          <>
+                          <div className="flex items-center gap-2 flex-1">
                             <input
                               type="time"
                               value={convertTo24Hour(startTime12)}
@@ -520,7 +520,7 @@ const SalonProfile = () => {
                                 handleBusinessHoursChange(day.key, `${newStartTime} - ${endTime12}`);
                               }}
                               disabled={!isEditing}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body text-sm"
+                              className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body text-sm"
                               aria-label={`Opening time for ${day.label}`}
                             />
                             <span className="text-gray-600 text-sm">to</span>
@@ -532,19 +532,19 @@ const SalonProfile = () => {
                                 handleBusinessHoursChange(day.key, `${startTime12} - ${newEndTime}`);
                               }}
                               disabled={!isEditing}
-                              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body text-sm"
+                              className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body text-sm"
                               aria-label={`Closing time for ${day.label}`}
                             />
                             {isEditing && (
                               <button
                                 type="button"
                                 onClick={() => handleBusinessHoursChange(day.key, 'Closed')}
-                                className="px-3 py-2 text-sm font-body text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                className="px-3 py-2 text-sm font-body text-red-600 hover:bg-red-50 rounded-lg transition-colors whitespace-nowrap"
                               >
                                 Closed
                               </button>
                             )}
-                          </>
+                          </div>
                         )}
                       </div>
                     </div>

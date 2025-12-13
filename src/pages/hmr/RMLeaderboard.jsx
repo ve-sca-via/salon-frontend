@@ -59,21 +59,21 @@ const RMLeaderboard = () => {
     <DashboardLayout role="hmr">
       <div className="space-y-6">
         {/* Header Section */}
-        <div className="bg-gradient-orange rounded-2xl p-8 text-white shadow-lg">
-          <div className="flex items-center justify-between">
+        <div className="bg-gradient-orange rounded-2xl p-4 sm:p-6 md:p-8 text-white shadow-lg">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-display font-bold mb-2 flex items-center gap-3">
-                <FiAward size={36} />
+              <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2 flex items-center gap-3">
+                <FiAward size={28} className="sm:w-9 sm:h-9" />
                 RM Leaderboard
               </h1>
-              <p className="text-white/90 text-lg">
+              <p className="text-white/90 text-sm sm:text-base lg:text-lg">
                 Top performers ranked by salon approvals and performance scores
               </p>
             </div>
             {currentUserRank > 0 && (
-              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-6 text-center">
-                <p className="text-white/80 text-sm font-medium mb-1">Your Rank</p>
-                <p className="text-5xl font-bold">{currentUserRank}</p>
+              <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4 sm:p-6 text-center">
+                <p className="text-white/80 text-xs sm:text-sm font-medium mb-1">Your Rank</p>
+                <p className="text-4xl sm:text-5xl font-bold">{currentUserRank}</p>
                 <p className="text-white/80 text-xs mt-1">out of {leaderboard.length}</p>
               </div>
             )}
@@ -135,119 +135,192 @@ const RMLeaderboard = () => {
 
           {/* Leaderboard Table */}
           {!isLoading && !error && leaderboard.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b-2 border-gray-200 bg-gray-50">
-                    <th className="text-left py-4 px-4 text-sm font-body font-semibold text-gray-700">
-                      Rank
-                    </th>
-                    <th className="text-left py-4 px-4 text-sm font-body font-semibold text-gray-700">
-                      Name
-                    </th>
-                    <th className="text-center py-4 px-4 text-sm font-body font-semibold text-gray-700">
-                      <div className="flex items-center justify-center gap-1">
-                        <FiStar className="text-yellow-500" />
-                        Score
-                      </div>
-                    </th>
-                    <th className="text-center py-4 px-4 text-sm font-body font-semibold text-gray-700">
-                      Salons Added
-                    </th>
-                    <th className="text-center py-4 px-4 text-sm font-body font-semibold text-gray-700">
-                      Approved
-                    </th>
-                    <th className="text-center py-4 px-4 text-sm font-body font-semibold text-gray-700">
-                      Approval Rate
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {leaderboard.map((rm, index) => {
-                    const rank = index + 1;
-                    const isCurrentUser = rm.id === user?.id;
-                    const approvalRate = rm.total_salons_added > 0
-                      ? Math.round(((rm.approved_requests_count || rm.total_approved_salons || 0) / rm.total_salons_added) * 100)
-                      : 0;
+            <>
+              {/* Desktop Table */}
+              <div className="hidden lg:block overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b-2 border-gray-200 bg-gray-50">
+                      <th className="text-left py-4 px-4 text-sm font-body font-semibold text-gray-700">
+                        Rank
+                      </th>
+                      <th className="text-left py-4 px-4 text-sm font-body font-semibold text-gray-700">
+                        Name
+                      </th>
+                      <th className="text-center py-4 px-4 text-sm font-body font-semibold text-gray-700">
+                        <div className="flex items-center justify-center gap-1">
+                          <FiStar className="text-yellow-500" />
+                          Score
+                        </div>
+                      </th>
+                      <th className="text-center py-4 px-4 text-sm font-body font-semibold text-gray-700">
+                        Salons Added
+                      </th>
+                      <th className="text-center py-4 px-4 text-sm font-body font-semibold text-gray-700">
+                        Approved
+                      </th>
+                      <th className="text-center py-4 px-4 text-sm font-body font-semibold text-gray-700">
+                        Approval Rate
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {leaderboard.map((rm, index) => {
+                      const rank = index + 1;
+                      const isCurrentUser = rm.id === user?.id;
+                      const approvalRate = rm.total_salons_added > 0
+                        ? Math.round(((rm.approved_requests_count || rm.total_approved_salons || 0) / rm.total_salons_added) * 100)
+                        : 0;
 
-                    return (
-                      <tr
-                        key={rm.id}
-                        className={`border-b border-gray-100 transition-all ${
-                          isCurrentUser
-                            ? 'bg-blue-50 hover:bg-blue-100 border-blue-200'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        {/* Rank */}
-                        <td className="py-4 px-4">
-                          <div
-                            className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${getRankBadgeColor(
-                              rank
-                            )} font-bold shadow-sm`}
-                          >
-                            {getRankIcon(rank)}
-                          </div>
-                        </td>
-
-                        {/* Name */}
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <p className="font-body font-semibold text-gray-900">
-                                {rm.profiles?.full_name || rm.full_name || 'Unknown RM'}
-                                {isCurrentUser && (
-                                  <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
-                                    You
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-sm text-gray-500 font-body">{rm.profiles?.email || rm.email || 'N/A'}</p>
+                      return (
+                        <tr
+                          key={rm.id}
+                          className={`border-b border-gray-100 transition-all ${
+                            isCurrentUser
+                              ? 'bg-blue-50 hover:bg-blue-100 border-blue-200'
+                              : 'hover:bg-gray-50'
+                          }`}
+                        >
+                          {/* Rank */}
+                          <td className="py-4 px-4">
+                            <div
+                              className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${getRankBadgeColor(
+                                rank
+                              )} font-bold shadow-sm`}
+                            >
+                              {getRankIcon(rank)}
                             </div>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Score */}
-                        <td className="py-4 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1">
-                            <span className="text-2xl font-bold text-accent-orange">
-                              {rm.performance_score || 0}
+                          {/* Name */}
+                          <td className="py-4 px-4">
+                            <div className="flex items-center gap-3">
+                              <div>
+                                <p className="font-body font-semibold text-gray-900">
+                                  {rm.profiles?.full_name || rm.full_name || 'Unknown RM'}
+                                  {isCurrentUser && (
+                                    <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                                      You
+                                    </span>
+                                  )}
+                                </p>
+                                <p className="text-sm text-gray-500 font-body">{rm.profiles?.email || rm.email || 'N/A'}</p>
+                              </div>
+                            </div>
+                          </td>
+
+                          {/* Score */}
+                          <td className="py-4 px-4 text-center">
+                            <div className="flex items-center justify-center gap-1">
+                              <span className="text-2xl font-bold text-accent-orange">
+                                {rm.performance_score || 0}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Salons Added */}
+                          <td className="py-4 px-4 text-center">
+                            <span className="text-lg font-semibold text-gray-700">
+                              {rm.total_salons_added || 0}
                             </span>
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* Salons Added */}
-                        <td className="py-4 px-4 text-center">
-                          <span className="text-lg font-semibold text-gray-700">
-                            {rm.total_salons_added || 0}
-                          </span>
-                        </td>
+                          {/* Approved */}
+                          <td className="py-4 px-4 text-center">
+                            <span className="inline-flex items-center justify-center w-10 h-10 bg-green-100 text-green-700 rounded-full font-bold">
+                              {rm.approved_requests_count || rm.total_approved_salons || 0}
+                            </span>
+                          </td>
 
-                        {/* Approved */}
-                        <td className="py-4 px-4 text-center">
-                          <span className="inline-flex items-center justify-center w-10 h-10 bg-green-100 text-green-700 rounded-full font-bold">
-                            {rm.approved_requests_count || rm.total_approved_salons || 0}
-                          </span>
-                        </td>
-
-                        {/* Approval Rate */}
-                        <td className="py-4 px-4 text-center">
-                          <div className="flex flex-col items-center">
-                            <span className="text-lg font-bold text-gray-900">{approvalRate}%</span>
-                            <div className="w-full bg-gray-200 rounded-full h-2 mt-1 max-w-[80px]">
-                              <div
-                                className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all"
-                                style={{ width: `${approvalRate}%` }}
-                              ></div>
+                          {/* Approval Rate */}
+                          <td className="py-4 px-4 text-center">
+                            <div className="flex flex-col items-center">
+                              <span className="text-lg font-bold text-gray-900">{approvalRate}%</span>
+                              <div className="w-full bg-gray-200 rounded-full h-2 mt-1 max-w-[80px]">
+                                <div
+                                  className="bg-gradient-to-r from-green-400 to-green-600 h-2 rounded-full transition-all"
+                                  style={{ width: `${approvalRate}%` }}
+                                ></div>
+                              </div>
                             </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile Cards */}
+              <div className="lg:hidden space-y-4 p-3">
+                {leaderboard.map((rm, index) => {
+                  const rank = index + 1;
+                  const isCurrentUser = rm.id === user?.id;
+                  const approvalRate = rm.total_salons_added > 0
+                    ? Math.round(((rm.approved_requests_count || rm.total_approved_salons || 0) / rm.total_salons_added) * 100)
+                    : 0;
+
+                  return (
+                    <div
+                      key={rm.id}
+                      className={`rounded-lg p-4 border-2 ${
+                        isCurrentUser
+                          ? 'bg-blue-50 border-blue-300'
+                          : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`inline-flex items-center justify-center w-10 h-10 rounded-full ${getRankBadgeColor(
+                              rank
+                            )} font-bold shadow-sm text-sm`}
+                          >
+                            {rank <= 3 ? getRankIcon(rank) : `#${rank}`}
                           </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">
+                              {rm.profiles?.full_name || rm.full_name || 'Unknown RM'}
+                              {isCurrentUser && (
+                                <span className="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded-full">
+                                  You
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-500">{rm.profiles?.email || rm.email || 'N/A'}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="text-center bg-white rounded-lg p-2">
+                          <p className="text-xs text-gray-600 mb-1">Score</p>
+                          <p className="text-xl font-bold text-accent-orange">{rm.performance_score || 0}</p>
+                        </div>
+                        <div className="text-center bg-white rounded-lg p-2">
+                          <p className="text-xs text-gray-600 mb-1">Total</p>
+                          <p className="text-xl font-bold text-gray-700">{rm.total_salons_added || 0}</p>
+                        </div>
+                        <div className="text-center bg-white rounded-lg p-2">
+                          <p className="text-xs text-gray-600 mb-1">Approved</p>
+                          <p className="text-xl font-bold text-green-600">{rm.approved_requests_count || rm.total_approved_salons || 0}</p>
+                        </div>
+                        <div className="text-center bg-white rounded-lg p-2">
+                          <p className="text-xs text-gray-600 mb-1">Rate</p>
+                          <p className="text-xl font-bold text-gray-900">{approvalRate}%</p>
+                          <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                            <div
+                              className="bg-gradient-to-r from-green-400 to-green-600 h-1.5 rounded-full"
+                              style={{ width: `${approvalRate}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
           )}
 
           {/* Footer Info */}

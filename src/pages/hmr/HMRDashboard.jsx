@@ -53,25 +53,25 @@ const HMRDashboard = () => {
   return (
     <DashboardLayout role="hmr">
       <div className="space-y-6">
-        <div className="bg-gradient-orange rounded-2xl p-8 text-white shadow-lg">
-          <h1 className="text-3xl font-display font-bold mb-2">
+        <div className="bg-gradient-orange rounded-2xl p-4 sm:p-6 md:p-8 text-white shadow-lg">
+          <h1 className="text-2xl sm:text-3xl font-display font-bold mb-2">
             Welcome, {user?.full_name || user?.name || 'Agent'}!
           </h1>
-          <p className="text-white/90 mb-6">Track your salon submissions and help grow our network</p>
-          <div className="flex flex-wrap gap-4">
-            <Link to="/hmr/add-salon">
-              <Button variant="secondary" className="bg-neutral-black hover:bg-neutral-gray-400" aria-label="Add new salon">
+          <p className="text-white/90 mb-4 sm:mb-6 text-sm sm:text-base">Track your salon submissions and help grow our network</p>
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4">
+            <Link to="/hmr/add-salon" className="w-full sm:w-auto">
+              <Button variant="secondary" className="bg-neutral-black hover:bg-neutral-gray-400 w-full sm:w-auto justify-center" aria-label="Add new salon">
                 <FiPlusCircle className="mr-2" />Add New Salon
               </Button>
             </Link>
-            <Link to="/hmr/leaderboard">
-              <Button className="bg-white text-accent-orange hover:bg-gray-100 shadow-md border border-white/20" aria-label="View leaderboard">
+            <Link to="/hmr/leaderboard" className="w-full sm:w-auto">
+              <Button className="bg-white text-accent-orange hover:bg-gray-100 shadow-md border border-white/20 w-full sm:w-auto justify-center" aria-label="View leaderboard">
                 <FiAward className="mr-2" />View Leaderboard
               </Button>
             </Link>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
           <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-none shadow-md">
             <div className="flex items-center justify-between">
               <div><p className="text-sm text-blue-600 font-body font-medium">Total</p><p className="text-3xl font-display font-bold text-blue-900">{stats?.total_salons_added || 0}</p></div>
@@ -98,7 +98,28 @@ const HMRDashboard = () => {
           </Card>
         </div>
         <Card title="Recent Submissions" headerAction={<Link to="/hmr/submissions"><Button variant="ghost" size="sm" aria-label="View all submissions">View All</Button></Link>}>
-          {submissionsLoading ? (<div className="text-center py-12"><div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto"></div><p className="text-gray-600 mt-4">Loading...</p></div>) : recentSubmissions.length === 0 ? (<div className="text-center py-12"><FiPlusCircle size={64} className="mx-auto text-gray-300 mb-4" /><h3 className="text-xl font-display font-semibold text-gray-900 mb-2">No submissions yet</h3><p className="text-gray-600 mb-4 font-body">Use the "Add New Salon" button above to start submitting salons</p></div>) : (<div className="overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-gray-200"><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Salon Name</th><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Location</th><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Submitted</th><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Status</th><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Admin Notes</th></tr></thead><tbody>{recentSubmissions.map((s) => (<tr key={s.id} className="border-b border-gray-100 hover:bg-bg-secondary transition-colors"><td className="py-3 px-4 font-body font-medium text-gray-900">{s.business_name}</td><td className="py-3 px-4 font-body text-gray-600 text-sm">{s.city}, {s.state}</td><td className="py-3 px-4 font-body text-gray-600">{s.created_at ? new Date(s.created_at).toLocaleDateString() : '-'}</td><td className="py-3 px-4"><span className={'inline-block px-3 py-1 rounded-full text-xs font-body font-medium ' + getStatusColor(s.status)}>{s.status}</span></td><td className="py-3 px-4 font-body text-gray-600 text-sm">{s.admin_notes || (s.status === 'rejected' ? 'See rejection details' : '-')}</td></tr>))}</tbody></table></div>)}
+          {submissionsLoading ? (<div className="text-center py-12"><div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto"></div><p className="text-gray-600 mt-4">Loading...</p></div>) : recentSubmissions.length === 0 ? (<div className="text-center py-12"><FiPlusCircle size={64} className="mx-auto text-gray-300 mb-4" /><h3 className="text-xl font-display font-semibold text-gray-900 mb-2">No submissions yet</h3><p className="text-gray-600 mb-4 font-body">Use the "Add New Salon" button above to start submitting salons</p></div>) : (
+            <>
+              {/* Desktop Table */}
+              <div className="hidden md:block overflow-x-auto"><table className="w-full"><thead><tr className="border-b border-gray-200"><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Salon Name</th><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Location</th><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Submitted</th><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Status</th><th className="text-left py-3 px-4 text-sm font-body font-semibold text-gray-700">Admin Notes</th></tr></thead><tbody>{recentSubmissions.map((s) => (<tr key={s.id} className="border-b border-gray-100 hover:bg-bg-secondary transition-colors"><td className="py-3 px-4 font-body font-medium text-gray-900">{s.business_name}</td><td className="py-3 px-4 font-body text-gray-600 text-sm">{s.city}, {s.state}</td><td className="py-3 px-4 font-body text-gray-600">{s.created_at ? new Date(s.created_at).toLocaleDateString() : '-'}</td><td className="py-3 px-4"><span className={'inline-block px-3 py-1 rounded-full text-xs font-body font-medium ' + getStatusColor(s.status)}>{s.status}</span></td><td className="py-3 px-4 font-body text-gray-600 text-sm">{s.admin_notes || (s.status === 'rejected' ? 'See rejection details' : '-')}</td></tr>))}</tbody></table></div>
+              {/* Mobile Cards */}
+              <div className="md:hidden space-y-3 p-3">
+                {recentSubmissions.map((s) => (
+                  <div key={s.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                    <div className="flex justify-between items-start mb-2">
+                      <p className="font-semibold text-gray-900">{s.business_name}</p>
+                      <span className={'inline-block px-3 py-1 rounded-full text-xs font-body font-medium ' + getStatusColor(s.status)}>{s.status}</span>
+                    </div>
+                    <div className="space-y-1 text-sm">
+                      <p className="text-gray-600">{s.city}, {s.state}</p>
+                      <p className="text-gray-500 text-xs">{s.created_at ? new Date(s.created_at).toLocaleDateString() : '-'}</p>
+                      {s.admin_notes && <p className="text-gray-600 text-xs mt-2 italic">{s.admin_notes}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </Card>
       </div>
     </DashboardLayout>

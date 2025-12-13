@@ -580,21 +580,27 @@ const AddSalonForm = () => {
   };
 
   const renderStepIndicator = () => (
-    <div className="flex items-center justify-center mb-8">
+    <div className="flex items-center justify-center mb-8 px-2">
       {[1, 2, 3, 4].map((step) => (
         <React.Fragment key={step}>
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-center flex-1 max-w-[80px]">
             <div
-              className={`w-10 h-10 rounded-full flex items-center justify-center font-body font-semibold transition-all ${
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-body font-semibold transition-all text-sm sm:text-base ${
                 currentStep >= step
                   ? 'bg-accent-orange text-white'
                   : 'bg-gray-200 text-gray-500'
               }`}
             >
-              {currentStep > step ? <FiCheck size={20} /> : step}
+              {currentStep > step ? <FiCheck size={16} className="sm:w-5 sm:h-5" /> : step}
             </div>
-            <span className="text-xs font-body mt-2 text-gray-600">
+            <span className="text-xs font-body mt-2 text-gray-600 text-center hidden sm:block">
               {step === 1 && 'Basic Info'}
+              {step === 2 && 'Services'}
+              {step === 3 && 'Photos'}
+              {step === 4 && 'Review'}
+            </span>
+            <span className="text-xs font-body mt-1 text-gray-600 text-center sm:hidden">
+              {step === 1 && 'Info'}
               {step === 2 && 'Services'}
               {step === 3 && 'Photos'}
               {step === 4 && 'Review'}
@@ -602,7 +608,7 @@ const AddSalonForm = () => {
           </div>
           {step < 4 && (
             <div
-              className={`h-1 w-16 mx-2 transition-all ${
+              className={`h-1 flex-1 mx-1 sm:mx-2 transition-all ${
                 currentStep > step ? 'bg-accent-orange' : 'bg-gray-200'
               }`}
             />
@@ -630,13 +636,15 @@ const AddSalonForm = () => {
     <DashboardLayout role="hmr">
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-display font-bold text-gray-900 mb-2">
-            {isEditMode ? 'Edit Draft Salon' : 'Add New Salon'}
-          </h1>
-          <p className="text-gray-600 font-body">
-            {isEditMode ? 'Continue editing your draft or submit for approval' : 'Submit a new salon for approval'}
-          </p>
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900 mb-2">
+              {isEditMode ? 'Edit Draft Salon' : 'Add New Salon'}
+            </h1>
+            <p className="text-gray-600 font-body">
+              {isEditMode ? 'Continue editing your draft or submit for approval' : 'Submit a new salon for approval'}
+            </p>
+          </div>
         </div>
 
         {/* Step Indicator */}
@@ -1303,7 +1311,7 @@ const AddSalonForm = () => {
                     Basic Information
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-3 font-body text-sm">
-                    <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                       <div>
                         <p className="text-gray-600 text-xs mb-1">Salon Name</p>
                         <p className="font-semibold text-gray-900">{watch('name') || '-'}</p>
@@ -1425,7 +1433,7 @@ const AddSalonForm = () => {
                     Photos
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-4">
-                    <div className="grid grid-cols-3 gap-4 font-body text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-body text-sm">
                       <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
                         {coverImage ? (
                           <div>
@@ -1473,7 +1481,7 @@ const AddSalonForm = () => {
                     {(coverImage || uploadedImages.length > 0) && (
                       <div>
                         <p className="text-sm font-semibold text-gray-700 mb-2">Preview</p>
-                        <div className="grid grid-cols-4 gap-2">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                           {coverImage && (
                             <div className="relative">
                               <img src={coverImage} alt="Cover" className="w-full h-20 object-cover rounded-lg border-2 border-accent-orange" />
@@ -1542,16 +1550,16 @@ const AddSalonForm = () => {
           )}
 
           {/* Navigation Buttons */}
-          <div className="flex justify-between items-center pt-6 border-t border-gray-200">
-            <div>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 pt-6 border-t border-gray-200">
+            <div className="order-2 sm:order-1">
               {currentStep > 1 && (
-                <Button type="button" variant="outline" onClick={prevStep}>
+                <Button type="button" variant="outline" onClick={prevStep} className="w-full sm:w-auto justify-center">
                   <FiChevronLeft className="mr-2" />
                   Previous
                 </Button>
               )}
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 order-1 sm:order-2">
               {/* Save as Draft or Update Draft - Available on ALL steps */}
               <Button
                 type="button"
@@ -1562,13 +1570,13 @@ const AddSalonForm = () => {
                   handleSubmit((data) => onSubmit(data, true, false))();
                 }}
                 disabled={isSubmitting || isUpdating}
-                className="border border-gray-300"
+                className="border border-gray-300 w-full sm:w-auto justify-center"
               >
                 💾 {isEditMode ? 'Update Draft' : 'Save as Draft'}
               </Button>
               
               {currentStep < totalSteps ? (
-                <Button type="button" variant="primary" onClick={nextStep}>
+                <Button type="button" variant="primary" onClick={nextStep} className="w-full sm:w-auto justify-center">
                   Next Step
                   <FiChevronRight className="ml-2" />
                 </Button>
@@ -1582,7 +1590,7 @@ const AddSalonForm = () => {
                     handleSubmit((data) => onSubmit(data, false, isEditMode))();
                   }}
                   disabled={isSubmitting || isUpdating || !coverImage}
-                  className="bg-gradient-orange"
+                  className="bg-gradient-orange w-full sm:w-auto justify-center"
                 >
                   {isSubmitting || isUpdating ? (
                     <>

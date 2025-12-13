@@ -374,14 +374,14 @@ const BookingsManagement = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-display font-bold text-gray-900">Bookings Management</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">Bookings Management</h1>
             <p className="text-gray-600 font-body mt-1">
               View and manage all salon bookings
             </p>
           </div>
           <Button
             variant="outline"
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 w-full sm:w-auto justify-center"
             onClick={() => showInfoToast('Export feature coming soon!')}
           >
             <FiDownload />
@@ -454,86 +454,92 @@ const BookingsManagement = () => {
             </div>
 
             {/* Filter Buttons */}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col lg:flex-row lg:flex-wrap gap-4">
               {/* Status Filters */}
-              <div className="flex items-center gap-2">
-                <FiFilter className="text-gray-500" />
-                <span className="text-sm text-gray-600 font-body font-semibold">Status:</span>
-                <Button
-                  variant={statusFilter === 'all' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('all')}
-                >
-                  All
-                </Button>
-                <Button
-                  variant={statusFilter === 'pending' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('pending')}
-                >
-                  Pending
-                </Button>
-                <Button
-                  variant={statusFilter === 'confirmed' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('confirmed')}
-                >
-                  Confirmed
-                </Button>
-                <Button
-                  variant={statusFilter === 'completed' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('completed')}
-                >
-                  Completed
-                </Button>
-                <Button
-                  variant={statusFilter === 'no_show' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('no_show')}
-                >
-                  No Show
-                </Button>
-                <Button
-                  variant={statusFilter === 'cancelled' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setStatusFilter('cancelled')}
-                >
-                  Cancelled
-                </Button>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <FiFilter className="text-gray-500" />
+                  <span className="text-sm text-gray-600 font-body font-semibold">Status:</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={statusFilter === 'all' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatusFilter('all')}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'pending' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatusFilter('pending')}
+                  >
+                    Pending
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'confirmed' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatusFilter('confirmed')}
+                  >
+                    Confirmed
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'completed' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatusFilter('completed')}
+                  >
+                    Completed
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'no_show' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatusFilter('no_show')}
+                  >
+                    No Show
+                  </Button>
+                  <Button
+                    variant={statusFilter === 'cancelled' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setStatusFilter('cancelled')}
+                  >
+                    Cancelled
+                  </Button>
+                </div>
               </div>
 
               {/* Date Filters */}
-              <div className="border-l pl-2 flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2 lg:border-l lg:pl-2">
                 <span className="text-sm text-gray-600 font-body font-semibold">Date:</span>
-                <Button
-                  variant={dateFilter === 'all' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setDateFilter('all')}
-                >
-                  All Time
-                </Button>
-                <Button
-                  variant={dateFilter === 'today' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setDateFilter('today')}
-                >
-                  Today
-                </Button>
-                <Button
-                  variant={dateFilter === 'upcoming' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setDateFilter('upcoming')}
-                >
-                  Upcoming
-                </Button>
-                <Button
-                  variant={dateFilter === 'past' ? 'primary' : 'outline'}
-                  size="sm"
-                  onClick={() => setDateFilter('past')}
-                >
-                  Past
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant={dateFilter === 'all' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setDateFilter('all')}
+                  >
+                    All Time
+                  </Button>
+                  <Button
+                    variant={dateFilter === 'today' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setDateFilter('today')}
+                  >
+                    Today
+                  </Button>
+                  <Button
+                    variant={dateFilter === 'upcoming' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setDateFilter('upcoming')}
+                  >
+                    Upcoming
+                  </Button>
+                  <Button
+                    variant={dateFilter === 'past' ? 'primary' : 'outline'}
+                    size="sm"
+                    onClick={() => setDateFilter('past')}
+                  >
+                    Past
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -565,7 +571,8 @@ const BookingsManagement = () => {
           </Card>
         ) : (
           <Card>
-            <div className="overflow-x-auto">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
@@ -674,6 +681,63 @@ const BookingsManagement = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="lg:hidden space-y-4 p-4">
+              {filteredBookings.map((booking) => (
+                <div key={booking.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="text-xs text-gray-500 font-mono mb-1">#{booking.id?.substring(0, 8)}</p>
+                      <p className="font-semibold text-gray-900">{booking.customer_name || 'N/A'}</p>
+                      {booking.customer_phone && (
+                        <p className="text-xs text-gray-500">{booking.customer_phone}</p>
+                      )}
+                    </div>
+                    <span
+                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-body font-semibold border ${getStatusColor(
+                        booking.status
+                      )}`}
+                    >
+                      {getStatusIcon(booking.status)}
+                      {formatStatus(booking.status)}
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-2 mb-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Service:</span>
+                      <span className="font-medium text-gray-900">{formatServicesDisplay(booking)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Staff:</span>
+                      <span className="font-medium text-gray-900">{booking.staff_name || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Date:</span>
+                      <span className="font-medium text-gray-900">{formatDate(booking.booking_date)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Time:</span>
+                      <span className="font-medium text-gray-900">{formatTimeDisplay(booking)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600">Amount:</span>
+                      <span className="font-semibold text-green-600">₹{booking.service_price?.toLocaleString() || 0}</span>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleViewDetails(booking)}
+                    className="w-full"
+                  >
+                    View Details
+                  </Button>
+                </div>
+              ))}
             </div>
           </Card>
         )}

@@ -84,9 +84,9 @@ const Drafts = () => {
     <DashboardLayout role="hmr">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-display font-bold text-gray-900">Draft Submissions</h1>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">Draft Submissions</h1>
             <p className="text-gray-600 font-body mt-1">
               Incomplete salon submissions that you can continue editing
             </p>
@@ -94,7 +94,7 @@ const Drafts = () => {
           <Button
             variant="primary"
             onClick={() => navigate('/hmr/add-salon')}
-            className="bg-gradient-orange"
+            className="bg-gradient-orange w-full sm:w-auto justify-center whitespace-nowrap"
           >
             + Add New Salon
           </Button>
@@ -126,7 +126,7 @@ const Drafts = () => {
               const documents = draft.documents || {};
               return (
                 <Card key={draft.id} className="hover:shadow-lg transition-shadow">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-xl font-display font-bold text-gray-900">
@@ -179,26 +179,28 @@ const Drafts = () => {
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex flex-col gap-2 ml-6">
+                    <div className="flex flex-row lg:flex-col gap-2 lg:ml-6">
                       <Button
                         variant="primary"
                         onClick={() => handleEdit(draft.id)}
-                        className="bg-gradient-orange whitespace-nowrap"
+                        className="bg-gradient-orange whitespace-nowrap flex-1 lg:flex-none justify-center"
                         disabled={deleteLoading}
                         aria-label={`Continue editing ${draft.business_name || 'draft'}`}
                       >
                         <FiEdit2 className="mr-2" size={16} />
-                        Continue Editing
+                        <span className="hidden sm:inline">Continue Editing</span>
+                        <span className="sm:hidden">Edit</span>
                       </Button>
                       <Button
                         variant="outline"
                         onClick={() => handleDelete(draft.id)}
-                        className="border-red-300 text-red-600 hover:bg-red-50 whitespace-nowrap"
+                        className="border-red-300 text-red-600 hover:bg-red-50 whitespace-nowrap flex-1 lg:flex-none justify-center"
                         disabled={deleteLoading}
                         aria-label={`Delete draft ${draft.business_name || 'draft'}`}
                       >
                         <FiTrash2 className="mr-2" size={16} />
-                        Delete Draft
+                        <span className="hidden sm:inline">Delete Draft</span>
+                        <span className="sm:hidden">Delete</span>
                       </Button>
                     </div>
                   </div>
