@@ -29,6 +29,8 @@ import React, { useEffect, lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { useDispatch } from 'react-redux';
+import { getUserLocation } from './store/slices/locationSlice';
 
 // Protected route wrappers for role-based access control
 import ProtectedRoute from './components/auth/ProtectedRoute';
@@ -81,6 +83,8 @@ const CompleteRegistration = lazy(() => import('./pages/vendor/CompleteRegistrat
 const VendorPayment = lazy(() => import('./pages/vendor/VendorPayment'));
 
 function App() {
+  const dispatch = useDispatch();
+
   // One-time token format migration for backward compatibility
   useEffect(() => {
     const oldToken = localStorage.getItem('token');
@@ -89,6 +93,11 @@ function App() {
       localStorage.removeItem('token');
     }
   }, []);
+
+  // Fetch user location on app mount
+  useEffect(() => {
+    dispatch(getUserLocation());
+  }, [dispatch]);
 
   return (
     <Router>

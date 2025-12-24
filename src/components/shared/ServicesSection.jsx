@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import service1 from "../../assets/images/Service_Image_1.png";
 import service2 from "../../assets/images/Service_Image_2.png";
 import service3 from "../../assets/images/service Image_3.png";
@@ -159,6 +159,8 @@ function NavigationButton({ direction, onClick, isActive }) {
 
 export default function ServicesSection() {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState(0);
+  const [touchEnd, setTouchEnd] = useState(0);
 
   const services = [
     {
@@ -250,7 +252,25 @@ export default function ServicesSection() {
     },
   ];
 
-  const itemsPerPage = 4;
+  // Responsive items per page
+  const [itemsPerPage, setItemsPerPage] = useState(1);
+
+  useEffect(() => {
+    const updateItemsPerPage = () => {
+      if (window.innerWidth >= 1024) {
+        setItemsPerPage(4); // Desktop: show all 4
+      } else if (window.innerWidth >= 640) {
+        setItemsPerPage(2); // Tablet: show 2
+      } else {
+        setItemsPerPage(1); // Mobile: show 1
+      }
+    };
+
+    updateItemsPerPage();
+    window.addEventListener('resize', updateItemsPerPage);
+    return () => window.removeEventListener('resize', updateItemsPerPage);
+  }, []);
+
   const totalPages = Math.ceil(services.length / itemsPerPage);
 
   const handlePrevious = () => {
@@ -259,6 +279,33 @@ export default function ServicesSection() {
 
   const handleNext = () => {
     setCurrentIndex((prev) => (prev < totalPages - 1 ? prev + 1 : 0));
+  };
+
+  // Touch handlers for swipe
+  const handleTouchStart = (e) => {
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > 50;
+    const isRightSwipe = distance < -50;
+
+    if (isLeftSwipe) {
+      handleNext();
+    }
+    if (isRightSwipe) {
+      handlePrevious();
+    }
+
+    setTouchStart(0);
+    setTouchEnd(0);
   };
 
   const visibleServices = services.slice(
@@ -272,26 +319,35 @@ export default function ServicesSection() {
         <div className="flex flex-col gap-10 items-center">
           <Header />
 
-          {/* Services Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full place-items-center">
-            {visibleServices.map((service, index) => (
-              <ServiceCard key={index} service={service} />
-            ))}
+          {/* Services Carousel/Grid */}
+          <div 
+            className="w-full overflow-hidden"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full px-4 sm:px-0 place-items-center justify-center">
+              {visibleServices.map((service, index) => (
+                <ServiceCard key={index} service={service} />
+              ))}
+            </div>
           </div>
 
-          {/* Navigation Buttons */}
-          <div className="flex gap-4 items-center">
-            <NavigationButton
-              direction="left"
-              onClick={handlePrevious}
-              isActive={false}
-            />
-            <NavigationButton
-              direction="right"
-              onClick={handleNext}
-              isActive={true}
-            />
-          </div>
+          {/* Navigation Controls - Show only when carousel is active */}
+          {totalPages > 1 && (
+            <div className="flex gap-4 items-center">
+              <NavigationButton
+                direction="left"
+                onClick={handlePrevious}
+                isActive={false}
+              />
+              <NavigationButton
+                direction="right"
+                onClick={handleNext}
+                isActive={true}
+              />
+            </div>
+          )}
         </div>
       </div>
     </section>

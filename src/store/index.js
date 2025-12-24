@@ -3,6 +3,7 @@ import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import authReducer from './slices/authSlice';
 import notificationReducer from './slices/notificationSlice';
+import locationReducer from './slices/locationSlice';
 
 
 // RTK Query APIs
@@ -29,6 +30,7 @@ export const store = configureStore({
   reducer: {
     auth: persistedAuthReducer,
     notification: notificationReducer,
+    location: locationReducer,
   
     // RTK Query API reducers
     [authApi.reducerPath]: authApi.reducer,

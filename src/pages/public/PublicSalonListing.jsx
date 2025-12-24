@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import bgImage from "../../assets/images/bg_7.jpg";
 import { useGetSalonsQuery, useSearchSalonsQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiClock, FiCalendar, FiNavigation, FiX } from "react-icons/fi";
+import { getUserLocation, clearLocation as clearLocationAction } from "../../store/slices/locationSlice";
 
 // Arrow Icon Component
 function ArrowCircleRight() {
@@ -69,16 +71,17 @@ function HeroSection() {
 }
 
 const PublicSalonListing = () => {
+  const dispatch = useDispatch();
+  
+  // Get location from Redux store
+  const { userLocation, locationError, locationLoading } = useSelector((state) => state.location);
+  
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState("all");
   const [isSearching, setIsSearching] = useState(false);
   const [searchParams, setSearchParams] = useState(null);
   
-  // Location-based search state
-  const [userLocation, setUserLocation] = useState(null);
-  const [locationError, setLocationError] = useState(null);
-  const [locationLoading, setLocationLoading] = useState(false);
   const [radius, setRadius] = useState(10); // Default 10km radius
 
   // RTK Query hooks - automatic caching and deduplication!
@@ -93,67 +96,10 @@ const PublicSalonListing = () => {
   );
 
   /**
-   * getUserLocation - Request user's current location using Browser Geolocation API
-   */
-  const getUserLocation = () => {
-    setLocationLoading(true);
-    setLocationError(null);
-    
-    if (!navigator.geolocation) {
-      setLocationError("Geolocation is not supported by your browser");
-      setLocationLoading(false);
-      return;
-    }
-    
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const location = {
-          lat: position.coords.latitude,
-          lon: position.coords.longitude
-        };
-        setUserLocation(location);
-        setLocationLoading(false);
-        
-        // Trigger search with location
-        setIsSearching(true);
-        setSearchParams({
-          lat: location.lat,
-          lon: location.lon,
-          radius: radius,
-          limit: 50,
-          query: searchTerm || undefined,
-        });
-      },
-      (error) => {
-        let errorMsg = "Unable to get your location";
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMsg = "Location access denied. Please enable location permissions.";
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMsg = "Location information unavailable.";
-            break;
-          case error.TIMEOUT:
-            errorMsg = "Location request timed out.";
-            break;
-        }
-        setLocationError(errorMsg);
-        setLocationLoading(false);
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 10000,
-        maximumAge: 300000 // 5 minutes cache
-      }
-    );
-  };
-
-  /**
    * clearLocation - Clear user location and return to showing all salons
    */
   const clearLocation = () => {
-    setUserLocation(null);
-    setLocationError(null);
+    dispatch(clearLocationAction());
     setIsSearching(false);
     setSearchParams(null);
   };
@@ -207,12 +153,30 @@ const PublicSalonListing = () => {
     ...new Set(displaySalons.map((salon) => salon.city).filter(Boolean)),
   ];
 
-  // Filter by city
-  const filteredSalons = displaySalons.filter((salon) => {
-    const matchesCity =
-      selectedCity === "all" || salon.city === selectedCity;
-    return matchesCity;
-  });
+  // Filter by city - Memoized to prevent refiltering on every render
+  const filteredSalons = useMemo(() => 
+    displaySalons.filter((salon) => {
+      const matchesCity =
+        selectedCity === "all" || salon.city === selectedCity;
+      return matchesCity;
+    })
+  , [displaySalons, selectedCity]);
+
+  /**
+   * Automatically trigger search when user location is available
+   */
+  useEffect(() => {
+    if (userLocation) {
+      setIsSearching(true);
+      setSearchParams({
+        lat: userLocation.lat,
+        lon: userLocation.lon,
+        radius: radius,
+        limit: 50,
+        query: searchTerm || undefined,
+      });
+    }
+  }, [userLocation]); // Trigger when location is fetched
 
   return (
     <div className="min-h-screen bg-white font-body">
@@ -265,7 +229,7 @@ const PublicSalonListing = () => {
                     {locationError}
                   </p>
                   <button
-                    onClick={getUserLocation}
+                    onClick={() => dispatch(getUserLocation())}
                     className="mt-2 text-xs text-red-700 hover:text-red-900 underline"
                   >
                     Try Again
@@ -301,7 +265,7 @@ const PublicSalonListing = () => {
                 ))}
               </select>
               <button
-                onClick={getUserLocation}
+                onClick={() => dispatch(getUserLocation())}
                 disabled={locationLoading || userLocation}
                 className={`h-[48px] px-6 py-3 rounded-lg transition-colors font-body font-semibold text-[16px] leading-[24px] flex items-center gap-2 whitespace-nowrap ${
                   userLocation
