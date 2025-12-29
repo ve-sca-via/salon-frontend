@@ -84,65 +84,21 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: (id) => {
-          // Core React libraries
-          if (id.includes('node_modules/react') || 
-              id.includes('node_modules/react-dom') || 
-              id.includes('node_modules/react-router-dom')) {
-            return 'react-vendor';
-          }
+          // Only split out truly independent libraries
+          // Everything else stays in vendor to prevent initialization issues
           
-          // Redux and state management (heavy but used everywhere)
-          if (id.includes('node_modules/@reduxjs/toolkit') || 
-              id.includes('node_modules/react-redux') || 
-              id.includes('node_modules/redux-persist')) {
-            return 'redux-vendor';
-          }
-          
-          // Supabase client (heavy but critical)
-          if (id.includes('node_modules/@supabase')) {
-            return 'supabase-vendor';
-          }
-          
-          // Date libraries - CRITICAL: Only use date-fns, remove moment.js
-          // Keeping both is 2.5MB+ of duplicate functionality
-          if (id.includes('node_modules/date-fns')) {
-            return 'date-vendor';
-          }
-          if (id.includes('node_modules/moment')) {
-            return 'moment-vendor'; // This should be removed!
-          }
-          
-          // Charts - HEAVY (500KB+), only used in vendor dashboard
-          if (id.includes('node_modules/recharts')) {
-            return 'charts-vendor';
-          }
-          
-          // Calendar - HEAVY (200KB+), only used in booking pages
-          if (id.includes('node_modules/react-big-calendar')) {
-            return 'calendar-vendor';
-          }
-          
-          // Icons - Keep separate for caching
-          if (id.includes('node_modules/react-icons')) {
-            return 'icons-vendor';
-          }
-          
-          // Forms and validation
-          if (id.includes('node_modules/react-hook-form')) {
-            return 'forms-vendor';
-          }
-          
-          // HTTP client and utilities
+          // HTTP client - completely independent of React
           if (id.includes('node_modules/axios')) {
             return 'axios-vendor';
           }
           
-          // Toast notifications
-          if (id.includes('node_modules/react-toastify')) {
-            return 'toast-vendor';
+          // Date utilities - completely independent of React
+          if (id.includes('node_modules/date-fns')) {
+            return 'date-vendor';
           }
           
-          // All other node_modules
+          // Everything else from node_modules goes in the main vendor bundle
+          // This includes React, Redux, and ALL React-dependent packages
           if (id.includes('node_modules')) {
             return 'vendor';
           }
