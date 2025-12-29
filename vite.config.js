@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
   plugins: [
@@ -50,6 +51,13 @@ export default defineConfig({
         ],
       },
     }),
+    // Bundle analyzer - generates stats.html after build
+    visualizer({
+      open: true,
+      gzipSize: true,
+      brotliSize: true,
+      filename: 'dist/stats.html',
+    }),
   ],
   server: {
     port: 3000,
@@ -70,15 +78,76 @@ export default defineConfig({
     },
   },
   build: {
-    // Optimize chunk size
+    // Reduce chunk size warning limit to catch issues early
+    chunkSizeWarningLimit: 500,
+    // Optimize chunk size with aggressive code splitting
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+        manualChunks: (id) => {
+          // Core React libraries
+          if (id.includes('node_modules/react') || 
+              id.includes('node_modules/react-dom') || 
+              id.includes('node_modules/react-router-dom')) {
+            return 'react-vendor';
+          }
+          
+          // Redux and state management (heavy but used everywhere)
+          if (id.includes('node_modules/@reduxjs/toolkit') || 
+              id.includes('node_modules/react-redux') || 
+              id.includes('node_modules/redux-persist')) {
+            return 'redux-vendor';
+          }
+          
+          // Supabase client (heavy but critical)
+          if (id.includes('node_modules/@supabase')) {
+            return 'supabase-vendor';
+          }
+          
+          // Date libraries - CRITICAL: Only use date-fns, remove moment.js
+          // Keeping both is 2.5MB+ of duplicate functionality
+          if (id.includes('node_modules/date-fns')) {
+            return 'date-vendor';
+          }
+          if (id.includes('node_modules/moment')) {
+            return 'moment-vendor'; // This should be removed!
+          }
+          
+          // Charts - HEAVY (500KB+), only used in vendor dashboard
+          if (id.includes('node_modules/recharts')) {
+            return 'charts-vendor';
+          }
+          
+          // Calendar - HEAVY (200KB+), only used in booking pages
+          if (id.includes('node_modules/react-big-calendar')) {
+            return 'calendar-vendor';
+          }
+          
+          // Icons - Keep separate for caching
+          if (id.includes('node_modules/react-icons')) {
+            return 'icons-vendor';
+          }
+          
+          // Forms and validation
+          if (id.includes('node_modules/react-hook-form')) {
+            return 'forms-vendor';
+          }
+          
+          // HTTP client and utilities
+          if (id.includes('node_modules/axios')) {
+            return 'axios-vendor';
+          }
+          
+          // Toast notifications
+          if (id.includes('node_modules/react-toastify')) {
+            return 'toast-vendor';
+          }
+          
+          // All other node_modules
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
         },
       },
     },
-    // Increase chunk size warning limit (images can be large)
-    chunkSizeWarningLimit: 1000,
   },
 });

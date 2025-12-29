@@ -622,11 +622,18 @@ const AddSalonForm = () => {
   if (loadingDraft) {
     return (
       <DashboardLayout role="hmr">
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-body">Loading draft...</p>
+        <div className="max-w-5xl mx-auto p-4 md:p-6">
+          <div className="animate-pulse mb-8">
+            <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 w-96 bg-gray-200 rounded"></div>
           </div>
+          <Card>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <SkeletonFormField key={i} />
+              ))}
+            </div>
+          </Card>
         </div>
       </DashboardLayout>
     );

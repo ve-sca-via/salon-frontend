@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Marcellus&family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap");
-@import "react-big-calendar/lib/css/react-big-calendar.css";
+
 
 @tailwind base;
 @tailwind components;
@@ -171,6 +171,16 @@
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Skeleton Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* Payment Modal Animations */

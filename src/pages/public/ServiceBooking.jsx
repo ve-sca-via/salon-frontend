@@ -28,8 +28,9 @@
  * 5. Navigate to /cart for checkout
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { useGetCartQuery, useAddToCartMutation, useRemoveFromCartMutation } from "../../services/api/cartApi";
@@ -119,6 +120,7 @@ function ServiceCategoryCard({ category, isSelected, onClick }) {
 export default function ServiceBooking() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useSelector((state) => state.auth);
   
   // RTK Query hooks
   const { data: salonData, isLoading: salonLoading, error: salonError } = useGetSalonByIdQuery(id);
@@ -133,56 +135,16 @@ export default function ServiceBooking() {
   const error = salonError;
   
   // Local UI state
-  const [serviceCategories, setServiceCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [expandedPlan, setExpandedPlan] = useState(null);
-  const [groupedServices, setGroupedServices] = useState({});
 
   /**
-   * Group services by category when data loads
-   * Extracts unique categories with counts
-   * Uses icon_url from service_categories or fallback to getCategoryImage
-   */
-  useEffect(() => {
-    if (services.length > 0) {
-      // Group services by category
-      const grouped = groupServicesByCategory(services);
-      setGroupedServices(grouped);
-      
-      // Extract unique categories for top navigation with icon_url
-      const categoriesMap = new Map();
-      services.forEach(service => {
-        const catName = service.service_categories?.name || 'Other Services';
-        if (!categoriesMap.has(catName)) {
-          categoriesMap.set(catName, {
-            name: catName,
-            icon_url: service.service_categories?.icon_url || null,
-            count: 0
-          });
-        }
-        categoriesMap.get(catName).count++;
-      });
-
-      const categories = Array.from(categoriesMap.values()).map((cat, index) => ({
-        id: index + 1,
-        name: cat.name,
-        image: cat.icon_url || getCategoryImage(cat.name), // Use icon_url if available, fallback to getCategoryImage
-        count: cat.count,
-      }));
-      setServiceCategories(categories);
-      
-      // Set first category as selected
-      if (categories.length > 0) {
-        setSelectedCategory(categories[0].name);
-      }
-    }
-  }, [services]);
-
-  /**
-   * groupServicesByCategory - Groups services array by category name
+   * ✅ OPTIMIZED: groupServicesByCategory - Memoized with useCallback
+   * Groups services array by category name
    * Returns object with category names as keys and service arrays as values
+   * Only recreated if needed (stable reference)
    */
-  const groupServicesByCategory = (servicesList) => {
+  const groupServicesByCategory = useCallback((servicesList) => {
     const grouped = {};
     
     servicesList.forEach((service) => {
@@ -194,12 +156,62 @@ export default function ServiceBooking() {
     });
     
     return grouped;
-  };
+  }, []);
+
+  /**
+   * ✅ OPTIMIZED: Memoized grouped services - Only recalculates when services change
+   * Replaces useEffect + useState pattern with useMemo for derived data
+   */
+  const groupedServices = useMemo(() => {
+    if (services.length === 0) return {};
+    return groupServicesByCategory(services);
+  }, [services, groupServicesByCategory]);
+
+  /**
+   * ✅ OPTIMIZED: Memoized service categories - Only recalculates when services change
+   * Extracts unique categories with counts
+   * Uses icon_url from service_categories or fallback to getCategoryImage
+   */
+  const serviceCategories = useMemo(() => {
+    if (services.length === 0) return [];
+    
+    // Extract unique categories for top navigation with icon_url
+    const categoriesMap = new Map();
+    services.forEach(service => {
+      const catName = service.service_categories?.name || 'Other Services';
+      if (!categoriesMap.has(catName)) {
+        categoriesMap.set(catName, {
+          name: catName,
+          icon_url: service.service_categories?.icon_url || null,
+          count: 0
+        });
+      }
+      categoriesMap.get(catName).count++;
+    });
+
+    return Array.from(categoriesMap.values()).map((cat, index) => ({
+      id: index + 1,
+      name: cat.name,
+      image: cat.icon_url || getCategoryImage(cat.name), // Use icon_url if available, fallback to getCategoryImage
+      count: cat.count,
+    }));
+  }, [services]);
+
+  /**
+   * ✅ OPTIMIZED: Set default selected category only when categories change
+   * Replaces setting state inside data processing useEffect
+   */
+  useEffect(() => {
+    if (serviceCategories.length > 0 && !selectedCategory) {
+      setSelectedCategory(serviceCategories[0].name);
+    }
+  }, [serviceCategories, selectedCategory]);
 
   /**
    * handleAddToCart - Adds service to cart with validation
    * 
    * VALIDATION:
+   * - Checks if user is authenticated, redirects to login if not
    * - Checks if cart contains items from different salon
    * - Shows error toast if attempting to mix salons
    * 
@@ -210,6 +222,15 @@ export default function ServiceBooking() {
    * - price, description, quantity (defaults to 1)
    */
   const handleAddToCart = async (service) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      navigate("/login", {
+        replace: true,
+        state: { from: `/salons/${id}/book` }
+      });
+      return;
+    }
+
     // Check if trying to add from different salon
     if (cart?.salon_id && cart.salon_id !== id) {
       showTopCenterToast(

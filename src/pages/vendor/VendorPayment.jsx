@@ -139,10 +139,13 @@ const VendorPayment = () => {
   if (salonLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50 flex items-center justify-center px-4">
-        <div className="text-center">
-          <div className="animate-spin h-16 w-16 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-gray-600 font-body">Loading payment details...</p>
-        </div>
+        <Card className="max-w-md w-full">
+          <div className="py-12 space-y-4 animate-pulse">
+            <div className="h-16 w-16 bg-gray-200 rounded-full mx-auto mb-4"></div>
+            <div className="h-6 w-48 bg-gray-200 rounded mx-auto mb-2"></div>
+            <div className="h-4 w-64 bg-gray-200 rounded mx-auto"></div>
+          </div>
+        </Card>
       </div>
     );
   }

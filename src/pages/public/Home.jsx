@@ -23,7 +23,7 @@
  * 4. Sign up or explore without account
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
@@ -33,12 +33,13 @@ import FeaturedSaloons from "../../components/shared/FeaturedSaloons";
 import PopularLocations from "../../components/shared/PopularLocations";
 import WhyChooseUs from "../../components/shared/WhyChooseUs";
 import ClientTestimonials from "../../components/shared/ClientTestimonials";
-import bg1 from "../../assets/images/bg_1.jpg";
-import bg2 from "../../assets/images/bg_2.jpg";
-import bg3 from "../../assets/images/bg_3.jpg";
-import bg4 from "../../assets/images/bg_4.jpg";
-import bg5 from "../../assets/images/bg_5.jpg";
-import bg6 from "../../assets/images/bg_6.jpg";
+// Preload first 2 carousel images for immediate display
+import bg1Mobile from "../../assets/images/optimized/bg_1_mobile.webp";
+import bg1Tablet from "../../assets/images/optimized/bg_1_tablet.webp";
+import bg1Desktop from "../../assets/images/optimized/bg_1_desktop.webp";
+import bg2Mobile from "../../assets/images/optimized/bg_2_mobile.webp";
+import bg2Tablet from "../../assets/images/optimized/bg_2_tablet.webp";
+import bg2Desktop from "../../assets/images/optimized/bg_2_desktop.webp";
 
 /**
  * ArrowCircleRight - Simple arrow icon for CTA buttons
@@ -65,70 +66,189 @@ function ArrowCircleRight() {
 /**
  * HeroSection - Main carousel section with rotating background images
  * Features:
- * - 6 background images rotating every 9 seconds
+ * - 6 background images rotating every 5 seconds (industry standard)
  * - Manual navigation via arrows and dot indicators
  * - Crossfade transition effect
  * - Responsive layout with overlay for text readability
+ * - Optimized WebP images with lazy loading (first 2 preloaded, rest lazy loaded)
  */
 function HeroSection() {
-  const backgroundImages = [bg1, bg2, bg3, bg4, bg5, bg6];
+  // Lazy load remaining images (3-6) to improve initial page load
+  const backgroundImages = [
+    { mobile: bg1Mobile, tablet: bg1Tablet, desktop: bg1Desktop },
+    { mobile: bg2Mobile, tablet: bg2Tablet, desktop: bg2Desktop },
+    { 
+      mobile: () => import("../../assets/images/optimized/bg_3_mobile.webp"),
+      tablet: () => import("../../assets/images/optimized/bg_3_tablet.webp"),
+      desktop: () => import("../../assets/images/optimized/bg_3_desktop.webp")
+    },
+    { 
+      mobile: () => import("../../assets/images/optimized/bg_4_mobile.webp"),
+      tablet: () => import("../../assets/images/optimized/bg_4_tablet.webp"),
+      desktop: () => import("../../assets/images/optimized/bg_4_desktop.webp")
+    },
+    { 
+      mobile: () => import("../../assets/images/optimized/bg_5_mobile.webp"),
+      tablet: () => import("../../assets/images/optimized/bg_5_tablet.webp"),
+      desktop: () => import("../../assets/images/optimized/bg_5_desktop.webp")
+    },
+    { 
+      mobile: () => import("../../assets/images/optimized/bg_6_mobile.webp"),
+      tablet: () => import("../../assets/images/optimized/bg_6_tablet.webp"),
+      desktop: () => import("../../assets/images/optimized/bg_6_desktop.webp")
+    },
+  ];
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [currentBgImage, setCurrentBgImage] = useState('');
+  const [loadedImages, setLoadedImages] = useState({});
+  const intervalRef = useRef(null);
 
   /**
-   * Auto-rotate carousel images every 9 seconds
+   * Get responsive background image based on screen width
+   */
+  const getResponsiveImage = async (images) => {
+    const width = window.innerWidth;
+    let imageKey, imageImport;
+    
+    if (width < 768) {
+      imageKey = 'mobile';
+      imageImport = images.mobile;
+    } else if (width < 1024) {
+      imageKey = 'tablet';
+      imageImport = images.tablet;
+    } else {
+      imageKey = 'desktop';
+      imageImport = images.desktop;
+    }
+    
+    // If it's a lazy-loaded image (function), load it
+    if (typeof imageImport === 'function') {
+      const module = await imageImport();
+      return module.default;
+    }
+    
+    // Already loaded image (string)
+    return imageImport;
+  };
+
+  /**
+   * Preload next image for smooth transitions
+   */
+  const preloadNextImage = async (index) => {
+    const nextIndex = (index + 1) % backgroundImages.length;
+    const imageSet = backgroundImages[nextIndex];
+    const imageUrl = await getResponsiveImage(imageSet);
+    
+    if (!loadedImages[nextIndex]) {
+      setLoadedImages(prev => ({ ...prev, [nextIndex]: imageUrl }));
+    }
+  };
+
+  /**
+   * Update background image when screen resizes or image changes
+   * Also preload the next image for smooth transitions
+   */
+  useEffect(() => {
+    const updateImage = async () => {
+      const imageUrl = await getResponsiveImage(backgroundImages[currentImageIndex]);
+      setCurrentBgImage(imageUrl);
+      
+      // Preload next image in background
+      preloadNextImage(currentImageIndex);
+    };
+    
+    updateImage();
+    window.addEventListener('resize', updateImage);
+    return () => window.removeEventListener('resize', updateImage);
+  }, [currentImageIndex]);
+
+  const [_, __] = useState(0); // Placeholder for removed state
+
+  /**
+   * Auto-rotate carousel images every 5 seconds (industry standard)
+   * Uses useRef to prevent interval from recreating on each render
    * Cleanup interval on component unmount
    */
   useEffect(() => {
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setCurrentImageIndex((prevIndex) => 
         (prevIndex + 1) % backgroundImages.length
       );
-    }, 9000);
+    }, 5000); // Changed from 9000ms to 5000ms
 
-    return () => clearInterval(interval);
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, []); // Empty dependency - backgroundImages is constant
 
   /**
    * goToSlide - Jump to specific slide via dot indicator
+   * Clears and restarts the auto-rotation interval
    */
   const goToSlide = (index) => {
     setCurrentImageIndex(index);
+    // Reset interval when user manually changes slide
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        setCurrentImageIndex((prevIndex) => 
+          (prevIndex + 1) % backgroundImages.length
+        );
+      }, 5000);
+    }
   };
 
   /**
    * goToPrevious - Navigate to previous slide (wraps to last)
+   * Resets auto-rotation interval
    */
   const goToPrevious = () => {
     setCurrentImageIndex((prevIndex) => 
       prevIndex === 0 ? backgroundImages.length - 1 : prevIndex - 1
     );
+    // Reset interval when user manually changes slide
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        setCurrentImageIndex((prevIndex) => 
+          (prevIndex + 1) % backgroundImages.length
+        );
+      }, 5000);
+    }
   };
 
   /**
    * goToNext - Navigate to next slide (wraps to first)
+   * Resets auto-rotation interval
    */
   const goToNext = () => {
     setCurrentImageIndex((prevIndex) => 
       (prevIndex + 1) % backgroundImages.length
     );
+    // Reset interval when user manually changes slide
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = setInterval(() => {
+        setCurrentImageIndex((prevIndex) => 
+          (prevIndex + 1) % backgroundImages.length
+        );
+      }, 5000);
+    }
   };
 
   return (
     <section className="relative w-full h-[600px] overflow-hidden">
-      {/* Background Images with Crossfade Transition */}
-      {backgroundImages.map((image, index) => (
+      {/* Background Images with Crossfade Transition - Lazy loaded after first 2 */}
+      {currentBgImage && (
         <div
-          key={index}
-          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out ${
-            index === currentImageIndex
-              ? "opacity-100 z-10"
-              : "opacity-0 z-0"
-          }`}
-          style={{ backgroundImage: `url(${image})` }}
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ease-in-out opacity-100 z-10"
+          style={{ backgroundImage: `url(${currentBgImage})` }}
           role="img"
-          aria-label={`Salon background ${index + 1}`}
+          aria-label={`Salon background ${currentImageIndex + 1}`}
         />
-      ))}
+      )}
 
       {/* Dark overlay for better text readability */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent z-20"></div>

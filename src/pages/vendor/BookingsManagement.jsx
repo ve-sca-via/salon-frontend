@@ -9,7 +9,6 @@
  * - Bookings from RTK Query (useGetVendorBookingsQuery)
  * - Status updates via RTK Query mutation (useUpdateBookingStatusMutation)
  * - Local state for filters, search, and modal
- * - Real-time booking updates via Supabase subscription
  * 
  * Key Features:
  * - Real-time booking statistics (total, pending, confirmed, completed, cancelled, revenue)
@@ -18,7 +17,6 @@
  * - Detailed booking view modal
  * - Responsive table layout
  * - Search by customer, service, or staff name
- * - Real-time notifications for new bookings
  * 
  * User Flow:
  * 1. Vendor views all bookings with stats
@@ -53,7 +51,6 @@ import {
   FiXCircle,
   FiAlertCircle,
 } from 'react-icons/fi';
-import { supabase } from '../../config/supabase';
 
 const BookingsManagement = () => {
   // RTK Query hooks
@@ -75,40 +72,10 @@ const BookingsManagement = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   /**
-   * Real-time subscription for new bookings
-   * Listens to INSERT events on bookings table and refetches data
+   * TODO: Real-time booking notifications
+   * Consider implementing via WebSocket connection to FastAPI backend
+   * or polling mechanism for new bookings
    */
-  useEffect(() => {
-    if (!salonProfile?.id) return;
-
-    // Subscribe to new bookings for this salon
-    const bookingSubscription = supabase
-      .channel(`bookings:salon_id=eq.${salonProfile.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'bookings',
-          filter: `salon_id=eq.${salonProfile.id}`
-        },
-        (payload) => {
-          // Show toast notification with customer name
-          showSuccessToast(
-            `🔔 New booking from ${payload.new.customer_name || 'a customer'}!`
-          );
-          
-          // Refetch bookings to update the list
-          refetchBookings();
-        }
-      )
-      .subscribe();
-
-    // Cleanup subscription on unmount
-    return () => {
-      supabase.removeChannel(bookingSubscription);
-    };
-  }, [salonProfile?.id, refetchBookings]);
 
   /**
    * handleStatusUpdate - Updates booking status (confirm, complete, cancel)

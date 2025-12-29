@@ -65,11 +65,6 @@ const Footer = () => {
                   My Bookings
                 </Link>
               </li>
-              <li>
-                <Link to="/favorites" className="hover:text-white transition-colors">
-                  Favorites
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -99,19 +94,9 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link to="/partner-with-us" className="hover:text-white transition-colors">
                   Partner With Us
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Business Solutions
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Advertise
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -119,21 +104,11 @@ const Footer = () => {
           {/* Support */}
           <div>
             <h4 className="text-lg font-semibold text-white mb-4">Support</h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2 mb-4">
               <li>
                 <Link to="/faq" className="hover:text-white transition-colors">
                   FAQs
                 </Link>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Help Center
-                </a>
-              </li>
-              <li>
-                <a href="mailto:support@lubist.in" className="hover:text-white transition-colors">
-                  Contact Us
-                </a>
               </li>
               <li>
                 <Link to="/privacy-policy" className="hover:text-white transition-colors">
@@ -145,12 +120,25 @@ const Footer = () => {
                   Terms of Service
                 </a>
               </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  FAQs
-                </a>
-              </li>
             </ul>
+            <div className="space-y-2 text-sm text-gray-400 border-t border-gray-800 pt-4">
+              <p className="font-semibold text-white mb-2">Contact Support</p>
+              <p>
+                <span className="text-gray-500">Phone:</span>{' '}
+                <a href="tel:+919204166560" className="hover:text-white transition-colors">
+                  +91 9204166560
+                </a>
+              </p>
+              <p>
+                <span className="text-gray-500">Email:</span>{' '}
+                <a href="mailto:support@lubist.com" className="hover:text-white transition-colors">
+                  support@lubist.com
+                </a>
+              </p>
+              <p className="text-gray-500">
+                Mon. to Sun. | 10:00 AM to 7:00 PM
+              </p>
+            </div>
           </div>
         </div>
 

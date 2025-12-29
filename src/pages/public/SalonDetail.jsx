@@ -34,6 +34,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock } from "react-icons/fi";
+import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
 
 /**
  * getCategoryImage - Returns category-specific image URL
@@ -286,13 +287,23 @@ export default function SalonDetail() {
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full" />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Hero Skeleton */}
+          <div className="animate-pulse mb-8">
+            <div className="h-96 w-full bg-gray-200 rounded-xl mb-6"></div>
+            <div className="h-10 w-64 bg-gray-200 rounded mb-3"></div>
+            <div className="h-5 w-96 bg-gray-200 rounded"></div>
           </div>
-          <h2 className="font-display text-3xl font-bold text-neutral-black mb-4">
-            Loading salon details...
-          </h2>
+          
+          {/* Services Skeleton */}
+          <div>
+            <div className="h-8 w-48 bg-gray-200 rounded mb-6 animate-pulse"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <SkeletonServiceCard key={i} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -571,22 +582,34 @@ export default function SalonDetail() {
                     </span>
                   </div>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                    />
-                  </svg>
-                  <span className="font-body font-medium">Share</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  {salon.phone && (
+                    <a
+                      href={`tel:${salon.phone}`}
+                      className="flex items-center gap-2 px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors"
+                      aria-label={`Call ${salon.business_name || salon.name}`}
+                    >
+                      <FiPhone className="w-5 h-5" />
+                      <span className="font-body font-medium">Call</span>
+                    </a>
+                  )}
+                  <button className="flex items-center gap-2 px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                      />
+                    </svg>
+                    <span className="font-body font-medium">Share</span>
+                  </button>
+                </div>
               </div>
 
               {salon.description && (
@@ -718,16 +741,6 @@ export default function SalonDetail() {
               </h3>
 
               <div className="space-y-4 mb-6">
-                {/* Contact Number */}
-                {salon.phone && (
-                  <div className="flex items-center gap-3">
-                    <FiPhone className="w-5 h-5 text-accent-orange" />
-                    <span className="font-body text-[15px] text-neutral-black font-medium">
-                      {salon.phone}
-                    </span>
-                  </div>
-                )}
-
                 {/* Email */}
                 {salon.email && (
                   <div className="flex items-center gap-3">

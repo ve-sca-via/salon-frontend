@@ -58,6 +58,7 @@ const Careers = lazy(() => import('./pages/public/Careers'));
 const About = lazy(() => import('./pages/public/About'));
 const PrivacyPolicy = lazy(() => import('./pages/public/PrivacyPolicy'));
 const FAQ = lazy(() => import('./pages/public/FAQ'));
+const PartnerWithUs = lazy(() => import('./pages/public/PartnerWithUs'));
 
 // Customer pages
 const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
@@ -124,6 +125,7 @@ function App() {
             <Route path="/payment" element={<Payment />} />
             <Route path="/booking-confirmation" element={<BookingConfirmation />} />
             <Route path="/careers" element={<Careers />} />
+            <Route path="/partner-with-us" element={<PartnerWithUs />} />
             
             {/* Authentication pages */}
             <Route path="/login" element={<Login />} />

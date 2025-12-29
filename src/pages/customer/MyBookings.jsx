@@ -36,6 +36,7 @@ import {
   useCancelBookingMutation,
 } from "../../services/api/bookingApi";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
+import { SkeletonBookingCard } from "../../components/shared/Skeleton";
 
 /**
  * BookingCard - Individual booking display component
@@ -436,10 +437,12 @@ export default function MyBookings() {
           </button>
         </div>
 
-        {/* Loading State */}
+        {/* Loading State - Skeleton Cards */}
         {loading && (
-          <div className="flex justify-center items-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-orange"></div>
+          <div>
+            {[1, 2, 3].map((i) => (
+              <SkeletonBookingCard key={i} />
+            ))}
           </div>
         )}
 
