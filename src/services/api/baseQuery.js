@@ -38,10 +38,10 @@ export const axiosBaseQuery = () => async ({ url, method = 'get', data, params }
     // RTK Query expects { data: ... } format
     return { data: result };
   } catch (axiosError) {
-    // Extract error information
+    // Extract error information (status preserved from handleApiError)
     const error = {
-      status: axiosError.response?.status,
-      data: axiosError.response?.data || axiosError.message,
+      status: axiosError.status || axiosError.response?.status,
+      data: axiosError.data || axiosError.response?.data || axiosError.message,
     };
 
     return { error };

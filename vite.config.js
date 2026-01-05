@@ -9,19 +9,19 @@ export default defineConfig({
     ViteImageOptimizer({
       // Image optimization settings
       jpg: {
-        quality: 80,
+        quality: 70,
       },
       jpeg: {
-        quality: 80,
+        quality: 70,
       },
       png: {
-        quality: 80,
+        quality: 75,
       },
       webp: {
-        quality: 80,
+        quality: 75,
       },
       avif: {
-        quality: 70,
+        quality: 65,
       },
       // Only optimize assets in production
       test: /\.(jpe?g|png|gif|tiff|webp|avif)$/i,
@@ -80,6 +80,14 @@ export default defineConfig({
   build: {
     // Reduce chunk size warning limit to catch issues early
     chunkSizeWarningLimit: 500,
+    // Remove console statements in production
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
     // Optimize chunk size with aggressive code splitting
     rollupOptions: {
       output: {

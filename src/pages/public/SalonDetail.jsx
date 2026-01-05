@@ -35,6 +35,7 @@ import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock } from "react-icons/fi";
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
+import { NotFound } from "../../components/shared/ErrorFallback";
 
 /**
  * getCategoryImage - Returns category-specific image URL
@@ -309,20 +310,82 @@ export default function SalonDetail() {
     );
   }
 
-  if (error || !salon) {
+  // Handle API errors (404, network errors, etc.)
+  if (error) {
+    const is404 = error.status === 404;
+    const isNetworkError = error.status === 'FETCH_ERROR' || !error.status;
+    
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <h2 className="font-display text-3xl font-bold text-neutral-black mb-4">
-            {error || "Salon Not Found"}
-          </h2>
-          <button
-            onClick={() => navigate("/salons")}
-            className="bg-accent-orange text-primary-white px-6 py-3 rounded-lg font-body font-medium hover:opacity-90"
-          >
-            Back to Salons
-          </button>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {is404 ? (
+            <NotFound message="The salon you're looking for doesn't exist or has been removed." />
+          ) : isNetworkError ? (
+            <div className="flex flex-col items-center justify-center min-h-[500px] p-6">
+              <div className="text-center max-w-md">
+                <div className="mb-6">
+                  <svg className="w-20 h-20 text-gray-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                  Connection Problem
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  We couldn't connect to our servers. Please check your internet connection and try again.
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-accent-orange hover:bg-orange-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[500px] p-6">
+              <div className="text-center max-w-md">
+                <div className="mb-6">
+                  <svg className="w-20 h-20 text-red-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                  Unable to Load Salon
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  There was a problem loading this salon's information. Please try again.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-accent-orange hover:bg-orange-600 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200"
+                  >
+                    Retry
+                  </button>
+                  <button
+                    onClick={() => navigate('/salons')}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200"
+                  >
+                    Back to Salons
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // If no salon data returned (shouldn't happen if no error, but safety check)
+  if (!salon) {
+    return (
+      <div className="min-h-screen bg-bg-secondary">
+        <PublicNavbar />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <NotFound message="The salon you're looking for doesn't exist." />
         </div>
       </div>
     );
@@ -664,9 +727,13 @@ export default function SalonDetail() {
                     </h3>
                     
                     {servicesLoading ? (
-                      <div className="text-center py-12">
-                        <div className="animate-spin h-8 w-8 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-3" />
-                        <p className="text-neutral-gray-600">Loading categories...</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className="animate-pulse">
+                            <div className="h-32 bg-gray-200 rounded-xl mb-3"></div>
+                            <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+                          </div>
+                        ))}
                       </div>
                     ) : serviceCategories.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">

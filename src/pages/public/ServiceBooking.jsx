@@ -32,9 +32,11 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
+import Footer from "../../components/layout/Footer";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { useGetCartQuery, useAddToCartMutation, useRemoveFromCartMutation } from "../../services/api/cartApi";
 import { showSuccessToast, showErrorToast, showInfoToast, showTopCenterToast } from "../../utils/toastConfig";
+import { NotFound, NetworkError } from "../../components/shared/ErrorFallback";
 
 /**
  * getCategoryImage - Returns category image URL
@@ -305,22 +307,65 @@ export default function ServiceBooking() {
     );
   }
 
-  // Error state - shows error message and back button
-  if (error || !salon) {
+  // Error state - handle API errors properly
+  if (error) {
+    const is404 = error.status === 404;
+    const isNetworkError = error.status === 'FETCH_ERROR' || !error.status;
+    
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <h2 className="font-display text-3xl font-bold text-neutral-black mb-4">
-            {error || "Salon Not Found"}
-          </h2>
-          <button
-            onClick={() => navigate("/salons")}
-            className="bg-accent-orange text-primary-white px-6 py-3 rounded-lg font-body font-medium hover:opacity-90"
-          >
-            Back to Salons
-          </button>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {is404 ? (
+            <NotFound message="The salon you're looking for doesn't exist or has been removed." />
+          ) : isNetworkError ? (
+            <NetworkError onRetry={() => window.location.reload()} />
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[500px] p-6">
+              <div className="text-center max-w-md">
+                <div className="mb-6">
+                  <svg className="w-20 h-20 text-red-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                  Unable to Load Salon
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  There was a problem loading this salon's information. Please try again.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-accent-orange hover:bg-orange-600 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200"
+                  >
+                    Retry
+                  </button>
+                  <button
+                    onClick={() => navigate('/salons')}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200"
+                  >
+                    Back to Salons
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Safety check for missing salon data
+  if (!salon) {
+    return (
+      <div className="min-h-screen bg-bg-secondary">
+        <PublicNavbar />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <NotFound message="The salon you're looking for doesn't exist." />
+        </div>
+        <Footer />
       </div>
     );
   }

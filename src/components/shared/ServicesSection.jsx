@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import service1 from "../../assets/images/Service_Image_1.png";
-import service2 from "../../assets/images/Service_Image_2.png";
-import service3 from "../../assets/images/service Image_3.png";
-import service4 from "../../assets/images/service_image_4.png";
+import service1 from "../../assets/images/optimized/Service_Image_1.webp";
+import service2 from "../../assets/images/optimized/Service_Image_2.webp";
+import service3 from "../../assets/images/optimized/service Image_3.webp";
+import service4 from "../../assets/images/optimized/service_image_4.webp";
 import svgPaths from "../../utils/svgPaths";
 
 // Scissors Icon for Header

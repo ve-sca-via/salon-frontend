@@ -60,6 +60,7 @@ import { useCreateCartPaymentOrderMutation } from "../../services/api/paymentApi
 import { useGetPublicConfigsQuery } from "../../services/api/configApi";
 import { toast } from "react-toastify";
 import { showInfoToast } from "../../utils/toastConfig";
+import { SkeletonServiceCard } from "../../components/shared/Skeleton";
 
 export default function Checkout() {
   const navigate = useNavigate();
@@ -283,9 +284,27 @@ export default function Checkout() {
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-accent-orange"></div>
-          <p className="mt-4 text-neutral-gray-500">Loading checkout...</p>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse mb-6">
+            <div className="h-8 w-48 bg-gray-200 rounded"></div>
+          </div>
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              {[1, 2, 3].map((i) => (
+                <SkeletonServiceCard key={i} />
+              ))}
+            </div>
+            <div>
+              <div className="bg-primary-white rounded-xl shadow-md p-6 animate-pulse">
+                <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
+                <div className="space-y-4">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="h-4 bg-gray-200 rounded"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );

@@ -7,6 +7,7 @@ import bgImage from "../../assets/images/bg_7.jpg";
 import { useGetSalonsQuery, useSearchSalonsQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiClock, FiCalendar, FiNavigation, FiX } from "react-icons/fi";
 import { getUserLocation, clearLocation as clearLocationAction } from "../../store/slices/locationSlice";
+import { SkeletonSalonCard } from "../../components/shared/Skeleton";
 
 // Arrow Icon Component
 function ArrowCircleRight() {
@@ -323,9 +324,10 @@ const PublicSalonListing = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="font-body text-[18px] leading-[26px] text-neutral-gray-600">Loading salons...</p>
+            <div className="grid md:grid-cols-3 gap-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <SkeletonSalonCard key={i} />
+              ))}
             </div>
           ) : (
             <div className="grid md:grid-cols-3 gap-8">

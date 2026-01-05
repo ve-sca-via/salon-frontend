@@ -49,7 +49,7 @@ import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import Button from "../../components/shared/Button";
 import InputField from "../../components/shared/InputField";
 import { FiMail, FiLock, FiShoppingBag, FiUsers, FiEye, FiEyeOff } from "react-icons/fi";
-import bgImage from "../../assets/images/bg.png";
+import bgImage from "../../assets/images/optimized/bg.webp";
 
 const Login = () => {
   // Form state
