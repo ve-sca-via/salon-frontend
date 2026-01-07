@@ -41,6 +41,7 @@ import {
 } from '../../services/api/vendorApi';
 import { FiEdit2, FiSave, FiX, FiMapPin, FiPhone, FiMail, FiClock, FiImage } from 'react-icons/fi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { SkeletonFormField } from '../../components/shared/Skeleton';
 
 const SalonProfile = () => {
   // RTK Query hooks for fetching and updating salon data
@@ -248,15 +249,22 @@ const SalonProfile = () => {
     setIsEditing(false);
   };
 
-  // Loading state - show spinner while fetching profile data
+  // Loading state - show skeleton form while fetching profile data
   if (profileLoading && !salonProfile) {
     return (
       <DashboardLayout role="vendor">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin h-16 w-16 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-body">Loading salon profile...</p>
+        <div className="p-4 md:p-6 space-y-6">
+          <div className="animate-pulse">
+            <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 w-64 bg-gray-200 rounded"></div>
           </div>
+          <Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <SkeletonFormField key={i} />
+              ))}
+            </div>
+          </Card>
         </div>
       </DashboardLayout>
     );

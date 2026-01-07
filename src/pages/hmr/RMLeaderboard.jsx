@@ -103,9 +103,29 @@ const RMLeaderboard = () => {
         >
           {/* Loading State */}
           {isLoading && (
-            <div className="text-center py-12">
-              <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto"></div>
-              <p className="text-gray-600 mt-4 font-body">Loading leaderboard...</p>
+            <div className="py-12">
+              <table className="w-full">
+                <thead className="bg-gradient-to-r from-orange-500 to-orange-600 text-white">
+                  <tr>
+                    <th className="px-6 py-4 text-left">Rank</th>
+                    <th className="px-6 py-4 text-left">RM Name</th>
+                    <th className="px-6 py-4 text-center">Total Salons</th>
+                    <th className="px-6 py-4 text-center">Active Salons</th>
+                    <th className="px-6 py-4 text-center">Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <tr key={i} className="border-b animate-pulse">
+                      <td className="px-6 py-4"><div className="h-4 w-8 bg-gray-200 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 w-32 bg-gray-200 rounded"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 w-12 bg-gray-200 rounded mx-auto"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 w-12 bg-gray-200 rounded mx-auto"></div></td>
+                      <td className="px-6 py-4"><div className="h-4 w-16 bg-gray-200 rounded mx-auto"></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
 

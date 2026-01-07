@@ -43,7 +43,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { FaUser, FaEnvelope, FaLock, FaPhone } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaEye, FaEyeSlash } from "react-icons/fa";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import InputField from "../../components/shared/InputField";
 import Button from "../../components/shared/Button";
@@ -69,6 +69,8 @@ const Signup = () => {
 
   // Field-level errors for inline validation feedback
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   /**
    * handleChange - Updates form field values and clears field-specific errors
@@ -164,6 +166,9 @@ const Signup = () => {
       
       // Store user in Redux auth slice
       dispatch(setUser(response.user));
+
+      // Mark that user just signed up (for email verification banner)
+      sessionStorage.setItem('just_signed_up', 'true');
 
       showSuccessToast("Account created successfully! Welcome to Lubist! 🎉");
 
@@ -341,32 +346,54 @@ const Signup = () => {
                 />
 
                 {/* Password Input */}
-                <InputField
-                  label="Password"
-                  type="password"
-                  name="password"
-                  placeholder="Create a password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  icon={<FaLock />}
-                  error={errors.password}
-                  disabled={isLoading}
-                  aria-label="Password"
-                />
+                <div className="relative">
+                  <InputField
+                    label="Password"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    icon={<FaLock />}
+                    error={errors.password}
+                    disabled={isLoading}
+                    aria-label="Password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                  </button>
+                </div>
 
                 {/* Confirm Password Input */}
-                <InputField
-                  label="Confirm Password"
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  icon={<FaLock />}
-                  error={errors.confirmPassword}
-                  disabled={isLoading}
-                  aria-label="Confirm password"
-                />
+                <div className="relative">
+                  <InputField
+                    label="Confirm Password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    icon={<FaLock />}
+                    error={errors.confirmPassword}
+                    disabled={isLoading}
+                    aria-label="Confirm password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    disabled={isLoading}
+                  >
+                    {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                  </button>
+                </div>
 
                 {/* Submit Button */}
                 <Button

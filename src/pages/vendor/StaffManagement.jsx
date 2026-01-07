@@ -45,6 +45,7 @@ import {
   useUpdateVendorStaffMutation,
   useDeleteVendorStaffMutation,
 } from '../../services/api/vendorApi';
+import { SkeletonTable } from '../../components/shared/Skeleton';
 import {
   FiPlus,
   FiEdit2,
@@ -319,12 +320,7 @@ const StaffManagement = () => {
 
         {/* Staff List */}
         {staffLoading ? (
-          <div className="flex items-center justify-center min-h-[40vh]">
-            <div className="text-center">
-              <div className="animate-spin h-12 w-12 border-4 border-purple-600 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-gray-600 font-body">Loading staff...</p>
-            </div>
-          </div>
+          <SkeletonTable rows={5} columns={5} />
         ) : filteredStaff.length === 0 ? (
           <Card>
             <div className="text-center py-12">

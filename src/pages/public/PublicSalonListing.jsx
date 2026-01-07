@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
@@ -7,6 +7,7 @@ import bgImage from "../../assets/images/bg_7.jpg";
 import { useGetSalonsQuery, useSearchSalonsQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiClock, FiCalendar, FiNavigation, FiX } from "react-icons/fi";
 import { getUserLocation, clearLocation as clearLocationAction } from "../../store/slices/locationSlice";
+import { SkeletonSalonCard } from "../../components/shared/Skeleton";
 
 // Arrow Icon Component
 function ArrowCircleRight() {
@@ -72,15 +73,19 @@ function HeroSection() {
 
 const PublicSalonListing = () => {
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
   
   // Get location from Redux store
   const { userLocation, locationError, locationLoading } = useSelector((state) => state.location);
   
+  // Get city from URL params (e.g., /salons?city=Mumbai)
+  const cityFromUrl = searchParams.get('city');
+  
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCity, setSelectedCity] = useState("all");
+  const [selectedCity, setSelectedCity] = useState(cityFromUrl || "all");
   const [isSearching, setIsSearching] = useState(false);
-  const [searchParams, setSearchParams] = useState(null);
+  const [apiSearchParams, setApiSearchParams] = useState(null);
   
   const [radius, setRadius] = useState(10); // Default 10km radius
 
@@ -91,8 +96,8 @@ const PublicSalonListing = () => {
   );
   
   const { data: searchData, isLoading: searchLoading, error: searchError } = useSearchSalonsQuery(
-    searchParams,
-    { skip: !isSearching || !searchParams } // Only run when actively searching
+    apiSearchParams,
+    { skip: !isSearching || !apiSearchParams } // Only run when actively searching
   );
 
   /**
@@ -101,7 +106,7 @@ const PublicSalonListing = () => {
   const clearLocation = () => {
     dispatch(clearLocationAction());
     setIsSearching(false);
-    setSearchParams(null);
+    setApiSearchParams(null);
   };
 
   /**
@@ -111,7 +116,7 @@ const PublicSalonListing = () => {
     setRadius(newRadius);
     if (userLocation) {
       setIsSearching(true);
-      setSearchParams({
+      setApiSearchParams({
         lat: userLocation.lat,
         lon: userLocation.lon,
         radius: newRadius,
@@ -127,7 +132,7 @@ const PublicSalonListing = () => {
   const handleSearch = () => {
     if (searchTerm.trim() || userLocation) {
       setIsSearching(true);
-      setSearchParams({
+      setApiSearchParams({
         query: searchTerm || undefined,
         location: selectedCity !== "all" ? selectedCity : undefined,
         lat: userLocation?.lat,
@@ -136,7 +141,7 @@ const PublicSalonListing = () => {
       });
     } else {
       setIsSearching(false);
-      setSearchParams(null);
+      setApiSearchParams(null);
     }
   };
 
@@ -163,12 +168,21 @@ const PublicSalonListing = () => {
   , [displaySalons, selectedCity]);
 
   /**
+   * Update selectedCity when URL changes
+   */
+  useEffect(() => {
+    if (cityFromUrl) {
+      setSelectedCity(cityFromUrl);
+    }
+  }, [cityFromUrl]);
+
+  /**
    * Automatically trigger search when user location is available
    */
   useEffect(() => {
     if (userLocation) {
       setIsSearching(true);
-      setSearchParams({
+      setApiSearchParams({
         lat: userLocation.lat,
         lon: userLocation.lon,
         radius: radius,
@@ -323,9 +337,10 @@ const PublicSalonListing = () => {
           </div>
 
           {loading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="font-body text-[18px] leading-[26px] text-neutral-gray-600">Loading salons...</p>
+            <div className="grid md:grid-cols-3 gap-8">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <SkeletonSalonCard key={i} />
+              ))}
             </div>
           ) : (
             <div className="grid md:grid-cols-3 gap-8">
@@ -378,13 +393,14 @@ const PublicSalonListing = () => {
                       {/* Subtle Gradient Overlay for better text visibility */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
                       
-                      {/* Rating Badge */}
+                      {/* COMMENTED OUT - Rating badge not yet implemented
                       <div className="absolute top-4 right-4 bg-white shadow-lg px-4 py-2 rounded-full flex items-center gap-2">
                         <FiStar className="text-yellow-500" fill="#FFC107" size={18} />
                         <span className="font-bold text-neutral-black text-lg">
                           {salon.average_rating || '4.5'}
                         </span>
                       </div>
+                      */}
                     </div>
 
                     {/* Content Section */}

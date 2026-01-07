@@ -10,14 +10,12 @@
  * - Analytics data from RTK Query (useGetVendorAnalyticsQuery)
  * - Recent bookings from RTK Query (useGetVendorBookingsQuery)
  * - Auth state from Redux (user display name)
- * - Real-time booking updates via Supabase subscription
  * 
  * Key Features:
  * - Payment status check for new vendors (registration fee)
  * - Analytics cards (bookings, revenue, services, staff, rating, pending)
  * - Quick action links (add service, add staff, view bookings)
  * - Recent bookings table (last 5 bookings)
- * - Real-time notifications for new bookings
  * - Responsive grid layouts
  * 
  * User Flow:
@@ -45,7 +43,7 @@ import {
   FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle, FiLock
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
-import { supabase } from '../../config/supabase';
+import { SkeletonStatCard, SkeletonTableRow } from '../../components/shared/Skeleton';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
@@ -71,48 +69,15 @@ const VendorDashboard = () => {
     : (bookingsData?.bookings || []).slice(0, 5);
 
   /**
-   * Real-time subscription for new bookings
-   * Listens to INSERT events on bookings table and refetches data
+   * TODO: Real-time booking notifications
+   * Consider implementing via WebSocket connection to FastAPI backend
+   * or polling mechanism for new bookings
+   * 
+   * Alternative approaches:
+   * 1. WebSocket: Backend can push real-time updates
+   * 2. Polling: Refetch bookings every N seconds
+   * 3. Server-Sent Events (SSE): Backend streams updates
    */
-  useEffect(() => {
-    if (!salonProfile?.id) return;
-
-    // Subscribe to new bookings for this salon
-    const bookingSubscription = supabase
-      .channel(`bookings:salon_id=eq.${salonProfile.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'bookings',
-          filter: `salon_id=eq.${salonProfile.id}`
-        },
-        (payload) => {
-          // Show toast notification
-          toast.success(
-            `🔔 New booking from ${payload.new.customer_name || 'a customer'}!`,
-            {
-              position: 'top-right',
-              autoClose: 5000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-            }
-          );
-          
-          // Refetch bookings and analytics to update dashboard
-          refetchBookings();
-        }
-      )
-      .subscribe();
-
-    // Cleanup subscription on unmount
-    return () => {
-      supabase.removeChannel(bookingSubscription);
-    };
-  }, [salonProfile?.id, refetchBookings]);
 
   /**
    * Toggle accepting_bookings status
@@ -176,15 +141,45 @@ const VendorDashboard = () => {
   };
 
   /**
-   * Loading state - show spinner while fetching initial data
+   * Loading state - show skeleton cards while fetching initial data
    */
   if ((analyticsLoading && !analytics) || (salonLoading && !salonProfile)) {
     return (
       <DashboardLayout role="vendor">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin h-16 w-16 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-body">Loading dashboard...</p>
+        <div className="space-y-8 p-4 md:p-6">
+          {/* Header Skeleton */}
+          <div className="animate-pulse">
+            <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 w-48 bg-gray-200 rounded"></div>
+          </div>
+          
+          {/* Stats Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <SkeletonStatCard key={i} />
+            ))}
+          </div>
+          
+          {/* Bookings Table Skeleton */}
+          <div className="bg-primary-white rounded-xl shadow-md overflow-hidden">
+            <div className="p-6">
+              <div className="h-6 w-48 bg-gray-200 rounded mb-4 animate-pulse"></div>
+              <table className="w-full">
+                <thead className="bg-neutral-gray-600">
+                  <tr>
+                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
+                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
+                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
+                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <SkeletonTableRow key={i} columns={4} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </DashboardLayout>

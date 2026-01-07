@@ -48,8 +48,8 @@ import { useLoginMutation } from "../../services/api/authApi";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import Button from "../../components/shared/Button";
 import InputField from "../../components/shared/InputField";
-import { FiMail, FiLock, FiShoppingBag, FiUsers } from "react-icons/fi";
-import bgImage from "../../assets/images/bg.png";
+import { FiMail, FiLock, FiShoppingBag, FiUsers, FiEye, FiEyeOff } from "react-icons/fi";
+import bgImage from "../../assets/images/optimized/bg.webp";
 
 const Login = () => {
   // Form state
@@ -58,6 +58,7 @@ const Login = () => {
     password: "",
     rememberMe: false 
   });
+  const [showPassword, setShowPassword] = useState(false);
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -239,18 +240,29 @@ const Login = () => {
                 />
                 
                 {/* Password Input */}
-                <InputField
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter your password"
-                  icon={<FiLock />}
-                  disabled={isLoading}
-                  required
-                  aria-label="Password"
-                />
+                <div className="relative">
+                  <InputField
+                    label="Password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Enter your password"
+                    icon={<FiLock />}
+                    disabled={isLoading}
+                    required
+                    aria-label="Password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                  </button>
+                </div>
                 
                 {/* Remember Me & Forgot Password */}
                 <div className="flex items-center justify-between">

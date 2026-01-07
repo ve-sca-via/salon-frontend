@@ -41,12 +41,14 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
-import { FiUser, FiMail, FiLock, FiShoppingBag, FiUsers } from 'react-icons/fi';
+import { FiUser, FiMail, FiLock, FiShoppingBag, FiUsers, FiEye, FiEyeOff } from 'react-icons/fi';
 import { setUser } from '../../store/slices/authSlice';
 import { useLoginMutation } from '../../services/api/authApi';
 import Button from '../../components/shared/Button';
 import InputField from '../../components/shared/InputField';
-import vendorBgImage from '../../assets/images/vendor_portal_bg.jpg';
+import vendorBgMobile from '../../assets/images/optimized/vendor_portal_bg_mobile.webp';
+import vendorBgTablet from '../../assets/images/optimized/vendor_portal_bg_tablet.webp';
+import vendorBgDesktop from '../../assets/images/optimized/vendor_portal_bg_desktop.webp';
 
 const VendorLogin = () => {
   const navigate = useNavigate();
@@ -61,15 +63,34 @@ const VendorLogin = () => {
     password: '',
     rememberMe: false,
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [bgImage, setBgImage] = useState(vendorBgDesktop);
+
+  /**
+   * Get responsive background image
+   */
+  const getResponsiveBg = () => {
+    const width = window.innerWidth;
+    if (width < 768) return vendorBgMobile;
+    if (width < 1024) return vendorBgTablet;
+    return vendorBgDesktop;
+  };
 
   /**
    * Load saved email from localStorage if "Remember me" was checked
+   * Also set up responsive background image
    */
   useEffect(() => {
     const savedEmail = localStorage.getItem('vendorRememberedEmail');
     if (savedEmail) {
       setFormData(prev => ({ ...prev, email: savedEmail, rememberMe: true }));
     }
+
+    // Set initial background and listen for resize
+    setBgImage(getResponsiveBg());
+    const handleResize = () => setBgImage(getResponsiveBg());
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   /**
@@ -162,10 +183,10 @@ const VendorLogin = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background Image with Dark Overlay */}
+      {/* Background Image with Dark Overlay - Optimized WebP */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${vendorBgImage})` }}
+        style={{ backgroundImage: `url(${bgImage})` }}
       >
         <div className="absolute inset-0 bg-neutral-black/70" />
       </div>
@@ -249,18 +270,29 @@ const VendorLogin = () => {
                 />
                 
                 {/* Password Input */}
-                <InputField
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter your password"
-                  icon={<FiLock />}
-                  disabled={isLoading}
-                  required
-                  aria-label="Password"
-                />
+                <div className="relative">
+                  <InputField
+                    label="Password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Enter your password"
+                    icon={<FiLock />}
+                    disabled={isLoading}
+                    required
+                    aria-label="Password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                  </button>
+                </div>
                 
                 {/* Remember Me & Forgot Password */}
                 <div className="flex items-center justify-between">

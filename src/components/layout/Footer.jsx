@@ -65,11 +65,6 @@ const Footer = () => {
                   My Bookings
                 </Link>
               </li>
-              <li>
-                <Link to="/favorites" className="hover:text-white transition-colors">
-                  Favorites
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -99,19 +94,9 @@ const Footer = () => {
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <Link to="/partner-with-us" className="hover:text-white transition-colors">
                   Partner With Us
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Business Solutions
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Advertise
-                </a>
+                </Link>
               </li>
             </ul>
           </div>
@@ -119,81 +104,47 @@ const Footer = () => {
           {/* Support */}
           <div>
             <h4 className="text-lg font-semibold text-white mb-4">Support</h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2 mb-4">
               <li>
                 <Link to="/faq" className="hover:text-white transition-colors">
                   FAQs
                 </Link>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Help Center
-                </a>
-              </li>
-              <li>
-                <a href="mailto:support@lubist.in" className="hover:text-white transition-colors">
-                  Contact Us
-                </a>
-              </li>
-              <li>
                 <Link to="/privacy-policy" className="hover:text-white transition-colors">
                   Privacy Policy
                 </Link>
               </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Terms of Service
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  FAQs
-                </a>
-              </li>
             </ul>
-          </div>
-        </div>
-
-        {/* Divider */}
-        <div className="border-t border-gray-800 mt-8 pt-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-gray-400 text-sm">
-              © 2025 Lubist. All rights reserved.
-            </p>
-            <div className="flex gap-6 text-sm">
-              <Link to="/privacy-policy" className="hover:text-white transition-colors">
-                Privacy
-              </Link>
-              <a href="#" className="hover:text-white transition-colors">
-                Terms
-              </a>
-              <a href="#" className="hover:text-white transition-colors">
-                Cookie Policy
-              </a>
+            <div className="space-y-2 text-sm text-gray-400 border-t border-gray-800 pt-4">
+              <p className="font-semibold text-white mb-2">Contact Support</p>
+              <p>
+                <span className="text-gray-500">Phone:</span>{' '}
+                <a href="tel:+919204166560" className="hover:text-white transition-colors">
+                  +91 9204166560
+                </a>
+              </p>
+              <p>
+                <span className="text-gray-500">Email:</span>{' '}
+                <a href="mailto:support@lubist.com" className="hover:text-white transition-colors">
+                  support@lubist.com
+                </a>
+              </p>
+              <p className="text-gray-500">
+                Mon. to Sun. | 10:00 AM to 7:00 PM
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Bottom Bar with Special Links */}
+      {/* Bottom Bar with Copyright */}
       <div className="bg-gray-950 py-3">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-4 text-sm">
-            <span className="text-gray-500">Are you a professional?</span>
-            <div className="flex gap-4">
-              <Link 
-                to="/vendor-login" 
-                className="text-yellow-400 hover:text-yellow-300 font-semibold transition-colors"
-              >
-                Register Your Salon →
-              </Link>
-              <Link 
-                to="/rm-login" 
-                className="text-green-400 hover:text-green-300 font-semibold transition-colors"
-              >
-                Join as Relationship Manager →
-              </Link>
-            </div>
+          <div className="flex justify-center items-center text-sm">
+            <p className="text-gray-400">
+              © 2026 Lubist. All rights reserved.
+            </p>
           </div>
         </div>
       </div>

@@ -28,12 +28,15 @@
  * 5. Navigate to /cart for checkout
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
+import Footer from "../../components/layout/Footer";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { useGetCartQuery, useAddToCartMutation, useRemoveFromCartMutation } from "../../services/api/cartApi";
 import { showSuccessToast, showErrorToast, showInfoToast, showTopCenterToast } from "../../utils/toastConfig";
+import { NotFound, NetworkError } from "../../components/shared/ErrorFallback";
 
 /**
  * getCategoryImage - Returns category image URL
@@ -119,6 +122,7 @@ function ServiceCategoryCard({ category, isSelected, onClick }) {
 export default function ServiceBooking() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useSelector((state) => state.auth);
   
   // RTK Query hooks
   const { data: salonData, isLoading: salonLoading, error: salonError } = useGetSalonByIdQuery(id);
@@ -133,56 +137,16 @@ export default function ServiceBooking() {
   const error = salonError;
   
   // Local UI state
-  const [serviceCategories, setServiceCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [expandedPlan, setExpandedPlan] = useState(null);
-  const [groupedServices, setGroupedServices] = useState({});
 
   /**
-   * Group services by category when data loads
-   * Extracts unique categories with counts
-   * Uses icon_url from service_categories or fallback to getCategoryImage
-   */
-  useEffect(() => {
-    if (services.length > 0) {
-      // Group services by category
-      const grouped = groupServicesByCategory(services);
-      setGroupedServices(grouped);
-      
-      // Extract unique categories for top navigation with icon_url
-      const categoriesMap = new Map();
-      services.forEach(service => {
-        const catName = service.service_categories?.name || 'Other Services';
-        if (!categoriesMap.has(catName)) {
-          categoriesMap.set(catName, {
-            name: catName,
-            icon_url: service.service_categories?.icon_url || null,
-            count: 0
-          });
-        }
-        categoriesMap.get(catName).count++;
-      });
-
-      const categories = Array.from(categoriesMap.values()).map((cat, index) => ({
-        id: index + 1,
-        name: cat.name,
-        image: cat.icon_url || getCategoryImage(cat.name), // Use icon_url if available, fallback to getCategoryImage
-        count: cat.count,
-      }));
-      setServiceCategories(categories);
-      
-      // Set first category as selected
-      if (categories.length > 0) {
-        setSelectedCategory(categories[0].name);
-      }
-    }
-  }, [services]);
-
-  /**
-   * groupServicesByCategory - Groups services array by category name
+   * ✅ OPTIMIZED: groupServicesByCategory - Memoized with useCallback
+   * Groups services array by category name
    * Returns object with category names as keys and service arrays as values
+   * Only recreated if needed (stable reference)
    */
-  const groupServicesByCategory = (servicesList) => {
+  const groupServicesByCategory = useCallback((servicesList) => {
     const grouped = {};
     
     servicesList.forEach((service) => {
@@ -194,12 +158,62 @@ export default function ServiceBooking() {
     });
     
     return grouped;
-  };
+  }, []);
+
+  /**
+   * ✅ OPTIMIZED: Memoized grouped services - Only recalculates when services change
+   * Replaces useEffect + useState pattern with useMemo for derived data
+   */
+  const groupedServices = useMemo(() => {
+    if (services.length === 0) return {};
+    return groupServicesByCategory(services);
+  }, [services, groupServicesByCategory]);
+
+  /**
+   * ✅ OPTIMIZED: Memoized service categories - Only recalculates when services change
+   * Extracts unique categories with counts
+   * Uses icon_url from service_categories or fallback to getCategoryImage
+   */
+  const serviceCategories = useMemo(() => {
+    if (services.length === 0) return [];
+    
+    // Extract unique categories for top navigation with icon_url
+    const categoriesMap = new Map();
+    services.forEach(service => {
+      const catName = service.service_categories?.name || 'Other Services';
+      if (!categoriesMap.has(catName)) {
+        categoriesMap.set(catName, {
+          name: catName,
+          icon_url: service.service_categories?.icon_url || null,
+          count: 0
+        });
+      }
+      categoriesMap.get(catName).count++;
+    });
+
+    return Array.from(categoriesMap.values()).map((cat, index) => ({
+      id: index + 1,
+      name: cat.name,
+      image: cat.icon_url || getCategoryImage(cat.name), // Use icon_url if available, fallback to getCategoryImage
+      count: cat.count,
+    }));
+  }, [services]);
+
+  /**
+   * ✅ OPTIMIZED: Set default selected category only when categories change
+   * Replaces setting state inside data processing useEffect
+   */
+  useEffect(() => {
+    if (serviceCategories.length > 0 && !selectedCategory) {
+      setSelectedCategory(serviceCategories[0].name);
+    }
+  }, [serviceCategories, selectedCategory]);
 
   /**
    * handleAddToCart - Adds service to cart with validation
    * 
    * VALIDATION:
+   * - Checks if user is authenticated, redirects to login if not
    * - Checks if cart contains items from different salon
    * - Shows error toast if attempting to mix salons
    * 
@@ -210,6 +224,15 @@ export default function ServiceBooking() {
    * - price, description, quantity (defaults to 1)
    */
   const handleAddToCart = async (service) => {
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      navigate("/login", {
+        replace: true,
+        state: { from: `/salons/${id}/book` }
+      });
+      return;
+    }
+
     // Check if trying to add from different salon
     if (cart?.salon_id && cart.salon_id !== id) {
       showTopCenterToast(
@@ -284,22 +307,65 @@ export default function ServiceBooking() {
     );
   }
 
-  // Error state - shows error message and back button
-  if (error || !salon) {
+  // Error state - handle API errors properly
+  if (error) {
+    const is404 = error.status === 404;
+    const isNetworkError = error.status === 'FETCH_ERROR' || !error.status;
+    
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <h2 className="font-display text-3xl font-bold text-neutral-black mb-4">
-            {error || "Salon Not Found"}
-          </h2>
-          <button
-            onClick={() => navigate("/salons")}
-            className="bg-accent-orange text-primary-white px-6 py-3 rounded-lg font-body font-medium hover:opacity-90"
-          >
-            Back to Salons
-          </button>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {is404 ? (
+            <NotFound message="The salon you're looking for doesn't exist or has been removed." />
+          ) : isNetworkError ? (
+            <NetworkError onRetry={() => window.location.reload()} />
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[500px] p-6">
+              <div className="text-center max-w-md">
+                <div className="mb-6">
+                  <svg className="w-20 h-20 text-red-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                  Unable to Load Salon
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  There was a problem loading this salon's information. Please try again.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-accent-orange hover:bg-orange-600 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200"
+                  >
+                    Retry
+                  </button>
+                  <button
+                    onClick={() => navigate('/salons')}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200"
+                  >
+                    Back to Salons
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Safety check for missing salon data
+  if (!salon) {
+    return (
+      <div className="min-h-screen bg-bg-secondary">
+        <PublicNavbar />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <NotFound message="The salon you're looking for doesn't exist." />
+        </div>
+        <Footer />
       </div>
     );
   }

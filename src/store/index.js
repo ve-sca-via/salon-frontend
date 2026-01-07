@@ -47,20 +47,38 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['notification/addNotification', 'persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredActions: [
+          'notification/addNotification',
+          'persist/PERSIST',
+          'persist/REHYDRATE',
+        ],
+        // Ignore RTK Query internal state (contains promises, AbortControllers)
+        ignoredPaths: [
+          'authApi',
+          'salonApi',
+          'bookingApi',
+          'cartApi',
+          'favoriteApi',
+          'reviewApi',
+          'vendorApi',
+          'rmApi',
+          'paymentApi',
+          'configApi',
+        ],
       },
-    })
+    }).concat(
       // RTK Query middleware for caching, invalidation, polling, etc.
-      .concat(authApi.middleware)
-      .concat(salonApi.middleware)
-      .concat(bookingApi.middleware)
-      .concat(cartApi.middleware)
-      .concat(favoriteApi.middleware)
-      .concat(reviewApi.middleware)
-      .concat(vendorApi.middleware)
-      .concat(rmApi.middleware)
-      .concat(paymentApi.middleware)
-      .concat(configApi.middleware),
+      authApi.middleware,
+      salonApi.middleware,
+      bookingApi.middleware,
+      cartApi.middleware,
+      favoriteApi.middleware,
+      reviewApi.middleware,
+      vendorApi.middleware,
+      rmApi.middleware,
+      paymentApi.middleware,
+      configApi.middleware
+    ),
 });
 
 export const persistor = persistStore(store);

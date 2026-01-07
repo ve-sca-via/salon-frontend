@@ -23,8 +23,9 @@
  * - Continue shopping or proceed to checkout
  */
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { 
   useGetCartQuery, 
@@ -33,6 +34,7 @@ import {
   useClearCartMutation 
 } from "../../services/api/cartApi";
 import { showSuccessToast, showErrorToast, showInfoToast } from "../../utils/toastConfig";
+import { SkeletonServiceCard } from "../../components/shared/Skeleton";
 
 /**
  * CartItem - Individual cart item display
@@ -207,15 +209,37 @@ function EmptyCart({ onBrowse }) {
 
 export default function Cart() {
   const navigate = useNavigate();
+  const { isAuthenticated } = useSelector((state) => state.auth);
   
-  // RTK Query hooks
-  const { data: cart, isLoading, error } = useGetCartQuery();
+  // RTK Query hooks - skip query if not authenticated
+  const { data: cart, isLoading, error } = useGetCartQuery(undefined, {
+    skip: !isAuthenticated
+  });
   const [updateCartItem] = useUpdateCartItemMutation();
   const [removeFromCart] = useRemoveFromCartMutation();
   const [clearCartMutation] = useClearCartMutation();
   
   // UI state
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  /**
+   * Redirect to login if user is not authenticated
+   */
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login", { 
+        replace: true,
+        state: { from: "/cart" } 
+      });
+    }
+  }, [isAuthenticated, navigate]);
+
+  /**
+   * Return null while redirecting for unauthenticated users
+   */
+  if (!isAuthenticated) {
+    return null;
+  }
 
   /**
    * Increment item quantity
@@ -316,9 +340,22 @@ export default function Cart() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-accent-orange"></div>
-            <p className="mt-4 text-neutral-gray-500">Loading cart...</p>
+          <div className="grid lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 space-y-4">
+              {[1, 2, 3].map((i) => (
+                <SkeletonServiceCard key={i} />
+              ))}
+            </div>
+            <div>
+              <div className="bg-primary-white rounded-xl shadow-md p-6 animate-pulse">
+                <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
+                <div className="space-y-3">
+                  <div className="h-4 bg-gray-200 rounded"></div>
+                  <div className="h-4 bg-gray-200 rounded"></div>
+                  <div className="h-6 bg-gray-200 rounded"></div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 

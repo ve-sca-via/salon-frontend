@@ -188,15 +188,21 @@ apiClient.interceptors.response.use(
 
 /**
  * Handle API errors consistently
+ * Throws error with status property preserved
  */
 export const handleApiError = (error) => {
   if (error.response) {
     // Server responded with error
     const message = error.response.data?.detail || error.response.data?.message || 'An error occurred';
-    throw new Error(message);
+    const err = new Error(message);
+    err.status = error.response.status;
+    err.data = error.response.data;
+    throw err;
   } else if (error.request) {
     // Request made but no response
-    throw new Error('Network error. Please check your connection.');
+    const err = new Error('Network error. Please check your connection.');
+    err.status = 'FETCH_ERROR';
+    throw err;
   } else {
     // Something else happened
     throw new Error(error.message || 'An unexpected error occurred');
