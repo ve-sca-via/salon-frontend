@@ -203,7 +203,9 @@ function CategoryCard({ category, onClick }) {
 /**
  * ReviewCard - Customer review display card
  * Shows customer avatar, name, rating, date, and comment
+ * COMMENTED OUT - Review functionality not yet implemented
  */
+/*
 function ReviewCard({ review }) {
   return (
     <div className="bg-white border border-neutral-gray-300 rounded-xl p-5">
@@ -231,6 +233,7 @@ function ReviewCard({ review }) {
     </div>
   );
 }
+*/
 
 export default function SalonDetail() {
   const { id } = useParams();
@@ -466,6 +469,8 @@ export default function SalonDetail() {
   };
 
   // Sample reviews (will be replaced with real reviews from API later)
+  // COMMENTED OUT - Review functionality not yet implemented
+  /*
   const displayReviews = [
     {
       id: 1,
@@ -492,6 +497,7 @@ export default function SalonDetail() {
       comment: "Best salon in the area! Amazing hair spa treatment. Highly recommended!",
     },
   ];
+  */
 
   return (
     <div className="min-h-screen bg-bg-secondary">
@@ -626,6 +632,7 @@ export default function SalonDetail() {
                   <h1 className="font-display font-bold text-[32px] text-neutral-black mb-2">
                     {salon.business_name || salon.name}
                   </h1>
+                  {/* COMMENTED OUT - Star rating and reviews not yet implemented
                   <div className="flex items-center gap-2 mb-2">
                     <StarRating
                       rating={Math.floor(salon.average_rating || 4.5)}
@@ -638,7 +645,8 @@ export default function SalonDetail() {
                       ({salon.review_count || '45'} reviews)
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-neutral-gray-700">
+                  */}
+                  <div className="flex items-center gap-2 text-neutral-gray-700 mt-2">
                     <FiMapPin className="w-5 h-5 text-accent-orange" />
                     <span className="font-body text-[15px]">
                       {salon.address || `${salon.city}, ${salon.state}`}
@@ -697,6 +705,7 @@ export default function SalonDetail() {
                 >
                   Services
                 </button>
+                {/* COMMENTED OUT - Reviews tab not yet implemented
                 <button
                   onClick={() => setActiveTab("reviews")}
                   className={`flex-1 px-6 py-4 font-body font-semibold text-[16px] transition-colors ${
@@ -707,6 +716,7 @@ export default function SalonDetail() {
                 >
                   Reviews
                 </button>
+                */}
                 <button
                   onClick={() => setActiveTab("about")}
                   className={`flex-1 px-6 py-4 font-body font-semibold text-[16px] transition-colors ${
@@ -754,6 +764,7 @@ export default function SalonDetail() {
                   </div>
                 )}
 
+                {/* COMMENTED OUT - Reviews tab content not yet implemented
                 {activeTab === "reviews" && (
                   <div className="space-y-4">
                     <h3 className="font-display font-bold text-[24px] text-neutral-black mb-6">
@@ -764,6 +775,7 @@ export default function SalonDetail() {
                     ))}
                   </div>
                 )}
+                */}
 
                 {activeTab === "about" && (
                   <div className="space-y-6">

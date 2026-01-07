@@ -91,6 +91,18 @@ export const salonApi = createApi({
       }),
       keepUnusedDataFor: 3600, // Cache for 1 hour (config doesn't change often)
     }),
+
+    // Get popular cities (aggregated from database)
+    getPopularCities: builder.query({
+      query: ({ limit = 8 } = {}) => ({
+        url: '/api/v1/salons/popular-cities',
+        method: 'get',
+        params: { limit },
+      }),
+      providesTags: [{ type: 'Salons', id: 'CITIES' }],
+      keepUnusedDataFor: 600, // Cache for 10 minutes
+      transformResponse: (response) => response, // Pass through backend response
+    }),
   }),
 });
 
@@ -103,6 +115,7 @@ export const {
   useGetSalonStaffQuery,
   useGetSalonAvailableSlotsQuery,
   useGetBookingFeePercentageQuery,
+  useGetPopularCitiesQuery, // New hook for popular cities
   useLazySearchSalonsQuery, // Lazy query for manual triggering
   useLazyGetSalonsQuery,
 } = salonApi;
