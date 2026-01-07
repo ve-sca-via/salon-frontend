@@ -28,8 +28,8 @@ export const cartApi = createApi({
               { type: 'Cart', id: 'LIST' },
             ]
           : [{ type: 'Cart', id: 'LIST' }],
-      keepUnusedDataFor: 30, // Cache for 30 seconds
-      refetchOnFocus: true, // Refetch when user comes back to tab
+      keepUnusedDataFor: 300, // Cache for 5 minutes (reduced API calls)
+      refetchOnFocus: false, // Don't refetch on tab focus (reduces calls)
       refetchOnReconnect: true, // Refetch when network reconnects
     }),
 

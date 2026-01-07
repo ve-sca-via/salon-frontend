@@ -36,6 +36,9 @@ import { getUserLocation } from './store/slices/locationSlice';
 import ErrorBoundary from './components/shared/ErrorBoundary';
 // import ErrorBoundaryTest from './components/shared/ErrorBoundaryTest';
 
+// Email verification banner
+import EmailVerificationBanner from './components/shared/EmailVerificationBanner';
+
 // Protected route wrappers for role-based access control
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import RMProtectedRoute from './components/auth/RMProtectedRoute';
@@ -110,6 +113,9 @@ function App() {
     <ErrorBoundary fallback="app">
       <Router>
         <div className="App">
+          {/* Email verification banner - shows when user needs to confirm email */}
+          <EmailVerificationBanner />
+          
           {/* Suspense provides fallback UI while lazy-loaded components are being fetched */}
           <Suspense fallback={
             <div className="flex items-center justify-center min-h-screen bg-bg-secondary">

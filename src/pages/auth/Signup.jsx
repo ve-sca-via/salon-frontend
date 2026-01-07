@@ -167,6 +167,9 @@ const Signup = () => {
       // Store user in Redux auth slice
       dispatch(setUser(response.user));
 
+      // Mark that user just signed up (for email verification banner)
+      sessionStorage.setItem('just_signed_up', 'true');
+
       showSuccessToast("Account created successfully! Welcome to Lubist! 🎉");
 
       // Slight delay to ensure toast displays before navigation
