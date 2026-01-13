@@ -468,36 +468,7 @@ export default function SalonDetail() {
     ];
   };
 
-  // Sample reviews (will be replaced with real reviews from API later)
-  // COMMENTED OUT - Review functionality not yet implemented
-  /*
-  const displayReviews = [
-    {
-      id: 1,
-      name: "Priya Sharma",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya",
-      rating: 5,
-      date: "2 days ago",
-      comment: "Excellent service! The staff was very professional and friendly. Loved my new haircut!",
-    },
-    {
-      id: 2,
-      name: "Rahul Kumar",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul",
-      rating: 4,
-      date: "1 week ago",
-      comment: "Great experience overall. The salon is clean and well-maintained. Will visit again.",
-    },
-    {
-      id: 3,
-      name: "Anjali Verma",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Anjali",
-      rating: 5,
-      date: "2 weeks ago",
-      comment: "Best salon in the area! Amazing hair spa treatment. Highly recommended!",
-    },
-  ];
-  */
+
 
   return (
     <div className="min-h-screen bg-bg-secondary">

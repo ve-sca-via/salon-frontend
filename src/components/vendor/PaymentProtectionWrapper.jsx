@@ -118,10 +118,6 @@ const PaymentProtectionWrapper = ({ children }) => {
                 Manage Services & Pricing
               </li>
               <li className="flex items-center gap-2">
-                <FiUsers className="text-gray-400" />
-                Add & Manage Staff
-              </li>
-              <li className="flex items-center gap-2">
                 <FiCalendar className="text-gray-400" />
                 Accept Customer Bookings
               </li>

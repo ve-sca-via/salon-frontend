@@ -10,7 +10,7 @@ import axiosBaseQuery from './baseQuery';
 export const vendorApi = createApi({
   reducerPath: 'vendorApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['VendorSalon', 'VendorServices', 'VendorStaff', 'VendorBookings', 'VendorAnalytics', 'ServiceCategories'],
+  tagTypes: ['VendorSalon', 'VendorServices', 'VendorBookings', 'VendorAnalytics', 'ServiceCategories'],
   endpoints: (builder) => ({
     // Get vendor's salon
     getVendorSalon: builder.query({
@@ -90,54 +90,6 @@ export const vendorApi = createApi({
       invalidatesTags: [{ type: 'VendorServices', id: 'LIST' }],
     }),
 
-    // Get vendor's staff
-    getVendorStaff: builder.query({
-      query: () => ({
-        url: '/api/v1/vendors/staff',
-        method: 'get',
-      }),
-      providesTags: (result) =>
-        result
-          ? [
-              ...result.map(({ id }) => ({ type: 'VendorStaff', id })),
-              { type: 'VendorStaff', id: 'LIST' },
-            ]
-          : [{ type: 'VendorStaff', id: 'LIST' }],
-      keepUnusedDataFor: 300, // Cache for 5 minutes
-    }),
-
-    // Create staff member
-    createVendorStaff: builder.mutation({
-      query: (staffData) => ({
-        url: '/api/v1/vendors/staff',
-        method: 'post',
-        data: staffData,
-      }),
-      invalidatesTags: [{ type: 'VendorStaff', id: 'LIST' }],
-    }),
-
-    // Update staff member
-    updateVendorStaff: builder.mutation({
-      query: ({ staffId, ...staffData }) => ({
-        url: `/api/v1/vendors/staff/${staffId}`,
-        method: 'put',
-        data: staffData,
-      }),
-      invalidatesTags: (result, error, { staffId }) => [
-        { type: 'VendorStaff', id: staffId },
-        { type: 'VendorStaff', id: 'LIST' },
-      ],
-    }),
-
-    // Delete staff member
-    deleteVendorStaff: builder.mutation({
-      query: (staffId) => ({
-        url: `/api/v1/vendors/staff/${staffId}`,
-        method: 'delete',
-      }),
-      invalidatesTags: [{ type: 'VendorStaff', id: 'LIST' }],
-    }),
-
     // Get vendor's bookings
     getVendorBookings: builder.query({
       query: ({ status, limit = 50, offset = 0 } = {}) => ({
@@ -199,10 +151,6 @@ export const {
   useCreateVendorServiceMutation,
   useUpdateVendorServiceMutation,
   useDeleteVendorServiceMutation,
-  useGetVendorStaffQuery,
-  useCreateVendorStaffMutation,
-  useUpdateVendorStaffMutation,
-  useDeleteVendorStaffMutation,
   useGetVendorBookingsQuery,
   useUpdateBookingStatusMutation,
   useGetVendorAnalyticsQuery,

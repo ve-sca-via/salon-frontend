@@ -63,6 +63,8 @@ const Signup = () => {
     name: "",
     email: "",
     phone: "",
+    age: "",
+    gender: "",
     password: "",
     confirmPassword: "",
   });
@@ -113,6 +115,26 @@ const Signup = () => {
       newErrors.phone = "Phone number must be 10 digits";
     }
 
+    // Age validation: Required, must be between 13-120
+    if (!formData.age || !formData.age.trim()) {
+      newErrors.age = "Age is required";
+    } else {
+      const ageNum = parseInt(formData.age, 10);
+      if (isNaN(ageNum) || ageNum < 13 || ageNum > 120) {
+        newErrors.age = "Age must be between 13 and 120";
+      }
+    }
+
+    // Gender validation: Required
+    if (!formData.gender || !formData.gender.trim()) {
+      newErrors.gender = "Gender is required";
+    } else {
+      const validGenders = ['male', 'female', 'other'];
+      if (!validGenders.includes(formData.gender.toLowerCase())) {
+        newErrors.gender = "Please select a valid gender";
+      }
+    }
+
     // Password validation: Required, minimum 6 characters
     // TODO: Add password strength indicator (weak/medium/strong)
     if (!formData.password) {
@@ -148,13 +170,15 @@ const Signup = () => {
 
     try {
       // Call RTK Query signup mutation (loading state managed automatically)
-      // Expects: { email, password, full_name, phone, role }
+      // Expects: { email, password, full_name, phone, age, gender, role }
       // Returns: { access_token, refresh_token, user: { id, email, role, ... } }
       const response = await signup({
         email: formData.email,
         password: formData.password,
         full_name: formData.name,
         phone: formData.phone,
+        age: parseInt(formData.age, 10),
+        gender: formData.gender.toLowerCase(),
         role: 'customer', // Always register as customer
       }).unwrap();
 
@@ -344,6 +368,48 @@ const Signup = () => {
                   disabled={isLoading}
                   aria-label="Phone number"
                 />
+
+                {/* Age Input */}
+                <InputField
+                  label="Age"
+                  type="number"
+                  name="age"
+                  placeholder="Enter your age (13-120)"
+                  value={formData.age}
+                  onChange={handleChange}
+                  icon={<FaUser />}
+                  error={errors.age}
+                  disabled={isLoading}
+                  aria-label="Age"
+                  min="13"
+                  max="120"
+                  required
+                />
+
+                {/* Gender Select */}
+                <div className="space-y-2">
+                  <label className="block font-body text-[14px] font-medium text-neutral-black">
+                    Gender <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    className={`w-full px-4 py-3 rounded-[10px] border ${
+                      errors.gender ? 'border-red-500' : 'border-neutral-gray-300'
+                    } font-body text-[16px] text-neutral-black placeholder-neutral-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                    aria-label="Gender"
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                  {errors.gender && (
+                    <p className="text-red-500 text-sm mt-1">{errors.gender}</p>
+                  )}
+                </div>
 
                 {/* Password Input */}
                 <div className="relative">

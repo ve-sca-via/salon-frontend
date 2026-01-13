@@ -29,7 +29,6 @@ const Sidebar = ({ role, isOpen, onClose }) => {
           { path: '/vendor/dashboard', icon: <FiHome />, label: 'Dashboard' },
           { path: '/vendor/profile', icon: <FiSettings />, label: 'Salon Profile' },
           { path: '/vendor/services', icon: <FiShoppingBag />, label: 'Services' },
-          { path: '/vendor/staff', icon: <FiUsers />, label: 'Staff' },
           { path: '/vendor/bookings', icon: <FiCalendar />, label: 'Bookings' },
         ];
       case 'hmr':

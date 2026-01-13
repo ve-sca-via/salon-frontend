@@ -16,7 +16,7 @@
  * - Booking status management (confirm, complete, cancel)
  * - Detailed booking view modal
  * - Responsive table layout
- * - Search by customer, service, or staff name
+ * - Search by customer, service
  * 
  * User Flow:
  * 1. Vendor views all bookings with stats
@@ -412,7 +412,7 @@ const BookingsManagement = () => {
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by customer, service, or staff..."
+                placeholder="Search by customer or service..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
@@ -553,9 +553,6 @@ const BookingsManagement = () => {
                       Service
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
-                      Staff
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
                       Date & Time
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
@@ -574,7 +571,7 @@ const BookingsManagement = () => {
                     <tr key={booking.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <span className="text-sm font-body text-gray-900 font-mono">
-                          #{booking.id?.substring(0, 8)}
+                          {booking.booking_number || `#${booking.id?.substring(0, 8)}`}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -597,11 +594,6 @@ const BookingsManagement = () => {
                       <td className="px-4 py-3">
                         <span className="text-sm font-body text-gray-900">
                           {formatServicesDisplay(booking)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm font-body text-gray-900">
-                          {booking.staff_name || 'N/A'}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -656,7 +648,7 @@ const BookingsManagement = () => {
                 <div key={booking.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="text-xs text-gray-500 font-mono mb-1">#{booking.id?.substring(0, 8)}</p>
+                      <p className="text-xs text-gray-500 font-mono mb-1">{booking.booking_number || `#${booking.id?.substring(0, 8)}`}</p>
                       <p className="font-semibold text-gray-900">{booking.customer_name || 'N/A'}</p>
                       {booking.customer_phone && (
                         <p className="text-xs text-gray-500">{booking.customer_phone}</p>
@@ -676,10 +668,6 @@ const BookingsManagement = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Service:</span>
                       <span className="font-medium text-gray-900">{formatServicesDisplay(booking)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Staff:</span>
-                      <span className="font-medium text-gray-900">{booking.staff_name || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Date:</span>
@@ -723,7 +711,7 @@ const BookingsManagement = () => {
               <div>
                 <p className="text-sm text-gray-600 font-body mb-1">Booking ID</p>
                 <p className="text-lg font-display font-bold text-gray-900 font-mono">
-                  #{selectedBooking.id?.substring(0, 8)}
+                  {selectedBooking.booking_number || `#${selectedBooking.id?.substring(0, 8)}`}
                 </p>
               </div>
               <span
@@ -796,12 +784,6 @@ const BookingsManagement = () => {
                 Appointment Details
               </h3>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 font-body">Staff:</span>
-                  <span className="text-sm font-body font-semibold text-gray-900">
-                    {selectedBooking.staff_name || 'N/A'}
-                  </span>
-                </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 font-body">Date:</span>
                   <span className="text-sm font-body font-semibold text-gray-900">

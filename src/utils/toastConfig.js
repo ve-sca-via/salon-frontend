@@ -17,9 +17,10 @@ import { toast } from 'react-toastify';
 /**
  * Base toast configuration
  * Applied to all toast types
+ * Position aligned with ToastContainer in App.jsx
  */
 const baseConfig = {
-  position: "bottom-right",
+  position: "top-right",
   className: "font-body",
   style: {
     fontFamily: "DM Sans, sans-serif",
@@ -59,7 +60,7 @@ export const showErrorToast = (message, options = {}) => {
 };
 
 /**
- * Info toast - gray background
+ * Info toast - neutral gray background (design token: neutral-gray-400)
  */
 export const showInfoToast = (message, options = {}) => {
   return toast.info(message, {
@@ -67,7 +68,7 @@ export const showInfoToast = (message, options = {}) => {
     autoClose: 2000,
     style: {
       ...baseConfig.style,
-      backgroundColor: "#6B7280", // gray-500
+      backgroundColor: "#555555", // neutral-gray-400 from design tokens
       color: "#fff",
     },
     ...options,
@@ -75,7 +76,7 @@ export const showInfoToast = (message, options = {}) => {
 };
 
 /**
- * Warning toast - orange background
+ * Warning toast - brand orange background (design token: accent-orange)
  */
 export const showWarningToast = (message, options = {}) => {
   return toast.warning(message, {
@@ -83,7 +84,7 @@ export const showWarningToast = (message, options = {}) => {
     autoClose: 2500,
     style: {
       ...baseConfig.style,
-      backgroundColor: "#F59E0B", // amber-500
+      backgroundColor: "#F89C02", // accent-orange from design tokens
       color: "#fff",
     },
     ...options,
@@ -96,15 +97,15 @@ export const showWarningToast = (message, options = {}) => {
 export const showTopCenterToast = (message, type = 'error', options = {}) => {
   const typeConfig = {
     error: {
-      backgroundColor: "#EF4444",
+      backgroundColor: "#EF4444", // red-500
       autoClose: 4000,
     },
     warning: {
-      backgroundColor: "#F59E0B",
+      backgroundColor: "#F89C02", // accent-orange from design tokens
       autoClose: 3500,
     },
     info: {
-      backgroundColor: "#3B82F6",
+      backgroundColor: "#555555", // neutral-gray-400 from design tokens
       autoClose: 3000,
     },
   };

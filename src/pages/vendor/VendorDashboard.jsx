@@ -13,8 +13,8 @@
  * 
  * Key Features:
  * - Payment status check for new vendors (registration fee)
- * - Analytics cards (bookings, revenue, services, staff, rating, pending)
- * - Quick action links (add service, add staff, view bookings)
+ * - Analytics cards (bookings, revenue, services, rating, pending)
+ * - Quick action links (add service, add view bookings)
  * - Recent bookings table (last 5 bookings)
  * - Responsive grid layouts
  * 
@@ -22,7 +22,7 @@
  * 1. Vendor logs in and lands on dashboard
  * 2. If payment pending: sees payment CTA and limited access
  * 3. If payment complete: sees full analytics and bookings
- * 4. Can navigate to manage services, staff, or bookings
+ * 4. Can navigate to manage services, or bookings
  * 5. Receives real-time notifications when customers book
  */
 
@@ -42,7 +42,7 @@ import {
   FiCalendar, FiDollarSign, FiShoppingBag, FiUsers, 
   FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle, FiLock
 } from 'react-icons/fi';
-import { toast } from 'react-toastify';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import { SkeletonStatCard, SkeletonTableRow } from '../../components/shared/Skeleton';
 
 const VendorDashboard = () => {
@@ -86,16 +86,13 @@ const VendorDashboard = () => {
     try {
       const newStatus = !salonProfile.accepting_bookings;
       await updateSalon({ accepting_bookings: newStatus }).unwrap();
-      toast.success(
+      showSuccessToast(
         newStatus 
           ? 'Bookings enabled! Customers can now book your services.' 
-          : 'Bookings disabled. Customers cannot book until you enable it again.',
-        { position: 'top-center' }
+          : 'Bookings disabled. Customers cannot book until you enable it again.'
       );
     } catch (error) {
-      toast.error(error?.data?.message || 'Failed to update booking status', {
-        position: 'top-center'
-      });
+      showErrorToast(error?.data?.message || 'Failed to update booking status');
     }
   };
 
@@ -127,7 +124,7 @@ const VendorDashboard = () => {
         return 'N/A';
       }
       
-      // Get first service name and show count if multiple
+      // Get first service name - check multiple possible field names
       const firstName = services[0].service_name || services[0].name || 'Service';
       
       if (services.length === 1) {
@@ -136,6 +133,7 @@ const VendorDashboard = () => {
         return `${firstName} +${services.length - 1} more`;
       }
     } catch (error) {
+      console.error('Error parsing services:', error);
       return 'N/A';
     }
   };
@@ -242,14 +240,6 @@ const VendorDashboard = () => {
       changeType: 'neutral',
     },
     {
-      title: 'Total Staff',
-      value: analytics?.total_staff || 0,
-      icon: <FiUsers className="text-orange-600" size={24} />,
-      bgColor: 'bg-orange-100',
-      change: analytics?.staff_change || null,
-      changeType: 'neutral',
-    },
-    {
       title: 'Average Rating',
       value: (analytics?.average_rating || 0).toFixed(1),
       icon: <FiStar className="text-yellow-600" size={24} />,
@@ -343,19 +333,6 @@ const VendorDashboard = () => {
             </Link>
 
             <Link
-              to="/vendor/staff"
-              className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                  <FiPlus className="text-white" size={20} />
-                </div>
-                <span className="font-body font-semibold text-gray-900">Add Staff</span>
-              </div>
-              <FiArrowRight className="text-blue-600" />
-            </Link>
-
-            <Link
               to="/vendor/bookings"
               className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
             >
@@ -419,15 +396,26 @@ const VendorDashboard = () => {
                         <td className="px-6 py-4 text-sm font-body text-gray-900">
                           {getServiceNames(booking)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-600">
-                          {booking.booking_date
-                            ? new Date(booking.booking_date).toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }) + ` at ${booking.booking_time || ''}`
-                            : 'N/A'}
+                        <td className="px-6 py-4 text-sm font-body text-gray-600">
+                          {booking.booking_date ? (
+                            <>
+                              <div>
+                                {new Date(booking.booking_date).toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {booking.time_slots && booking.time_slots.length > 0
+                                  ? booking.time_slots.join(', ')
+                                  : 'N/A'}
+                              </div>
+                            </>
+                          ) : (
+                            'N/A'
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -534,10 +522,6 @@ const VendorDashboard = () => {
                   <li className="flex items-center gap-2">
                     <FiShoppingBag className="text-gray-400" />
                     Manage Services & Pricing
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <FiUsers className="text-gray-400" />
-                    Add & Manage Staff
                   </li>
                   <li className="flex items-center gap-2">
                     <FiCalendar className="text-gray-400" />
