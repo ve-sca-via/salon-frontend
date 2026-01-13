@@ -6,6 +6,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import InputField from '../../components/shared/InputField';
 import Button from '../../components/shared/Button';
+import { SkeletonFormField } from '../../components/shared/Skeleton';
 import { 
   useSubmitVendorRequestMutation, 
   useUpdateVendorRequestMutation,
@@ -100,6 +101,9 @@ const AddSalonForm = () => {
   
   // Upload progress state
   const [uploading, setUploading] = useState(false);
+  
+  // Location state
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   // Edit mode derived from URL param
   const isEditMode = Boolean(draftId);
@@ -261,6 +265,70 @@ const AddSalonForm = () => {
     setServices(updated);
   };
 
+  // Get user's current location
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      showErrorToast('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setGettingLocation(true);
+    showInfoToast('Getting your location...');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy, altitude, altitudeAccuracy, heading, speed } = position.coords;
+        const timestamp = new Date(position.timestamp).toLocaleString();
+        
+        // Console log all the details
+        console.log('=== GEOLOCATION DATA ===');
+        console.log('Latitude:', latitude);
+        console.log('Longitude:', longitude);
+        console.log('Accuracy:', accuracy, 'meters');
+        console.log('Altitude:', altitude, 'meters');
+        console.log('Altitude Accuracy:', altitudeAccuracy, 'meters');
+        console.log('Heading:', heading, 'degrees');
+        console.log('Speed:', speed, 'm/s');
+        console.log('Timestamp:', timestamp);
+        console.log('Full Position Object:', position);
+        console.log('========================');
+        
+        // Set the latitude and longitude in the form
+        setValue('latitude', latitude.toFixed(6));
+        setValue('longitude', longitude.toFixed(6));
+        
+        setGettingLocation(false);
+        showSuccessToast(`Location captured! Accuracy: ${Math.round(accuracy)}m`);
+      },
+      (error) => {
+        setGettingLocation(false);
+        console.error('Geolocation error:', error);
+        
+        let errorMessage = 'Failed to get location';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location permission denied. Please enable location access.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information unavailable';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out';
+            break;
+          default:
+            errorMessage = 'An unknown error occurred';
+        }
+        
+        showErrorToast(errorMessage);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
   const onSubmit = async (data, isDraft = false, submitForApproval = false) => {
     try {
       // Validate required fields only for final submission (not draft)
@@ -394,9 +462,9 @@ const AddSalonForm = () => {
         state: data.state,
         pincode: data.pincode,
         
-        // Optional location
-        latitude: null,
-        longitude: null,
+        // Optional location coordinates
+        latitude: data.latitude ? parseFloat(data.latitude) : null,
+        longitude: data.longitude ? parseFloat(data.longitude) : null,
         
         // Legal
         gst_number: data.gst_number || null,
@@ -409,7 +477,6 @@ const AddSalonForm = () => {
         gallery_images: uploadedImages.length > 0 ? uploadedImages : null,
         
         // Operations fields (direct columns) - BUSINESS HOURS FIX
-        staff_count: data.staff_count ? parseInt(data.staff_count) : 1,
         opening_time: opening_time,  // From parseBusinessHours()
         closing_time: closing_time,  // From parseBusinessHours()
         working_days: working_days.length > 0 ? working_days : null,  // From parseBusinessHours()
@@ -426,6 +493,16 @@ const AddSalonForm = () => {
           services: prepareServicesArray(),
         },
       };
+
+      // Console log the vendor request data including lat/long
+      console.log('=== FORM SUBMISSION DATA ===');
+      console.log('Business Name:', vendorRequestData.business_name);
+      console.log('Latitude:', vendorRequestData.latitude);
+      console.log('Longitude:', vendorRequestData.longitude);
+      console.log('Full Address:', vendorRequestData.business_address);
+      console.log('City:', vendorRequestData.city, 'State:', vendorRequestData.state);
+      console.log('Full Vendor Request Data:', vendorRequestData);
+      console.log('============================');
 
       // Update existing draft or create new using RTK Query mutations
       if (isEditMode && draftId) {
@@ -863,6 +940,78 @@ const AddSalonForm = () => {
                     {...register('address_line2')}
                     placeholder="Near XYZ Mall (Optional)"
                   />
+                </div>
+
+                {/* Latitude and Longitude Section */}
+                <div className="md:col-span-2">
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-body font-semibold text-gray-900 flex items-center">
+                        <FiMapPin className="mr-2 text-blue-600" />
+                        Location Coordinates (Optional)
+                      </h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUseMyLocation}
+                        disabled={gettingLocation}
+                        className="bg-white hover:bg-blue-50 border-blue-300"
+                      >
+                        {gettingLocation ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full mr-2"></div>
+                            Getting Location...
+                          </>
+                        ) : (
+                          <>
+                            <FiMapPin className="mr-2" size={16} />
+                            Use My Location
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <InputField
+                        label="Latitude"
+                        type="text"
+                        {...register('latitude', {
+                          pattern: {
+                            value: /^-?([0-8]?[0-9]|90)(\.[0-9]{1,10})?$/,
+                            message: 'Invalid latitude format'
+                          }
+                        })}
+                        error={errors.latitude?.message}
+                        placeholder="e.g., 19.076090"
+                        helperText="Range: -90 to 90"
+                      />
+                      
+                      <InputField
+                        label="Longitude"
+                        type="text"
+                        {...register('longitude', {
+                          pattern: {
+                            value: /^-?((1[0-7][0-9])|([0-9]?[0-9]))(\.[0-9]{1,10})?$/,
+                            message: 'Invalid longitude format'
+                          }
+                        })}
+                        error={errors.longitude?.message}
+                        placeholder="e.g., 72.877426"
+                        helperText="Range: -180 to 180"
+                      />
+                    </div>
+                    
+                    <div className="mt-3 text-xs text-gray-600 bg-white p-3 rounded border border-blue-100">
+                      <p className="flex items-start">
+                        <FiInfo className="mr-2 mt-0.5 flex-shrink-0 text-blue-600" size={14} />
+                        <span>
+                          Click "Use My Location" to automatically capture your current coordinates, 
+                          or enter them manually. Check browser console for detailed location data.
+                        </span>
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 <div className="md:col-span-2">
@@ -1369,6 +1518,24 @@ const AddSalonForm = () => {
                         {', '}{watch('city')}, {watch('state')} - {watch('pincode')}
                       </p>
                     </div>
+                    {(watch('latitude') || watch('longitude')) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                        <div>
+                          <p className="text-gray-600 text-xs mb-1 flex items-center">
+                            <FiMapPin className="mr-1" size={12} />
+                            Latitude
+                          </p>
+                          <p className="font-semibold text-blue-600">{watch('latitude') || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-xs mb-1 flex items-center">
+                            <FiMapPin className="mr-1" size={12} />
+                            Longitude
+                          </p>
+                          <p className="font-semibold text-blue-600">{watch('longitude') || '-'}</p>
+                        </div>
+                      </div>
+                    )}
                     <div>
                       <p className="text-gray-600 text-xs mb-1">Description</p>
                       <p className="text-gray-700 text-xs leading-relaxed">

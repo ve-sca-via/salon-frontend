@@ -76,7 +76,7 @@ const PublicSalonListing = () => {
   const [searchParams] = useSearchParams();
   
   // Get location from Redux store
-  const { userLocation, locationError, locationLoading } = useSelector((state) => state.location);
+  const { userLocation, locationName, locationError, locationLoading } = useSelector((state) => state.location);
   
   // Get city from URL params (e.g., /salons?city=Mumbai)
   const cityFromUrl = searchParams.get('city');
@@ -211,7 +211,7 @@ const PublicSalonListing = () => {
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-green-800">
-                    📍 Showing salons near your location
+                    📍 Showing salons near {locationName || 'your location'}
                   </p>
                   <p className="text-xs text-green-600 mt-0.5">
                     Within {radius}km radius • {filteredSalons.length} salon{filteredSalons.length !== 1 ? 's' : ''} found

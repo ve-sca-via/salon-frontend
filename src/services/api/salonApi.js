@@ -11,7 +11,7 @@ import axiosBaseQuery from './baseQuery';
 export const salonApi = createApi({
   reducerPath: 'salonApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['Salons', 'SalonDetails', 'SalonServices', 'SalonStaff'],
+  tagTypes: ['Salons', 'SalonDetails', 'SalonServices'],
   endpoints: (builder) => ({
     // Get all public salons
     getSalons: builder.query({
@@ -62,16 +62,6 @@ export const salonApi = createApi({
       keepUnusedDataFor: 600, // Cache for 10 minutes
     }),
 
-    // Get salon staff
-    getSalonStaff: builder.query({
-      query: (salonId) => ({
-        url: `/api/v1/salons/${salonId}/staff`,
-        method: 'get',
-      }),
-      providesTags: (result, error, salonId) => [{ type: 'SalonStaff', id: salonId }],
-      keepUnusedDataFor: 600, // Cache for 10 minutes
-    }),
-
     // Get salon available slots
     getSalonAvailableSlots: builder.query({
       query: ({ salonId, date, serviceIds }) => ({
@@ -112,7 +102,6 @@ export const {
   useGetSalonByIdQuery,
   useSearchSalonsQuery,
   useGetSalonServicesQuery,
-  useGetSalonStaffQuery,
   useGetSalonAvailableSlotsQuery,
   useGetBookingFeePercentageQuery,
   useGetPopularCitiesQuery, // New hook for popular cities

@@ -142,24 +142,10 @@
 }
 
 /* React Toastify Custom Styles */
+/* Note: Toast colors are managed via inline styles in toastConfig.js */
+/* This ensures design token alignment and centralized configuration */
 .Toastify__toast {
   @apply rounded-lg shadow-lg;
-}
-
-.Toastify__toast--success {
-  @apply bg-green-500;
-}
-
-.Toastify__toast--error {
-  @apply bg-red-500;
-}
-
-.Toastify__toast--info {
-  @apply bg-blue-500;
-}
-
-.Toastify__toast--warning {
-  @apply bg-yellow-500;
 }
 
 /* Loading Spinner */

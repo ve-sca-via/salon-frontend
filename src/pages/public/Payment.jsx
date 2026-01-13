@@ -55,12 +55,12 @@ export default function Payment() {
   // Redirect if no checkout data or user not logged in
   useEffect(() => {
     if (!checkoutData) {
-      showErrorToast("Invalid checkout session", { position: "top-center" });
+      showErrorToast("Invalid checkout session");
       navigate("/cart");
       return;
     }
     if (!user) {
-      showErrorToast("Please login to complete payment", { position: "top-center" });
+      showErrorToast("Please login to complete payment");
       navigate("/login");
     }
   }, [checkoutData, user, navigate]);
@@ -78,7 +78,7 @@ export default function Payment() {
       script.async = true;
       script.onload = () => setRazorpayLoaded(true);
       script.onerror = () => {
-        showErrorToast("Failed to load payment gateway", { position: "top-center" });
+        showErrorToast("Failed to load payment gateway");
       };
       document.body.appendChild(script);
     };
@@ -97,7 +97,7 @@ export default function Payment() {
    */
   const handlePayNow = async () => {
     if (!razorpayLoaded) {
-      showErrorToast("Payment gateway not loaded. Please refresh.", { position: "top-center" });
+      showErrorToast("Payment gateway not loaded. Please refresh.");
       return;
     }
 

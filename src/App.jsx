@@ -10,7 +10,7 @@
  * - Public routes: Home, Salon listings, Login pages
  * - Customer routes: Bookings, Favorites, Reviews, Profile
  * - RM (Relationship Manager) routes: Dashboard, Add/Edit salons, Submissions
- * - Vendor routes: Dashboard, Profile, Services, Staff, Bookings, Payments
+ * - Vendor routes: Dashboard, Profile, Services, Bookings, Payments
  * 
  * AUTHENTICATION:
  * - Backend JWT authentication with Redux state management
@@ -86,7 +86,6 @@ const RMLeaderboard = lazy(() => import('./pages/hmr/RMLeaderboard'));
 const VendorDashboard = lazy(() => import('./pages/vendor/VendorDashboard'));
 const SalonProfile = lazy(() => import('./pages/vendor/SalonProfile'));
 const ServicesManagement = lazy(() => import('./pages/vendor/ServicesManagement'));
-const StaffManagement = lazy(() => import('./pages/vendor/StaffManagement'));
 const BookingsManagement = lazy(() => import('./pages/vendor/BookingsManagement'));
 const CompleteRegistration = lazy(() => import('./pages/vendor/CompleteRegistration'));
 const VendorPayment = lazy(() => import('./pages/vendor/VendorPayment'));
@@ -302,15 +301,6 @@ function App() {
                   <PaymentProtectionWrapper>
                     <ErrorBoundary fallback="page">
                       <ServicesManagement />
-                    </ErrorBoundary>
-                  </PaymentProtectionWrapper>
-                </VendorProtectedRoute>
-              } />
-              <Route path="/vendor/staff" element={
-                <VendorProtectedRoute>
-                  <PaymentProtectionWrapper>
-                    <ErrorBoundary fallback="page">
-                      <StaffManagement />
                     </ErrorBoundary>
                   </PaymentProtectionWrapper>
                 </VendorProtectedRoute>

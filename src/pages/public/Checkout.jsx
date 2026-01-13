@@ -58,8 +58,7 @@ import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetCartQuery, useCheckoutCartMutation } from "../../services/api/cartApi";
 import { useCreateCartPaymentOrderMutation } from "../../services/api/paymentApi";
 import { useGetPublicConfigsQuery } from "../../services/api/configApi";
-import { toast } from "react-toastify";
-import { showInfoToast } from "../../utils/toastConfig";
+import { showSuccessToast, showErrorToast, showWarningToast, showInfoToast } from "../../utils/toastConfig";
 import { SkeletonServiceCard } from "../../components/shared/Skeleton";
 
 export default function Checkout() {
@@ -98,7 +97,7 @@ export default function Checkout() {
   // Check if required config is loaded
   useEffect(() => {
     if (configs && !bookingFeePercentage) {
-      toast.error("Payment configuration not available. Please contact support.", {
+      showErrorToast("Payment configuration not available. Please contact support.", {
         position: "top-center"
       });
     }
@@ -166,9 +165,7 @@ export default function Checkout() {
       if (selectedTimes.length < 3) {
         setSelectedTimes([...selectedTimes, time]);
       } else {
-        toast.warning("You can select up to 3 time slots only", {
-          position: "bottom-right",
-        });
+        showWarningToast("You can select up to 3 time slots only");
       }
     }
   };
@@ -179,23 +176,17 @@ export default function Checkout() {
   const handleProceedToPayment = async () => {
     // Validate selections
     if (!selectedDate) {
-      toast.error("Please select a date for your appointment", {
-        position: "top-center",
-      });
+      showErrorToast("Please select a date for your appointment");
       return;
     }
     if (selectedTimes.length === 0) {
-      toast.error("Please select at least one time slot", {
-        position: "top-center",
-      });
+      showErrorToast("Please select at least one time slot");
       return;
     }
 
     // Validate config is loaded (critical for payment calculation)
     if (!bookingFeePercentage) {
-      toast.error("Payment configuration not available. Please refresh the page or contact support.", {
-        position: "top-center",
-      });
+      showErrorToast("Payment configuration not available. Please refresh the page or contact support.");
       return;
     }
 
@@ -219,9 +210,7 @@ export default function Checkout() {
             await handleCheckoutSuccess(response);
           } catch (error) {
             setIsProcessingPayment(false);
-            toast.error('Failed to complete booking. Please contact support with your payment ID.', {
-              position: "top-center"
-            });
+            showErrorToast('Failed to complete booking. Please contact support with your payment ID.');
           }
         },
         prefill: {
@@ -235,7 +224,7 @@ export default function Checkout() {
         modal: {
           ondismiss: function() {
             setIsProcessingPayment(false);
-            toast.info("Payment cancelled", { position: "top-center" });
+            showInfoToast("Payment cancelled");
           }
         }
       };
@@ -244,9 +233,9 @@ export default function Checkout() {
       rzp.open();
     } catch (error) {
       setIsProcessingPayment(false);
-      toast.error(error?.data?.message || 'Failed to initiate payment', {
-        position: "top-center"
-      });
+      // Show user-friendly error message
+      const errorMessage = error?.data?.detail || error?.data?.message || 'Failed to initiate payment';
+      showErrorToast(errorMessage);
     }
   };
 
@@ -266,7 +255,7 @@ export default function Checkout() {
       }).unwrap();
       
       setIsProcessingPayment(false);
-      toast.success('Booking confirmed successfully!', { position: "top-center" });
+      showSuccessToast('Booking confirmed successfully!');
       
       // Small delay to ensure user sees the success message
       setTimeout(() => {
@@ -274,9 +263,7 @@ export default function Checkout() {
       }, 1500);
     } catch (error) {
       setIsProcessingPayment(false);
-      toast.error(error?.data?.message || 'Checkout failed. Please contact support.', {
-        position: "top-center"
-      });
+      showErrorToast(error?.data?.message || 'Checkout failed. Please contact support.');
     }
   };
 

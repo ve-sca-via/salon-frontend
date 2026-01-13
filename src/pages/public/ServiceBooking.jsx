@@ -35,7 +35,7 @@ import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { useGetCartQuery, useAddToCartMutation, useRemoveFromCartMutation } from "../../services/api/cartApi";
-import { showSuccessToast, showErrorToast, showInfoToast, showTopCenterToast } from "../../utils/toastConfig";
+import { showSuccessToast, showErrorToast, showInfoToast } from "../../utils/toastConfig";
 import { NotFound, NetworkError } from "../../components/shared/ErrorFallback";
 
 /**
@@ -235,9 +235,8 @@ export default function ServiceBooking() {
 
     // Check if trying to add from different salon
     if (cart?.salon_id && cart.salon_id !== id) {
-      showTopCenterToast(
+      showErrorToast(
         `Your cart contains items from ${cart.salon_name}. Please clear your cart to add items from a different salon.`,
-        'error',
         { autoClose: 4000 }
       );
       return;
