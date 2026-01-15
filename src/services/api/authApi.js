@@ -90,6 +90,24 @@ export const authApi = createApi({
         data: { refresh_token: refreshToken },
       }),
     }),
+
+    // Forgot password (initiate password reset)
+    forgotPassword: builder.mutation({
+      query: (credentials) => ({
+        url: '/api/v1/auth/password-reset',
+        method: 'POST',
+        data: credentials,
+      }),
+    }),
+
+    // Reset password (confirm password reset with token)
+    resetPassword: builder.mutation({
+      query: (resetData) => ({
+        url: '/api/v1/auth/password-reset/confirm',
+        method: 'POST',
+        data: resetData,
+      }),
+    }),
   }),
 });
 
@@ -100,6 +118,8 @@ export const {
   useLogoutMutation,
   useLogoutAllMutation,
   useRefreshTokenMutation,
+  useForgotPasswordMutation,
+  useResetPasswordMutation,
 } = authApi;
 
 export default authApi;

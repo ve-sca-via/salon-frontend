@@ -310,7 +310,6 @@ const VendorLogin = () => {
                       Remember me
                     </span>
                   </label>
-                  {/* TODO: Implement forgot password functionality */}
                   <Link
                     to="/forgot-password"
                     className="font-body text-sm text-accent-orange hover:opacity-80 transition-opacity"

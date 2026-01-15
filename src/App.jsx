@@ -51,6 +51,8 @@ const Login = lazy(() => import('./pages/auth/Login'));
 const RMLogin = lazy(() => import('./pages/auth/RMLogin'));
 const VendorLogin = lazy(() => import('./pages/auth/VendorLogin'));
 const Signup = lazy(() => import('./pages/auth/Signup'));
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 
 // Public pages
 const Home = lazy(() => import('./pages/public/Home'));
@@ -106,6 +108,17 @@ function App() {
   useEffect(() => {
     dispatch(getUserLocation());
   }, [dispatch]);
+
+  // Handle password reset redirect from email
+  // If user lands on homepage with reset token in hash, redirect to reset-password page
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash && hash.includes('type=recovery')) {
+      // Extract the full hash and redirect to reset-password page
+      const resetPasswordUrl = `/reset-password${hash}`;
+      window.location.replace(resetPasswordUrl);
+    }
+  }, []);
 
   return (
     // App-level Error Boundary - Last line of defense against crashes
@@ -178,6 +191,8 @@ function App() {
               <Route path="/rm-login" element={<RMLogin />} />
               <Route path="/vendor-login" element={<VendorLogin />} />
               <Route path="/signup" element={<Signup />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               
               {/* Vendor Registration - Publicly accessible via email token */}
               <Route path="/vendor/complete-registration" element={<CompleteRegistration />} />
