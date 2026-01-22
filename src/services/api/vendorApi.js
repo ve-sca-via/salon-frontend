@@ -18,6 +18,10 @@ export const vendorApi = createApi({
         url: '/api/v1/vendors/salon',
         method: 'get',
       }),
+      transformResponse: (response) => {
+        // Backend returns salon data directly, wrap it for consistency
+        return { salon: response };
+      },
       providesTags: ['VendorSalon'],
       keepUnusedDataFor: 300, // Cache for 5 minutes
     }),

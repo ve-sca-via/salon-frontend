@@ -3,16 +3,17 @@
  * 
  * Purpose:
  * Handles one-time registration fee payment for vendor salon accounts.
- * Simulates payment processing in demo mode and activates salon account upon completion.
+ * Integrates with Razorpay payment gateway for secure payment processing.
  * 
  * Data Management:
  * - Fetches salon profile via RTK Query (useGetVendorSalonQuery)
- * - Processes payment via mutation (useProcessVendorPaymentMutation)
+ * - Creates payment order via mutation (useCreateVendorRegistrationOrderMutation)
+ * - Verifies payment via mutation (useVerifyVendorRegistrationPaymentMutation)
  * - Local state for payment flow and processing status
  * 
  * Key Features:
- * - 3-step payment flow (Details → Processing → Success)
- * - Demo payment simulation (no real payment gateway)
+ * - 3-step payment flow (Details → Razorpay Checkout → Success)
+ * - Razorpay payment gateway integration
  * - Redirect protection for already-paid accounts
  * - Automatic redirect to dashboard after success
  * - Detailed payment summary and benefits
@@ -21,20 +22,22 @@
  * Payment Flow:
  * 1. Check if already paid → redirect to dashboard
  * 2. Display payment details and benefits
- * 3. User clicks "Complete Payment" (demo mode)
- * 4. Simulate 3-second processing with animation
- * 5. Call backend to update subscription status
- * 6. Show success screen for 2 seconds
- * 7. Redirect to vendor dashboard
+ * 3. User clicks "Complete Payment"
+ * 4. Create Razorpay order via backend
+ * 5. Open Razorpay Checkout modal
+ * 6. User completes payment on Razorpay
+ * 7. Verify payment signature via backend
+ * 8. Backend activates salon account
+ * 9. Show success screen for 2 seconds
+ * 10. Redirect to vendor dashboard
  * 
  * Demo Mode:
- * - No real payment gateway integrated
- * - Simulates successful payment after 3 seconds
- * - Click "Complete Payment" to activate account
+ * - Uses demo Razorpay credentials (test mode)
+ * - Actual payment gateway flow but with test keys
+ * - No real money transactions
  * 
  * Configuration:
  * - Registration fee: ₹5,000 (incl. 18% GST)
- * - Processing delay: 3 seconds
  * - Success screen duration: 2 seconds
  */
 
@@ -48,9 +51,12 @@ import {
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import { 
-  useGetVendorSalonQuery, 
-  useProcessVendorPaymentMutation 
+  useGetVendorSalonQuery
 } from '../../services/api/vendorApi';
+import { 
+  useCreateVendorRegistrationOrderMutation,
+  useVerifyVendorRegistrationPaymentMutation
+} from '../../services/api/paymentApi';
 
 // Payment configuration
 const PAYMENT_CONFIG = {
@@ -58,7 +64,6 @@ const PAYMENT_CONFIG = {
   SUBTOTAL: 4237,
   GST_AMOUNT: 763,
   GST_RATE: 18,
-  PROCESSING_DELAY: 3000, // 3 seconds
   SUCCESS_SCREEN_DURATION: 2000, // 2 seconds
 };
 
@@ -67,16 +72,17 @@ const VendorPayment = () => {
   
   // RTK Query hooks for fetching and updating payment status
   const { data: salonData, isLoading: salonLoading } = useGetVendorSalonQuery();
-  const [processPayment, { isLoading: isProcessing }] = useProcessVendorPaymentMutation();
+  const [createOrder, { isLoading: isCreatingOrder }] = useCreateVendorRegistrationOrderMutation();
+  const [verifyPayment, { isLoading: isVerifying }] = useVerifyVendorRegistrationPaymentMutation();
   
   const salonProfile = salonData?.salon;
   
   // Payment flow state: 1 = Details, 2 = Processing, 3 = Success
   const [processing, setProcessing] = useState(false);
   const [paymentStep, setPaymentStep] = useState(1);
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   
-  // Refs for timeout cleanup
-  const processingTimeoutRef = useRef(null);
+  // Refs for cleanup
   const redirectTimeoutRef = useRef(null);
 
   /**
@@ -93,46 +99,131 @@ const VendorPayment = () => {
   }, [salonProfile, navigate]);
 
   /**
+   * Load Razorpay SDK
+   */
+  useEffect(() => {
+    const loadRazorpay = () => {
+      if (window.Razorpay) {
+        setRazorpayLoaded(true);
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => setRazorpayLoaded(true);
+      script.onerror = () => {
+        showErrorToast("Failed to load payment gateway");
+      };
+      document.body.appendChild(script);
+    };
+
+    loadRazorpay();
+  }, []);
+
+  /**
    * Cleanup timeouts on component unmount to prevent memory leaks
    */
   useEffect(() => {
     return () => {
-      if (processingTimeoutRef.current) clearTimeout(processingTimeoutRef.current);
       if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current);
     };
   }, []);
 
   /**
-   * handlePayment - Simulates payment processing and updates backend
-   * Demo mode: No real payment gateway, just updates subscription status
+   * handlePayment - Process payment with Razorpay
    */
   const handlePayment = async () => {
+    if (!razorpayLoaded) {
+      showErrorToast("Payment gateway not loaded. Please refresh the page.");
+      return;
+    }
+
+    // Check if join_request_id is available
+    if (!salonProfile?.join_request_id) {
+      // For salons created before join_request_id was added, show helpful error
+      console.error("Missing join_request_id for salon:", salonProfile?.id);
+      showErrorToast("Unable to process payment. Your salon profile is missing required information. Please contact support.");
+      return;
+    }
+
     setProcessing(true);
     setPaymentStep(2);
 
-    // Simulate payment gateway processing (demo mode - 3 seconds)
-    processingTimeoutRef.current = setTimeout(async () => {
-      try {
-        // Call backend to update subscription status and mark as paid
-        await processPayment().unwrap();
-        
-        setPaymentStep(3);
-        
-        // Show success screen, then redirect to dashboard after 2 seconds
-        redirectTimeoutRef.current = setTimeout(() => {
-          showSuccessToast('🎉 Payment successful! Your salon is now active!');
-          navigate('/vendor/dashboard');
-        }, PAYMENT_CONFIG.SUCCESS_SCREEN_DURATION);
-      } catch (error) {
-        // Differentiate error types for better user feedback
-        const errorMessage = error?.data?.message || error?.message || 'Payment processing failed';
-        showErrorToast(`Payment failed: ${errorMessage}`);
-        
-        // Reset to payment form
-        setProcessing(false);
-        setPaymentStep(1);
-      }
-    }, PAYMENT_CONFIG.PROCESSING_DELAY);
+    try {
+      // Step 1: Create Razorpay order
+      const orderData = await createOrder(salonProfile.join_request_id).unwrap();
+
+      // Step 2: Open Razorpay Checkout
+      const options = {
+        key: orderData.key_id,
+        amount: orderData.amount_paise,
+        currency: 'INR',
+        order_id: orderData.order_id,
+        name: 'Salon Platform',
+        description: 'Salon Registration Fee',
+        handler: async function (response) {
+          try {
+            // Step 3: Verify payment
+            await handlePaymentSuccess(response);
+          } catch (error) {
+            setProcessing(false);
+            setPaymentStep(1);
+            showErrorToast('Payment verification failed. Please contact support.');
+          }
+        },
+        prefill: {
+          name: salonProfile?.owner_name || salonProfile?.business_name || '',
+          email: salonProfile?.owner_email || salonProfile?.email || '',
+          contact: salonProfile?.owner_phone || salonProfile?.phone || ''
+        },
+        theme: {
+          color: '#F89C02'
+        },
+        modal: {
+          ondismiss: function() {
+            setProcessing(false);
+            setPaymentStep(1);
+            showInfoToast("Payment cancelled");
+          }
+        }
+      };
+      
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (error) {
+      setProcessing(false);
+      setPaymentStep(1);
+      const errorMessage = error?.data?.detail || error?.data?.message || 'Failed to initiate payment';
+      showErrorToast(errorMessage);
+    }
+  };
+
+  /**
+   * handlePaymentSuccess - Verify payment and update salon status
+   */
+  const handlePaymentSuccess = async (razorpayResponse) => {
+    try {
+      const verifyData = {
+        razorpay_order_id: razorpayResponse.razorpay_order_id,
+        razorpay_payment_id: razorpayResponse.razorpay_payment_id,
+        razorpay_signature: razorpayResponse.razorpay_signature,
+      };
+
+      await verifyPayment(verifyData).unwrap();
+      
+      setPaymentStep(3);
+      
+      // Show success screen, then redirect to dashboard after 2 seconds
+      redirectTimeoutRef.current = setTimeout(() => {
+        showSuccessToast('🎉 Payment successful! Your salon is now active!');
+        navigate('/vendor/dashboard');
+      }, PAYMENT_CONFIG.SUCCESS_SCREEN_DURATION);
+    } catch (error) {
+      const errorMessage = error?.data?.detail || error?.data?.message || 'Payment verification failed';
+      showErrorToast(`Payment verification failed: ${errorMessage}`);
+      throw error;
+    }
   };
 
   // Loading state while fetching salon data
@@ -228,18 +319,18 @@ const VendorPayment = () => {
           {/* Payment Summary */}
           <div className="lg:col-span-2">
             {/* Demo Mode Warning - Prominent Display */}
-            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border-2 border-yellow-400 rounded-lg p-6 mb-6 shadow-lg">
+            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-400 rounded-lg p-6 mb-6 shadow-lg">
               <div className="flex items-start">
-                <FiAlertTriangle className="text-yellow-600 mt-1 mr-4 flex-shrink-0 text-2xl" />
+                <FiInfo className="text-blue-600 mt-1 mr-4 flex-shrink-0 text-2xl" />
                 <div>
-                  <h3 className="font-heading font-bold text-yellow-900 text-lg mb-2">
-                    🎮 DEMO MODE - Test Environment
+                  <h3 className="font-heading font-bold text-blue-900 text-lg mb-2">
+                    💳 Razorpay Payment Integration
                   </h3>
-                  <p className="text-sm text-yellow-800 font-body mb-2">
-                    This is a <strong>demonstration environment</strong>. No real payment will be processed.
+                  <p className="text-sm text-blue-800 font-body mb-2">
+                    This is a <strong>demo Razorpay integration</strong> using test credentials.
                   </p>
-                  <p className="text-sm text-yellow-800 font-body">
-                    Click "Complete Payment" below to simulate a successful payment and activate your salon account.
+                  <p className="text-sm text-blue-800 font-body">
+                    You'll be redirected to Razorpay's secure payment gateway to complete the transaction.
                   </p>
                 </div>
               </div>
@@ -320,12 +411,16 @@ const VendorPayment = () => {
 
               <Button
                 onClick={handlePayment}
-                disabled={processing || isProcessing}
+                disabled={processing || isCreatingOrder || isVerifying || !razorpayLoaded}
                 className="w-full bg-gradient-to-r from-[#F89C02] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-heading font-bold py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label={`Complete payment of ${PAYMENT_CONFIG.REGISTRATION_FEE} rupees`}
               >
                 <FiLock className="mr-2" size={20} />
-                {processing || isProcessing ? 'Processing...' : `Complete Payment - ₹${PAYMENT_CONFIG.REGISTRATION_FEE.toLocaleString()}`}
+                {processing || isCreatingOrder || isVerifying 
+                  ? 'Processing...' 
+                  : !razorpayLoaded 
+                  ? 'Loading Payment Gateway...'
+                  : `Complete Payment - ₹${PAYMENT_CONFIG.REGISTRATION_FEE.toLocaleString()}`}
               </Button>
 
               <p className="text-center text-sm text-gray-500 font-body mt-4">

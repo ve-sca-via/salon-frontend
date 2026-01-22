@@ -49,8 +49,8 @@ export const paymentApi = createApi({
 
     // Vendor Registration Payment - Create Order
     createVendorRegistrationOrder: builder.mutation({
-      query: () => ({
-        url: '/api/v1/payments/registration/create-order',
+      query: (vendorRequestId) => ({
+        url: `/api/v1/payments/registration/create-order?vendor_request_id=${vendorRequestId}`,
         method: 'post',
       }),
     }),
@@ -62,6 +62,7 @@ export const paymentApi = createApi({
         method: 'post',
         data: paymentData,
       }),
+      invalidatesTags: ['VendorSalon'],
     }),
 
     // Get payment history for customer

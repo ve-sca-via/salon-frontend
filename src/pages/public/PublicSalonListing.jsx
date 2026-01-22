@@ -178,9 +178,12 @@ const PublicSalonListing = () => {
 
   /**
    * Automatically trigger search when user location is available
+   * Uses stringified coordinates to prevent infinite loops from object reference changes
    */
+  const locationKey = userLocation ? `${userLocation.lat},${userLocation.lon}` : null;
+  
   useEffect(() => {
-    if (userLocation) {
+    if (userLocation && locationKey) {
       setIsSearching(true);
       setApiSearchParams({
         lat: userLocation.lat,
@@ -190,7 +193,7 @@ const PublicSalonListing = () => {
         query: searchTerm || undefined,
       });
     }
-  }, [userLocation]); // Trigger when location is fetched
+  }, [locationKey, radius]); // Only trigger when coordinates change (not object reference)
 
   return (
     <div className="min-h-screen bg-white font-body">
