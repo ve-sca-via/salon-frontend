@@ -54,7 +54,7 @@ function ScissorsIcon() {
 // Header Component
 function Header() {
   return (
-    <div className="flex flex-col gap-4 items-center w-full mb-10">
+    <div className="flex flex-col gap-4 items-center w-full mb-6 md:mb-10">
       <div className="flex flex-col gap-2 items-center">
         {/* Title */}
         <h2 className="font-display font-bold text-[32px] leading-[48px] text-neutral-black">
@@ -112,11 +112,11 @@ function SalonCard({ salon }) {
 
   return (
     <div
-      className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer w-full max-w-[416px]"
+      className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer w-full max-w-[380px]"
       onClick={handleViewSalon}
     >
       {/* Image Section - Show Logo or Cover Image */}
-      <div className="relative h-[250px] w-full overflow-hidden">
+      <div className="relative h-[220px] w-full overflow-hidden">
         {logoImage || coverImage ? (
           <img
             src={logoImage || coverImage}
@@ -202,7 +202,7 @@ export default function FeaturedSaloons() {
   const salons = data?.salons || [];
 
   return (
-    <section className="w-full py-16 bg-white">
+    <section className="w-full py-8 md:py-16 bg-white">
       <div className="max-w-[1320px] mx-auto px-4">
         <Header />
 

@@ -83,7 +83,7 @@ function Header() {
 // Service Card Component
 function ServiceCard({ service }) {
   return (
-    <div className="relative w-full max-w-[306px] h-[428px] rounded-[10px] overflow-hidden group cursor-pointer">
+    <div className="relative w-full max-w-[280px] h-[380px] rounded-[10px] overflow-hidden group cursor-pointer">
       {/* Service Image */}
       <img
         src={service.image}
@@ -321,9 +321,9 @@ export default function ServicesSection() {
   );
 
   return (
-    <section className="w-full py-16 bg-bg-secondary">
+    <section className="w-full py-8 md:py-16 bg-bg-secondary">
       <div className="max-w-[1320px] mx-auto px-4">
-        <div className="flex flex-col gap-10 items-center">
+        <div className="flex flex-col gap-6 md:gap-10 items-center">
           <Header />
 
           {/* Services Carousel/Grid */}
