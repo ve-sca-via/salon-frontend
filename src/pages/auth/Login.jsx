@@ -336,12 +336,11 @@ const Login = () => {
               </div>
 
               {/* Alternative Login Portals */}
-              <div className="mt-6 pt-6 border-t border-neutral-gray-600">
+              {/* <div className="mt-6 pt-6 border-t border-neutral-gray-600">
                 <p className="text-center text-sm text-neutral-gray-500 mb-3 font-body">
                   Looking for a different portal?
                 </p>
                 <div className="flex flex-col gap-2">
-                  {/* Vendor/Salon Portal Link */}
                   <Link
                     to="/vendor-login"
                     className="font-body text-sm text-neutral-black hover:bg-neutral-gray-600 transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 border border-neutral-gray-600"
@@ -349,7 +348,6 @@ const Login = () => {
                     <FiShoppingBag className="text-lg" />
                     <span>Vendor/Salon Login</span>
                   </Link>
-                  {/* Relationship Manager Portal Link */}
                   <Link
                     to="/rm-login"
                     className="font-body text-sm text-neutral-black hover:bg-neutral-gray-600 transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 border border-neutral-gray-600"
@@ -358,7 +356,7 @@ const Login = () => {
                     <span>Relationship Manager Login</span>
                   </Link>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
