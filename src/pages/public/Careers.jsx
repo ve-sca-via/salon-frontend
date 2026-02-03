@@ -147,7 +147,7 @@ const Careers = () => {
         formDataToSend.append('educational_certificates', file);
       });
 
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
       const response = await fetch(`${API_URL}/api/v1/careers/apply`, {
         method: 'POST',
         body: formDataToSend
