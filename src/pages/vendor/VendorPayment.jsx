@@ -37,7 +37,7 @@
  * - No real money transactions
  * 
  * Configuration:
- * - Registration fee: ₹5,000 (incl. 18% GST)
+ * - Registration fee: ₹5,000 (one-time payment)
  * - Success screen duration: 2 seconds
  */
 
@@ -61,9 +61,6 @@ import {
 // Payment configuration
 const PAYMENT_CONFIG = {
   REGISTRATION_FEE: 5000,
-  SUBTOTAL: 4237,
-  GST_AMOUNT: 763,
-  GST_RATE: 18,
   SUCCESS_SCREEN_DURATION: 2000, // 2 seconds
 };
 
@@ -355,7 +352,7 @@ const VendorPayment = () => {
                   </div>
                   <div className="text-right">
                     <p className="text-3xl font-display font-bold text-gray-900">₹{PAYMENT_CONFIG.REGISTRATION_FEE.toLocaleString()}</p>
-                    <p className="text-sm text-gray-500 font-body">incl. {PAYMENT_CONFIG.GST_RATE}% GST</p>
+                    <p className="text-sm text-gray-500 font-body">One-time payment</p>
                   </div>
                 </div>
               </div>
@@ -436,14 +433,6 @@ const VendorPayment = () => {
               <h3 className="font-heading font-bold text-gray-900 mb-4">Order Summary</h3>
               
               <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-gray-700 font-body">
-                  <span>Subtotal</span>
-                  <span>₹{PAYMENT_CONFIG.SUBTOTAL.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-gray-700 font-body">
-                  <span>GST ({PAYMENT_CONFIG.GST_RATE}%)</span>
-                  <span>₹{PAYMENT_CONFIG.GST_AMOUNT.toLocaleString()}</span>
-                </div>
                 <div className="border-t border-gray-200 pt-3 flex justify-between font-heading font-bold text-gray-900 text-lg">
                   <span>Total</span>
                   <span>₹{PAYMENT_CONFIG.REGISTRATION_FEE.toLocaleString()}</span>

@@ -17,8 +17,7 @@
  * 6. Component displays pricing:
  *    - Service Total: Sum of all service prices
  *    - Booking Fee: 10% of service total (from config)
- *    - GST: 18% of booking fee
- *    - Pay Now: Booking Fee + GST (convenience fee)
+ *    - Pay Now: Booking Fee (convenience fee)
  *    - Pay at Salon: Service Total (full service amount)
  * 7. User clicks "Proceed to Payment"
  * 8. Component calls POST /api/v1/payments/cart/create-order
@@ -41,7 +40,7 @@
  * 14. Component redirects to /customer/bookings
  * 
  * PAYMENT SPLIT MODEL:
- * - Online Payment: Convenience fee (10% + GST) - Platform revenue
+ * - Online Payment: Convenience fee (% of service total) - Platform revenue
  * - At Salon Payment: Full service amount - Vendor revenue
  * 
  * DATA SOURCES:
@@ -151,8 +150,7 @@ export default function Checkout() {
   // Calculate pricing (only if config is loaded)
   const servicesTotalAmount = cart?.total_amount || 0;
   const bookingFee = bookingFeePercentage ? Math.round((servicesTotalAmount * bookingFeePercentage) / 100) : 0;
-  const gst = Math.round(bookingFee * 0.18);
-  const totalBookingAmount = bookingFee + gst;
+  const totalBookingAmount = bookingFee;
   const remainingAmount = servicesTotalAmount;
 
   /**
@@ -441,10 +439,6 @@ export default function Checkout() {
                 <div className="flex justify-between font-body text-[14px]">
                   <span className="text-neutral-gray-500">Booking Fee ({bookingFeePercentage}%)</span>
                   <span className="text-neutral-black font-semibold">₹{bookingFee}</span>
-                </div>
-                <div className="flex justify-between font-body text-[14px]">
-                  <span className="text-neutral-gray-500">GST (18%)</span>
-                  <span className="text-neutral-black font-semibold">₹{gst}</span>
                 </div>
                 <div className="pt-3 border-t border-neutral-gray-600">
                   <div className="flex justify-between font-body text-[16px]">

@@ -1,16 +1,20 @@
 import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
+import Modal from '../../components/shared/Modal';
 import { useGetOwnVendorRequestsQuery } from '../../services/api/rmApi';
-import { FiSearch, FiEye, FiPlusCircle } from 'react-icons/fi';
+import { FiSearch, FiEye, FiPlusCircle, FiEdit, FiX } from 'react-icons/fi';
 
 const SubmissionHistory = () => {
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedSubmission, setSelectedSubmission] = useState(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   
   // RTK Query hook
   const { data: submissionsData, isLoading: submissionsLoading } = useGetOwnVendorRequestsQuery();
@@ -23,6 +27,15 @@ const SubmissionHistory = () => {
 
   // Safety check: ensure submissions is an array
   const submissionsArray = Array.isArray(submissions) ? submissions : [];
+  
+  const handleEditRejected = (submissionId) => {
+    navigate(`/hmr/edit-salon/${submissionId}`);
+  };
+
+  const handleViewDetails = (submission) => {
+    setSelectedSubmission(submission);
+    setIsViewModalOpen(true);
+  };
 
   // Debug log to check admin_notes
   React.useEffect(() => {
@@ -114,16 +127,11 @@ const SubmissionHistory = () => {
               <h3 className="text-xl font-display font-semibold text-gray-900 mb-2">
                 {searchQuery || filterStatus !== 'all' ? 'No matching submissions' : 'No submissions yet'}
               </h3>
-              <p className="text-gray-600 mb-4 font-body">
+              <p className="text-gray-600 font-body">
                 {searchQuery || filterStatus !== 'all'
                   ? 'Try adjusting your filters or search query'
                   : 'Start by adding your first salon'}
               </p>
-              {!searchQuery && filterStatus === 'all' && (
-                <Link to="/hmr/add-salon">
-                  <Button variant="primary">Add Salon</Button>
-                </Link>
-              )}
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -183,7 +191,7 @@ const SubmissionHistory = () => {
                         )}
                       </td>
                       <td className="py-3 px-4 font-body text-gray-600 text-sm">
-                        {submission.admin_notes || '-'}
+                        {submission.reviewed_by ? 'Admin' : '-'}
                         {submission.reviewed_at && (
                           <p className="text-xs text-gray-500">
                             {new Date(submission.reviewed_at).toLocaleDateString()}
@@ -191,10 +199,25 @@ const SubmissionHistory = () => {
                         )}
                       </td>
                       <td className="py-3 px-4">
-                        <Button variant="ghost" size="sm">
-                          <FiEye className="mr-1" />
-                          View
-                        </Button>
+                        {submission.status === 'rejected' ? (
+                          <Button 
+                            variant="primary" 
+                            size="sm"
+                            onClick={() => handleEditRejected(submission.id)}
+                          >
+                            <FiEdit className="mr-1" />
+                            Edit & Resubmit
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleViewDetails(submission)}
+                          >
+                            <FiEye className="mr-1" />
+                            View
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -210,6 +233,152 @@ const SubmissionHistory = () => {
             Showing {filteredSubmissions.length} of {submissionsArray.length} submissions
           </div>
         )}
+
+        {/* View Details Modal */}
+        <Modal
+          isOpen={isViewModalOpen}
+          onClose={() => {
+            setIsViewModalOpen(false);
+            setSelectedSubmission(null);
+          }}
+          title="Submission Details"
+          size="lg"
+        >
+          {selectedSubmission && (
+            <div className="space-y-4">
+              {/* Status Badge */}
+              <div className="flex items-center gap-3">
+                <span className={`inline-block px-4 py-2 rounded-full text-sm font-medium capitalize ${
+                  getStatusColor(selectedSubmission.status)
+                }`}>
+                  {selectedSubmission.status}
+                </span>
+                {selectedSubmission.reviewed_at && (
+                  <span className="text-sm text-gray-600">
+                    Reviewed on {new Date(selectedSubmission.reviewed_at).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Admin Notes */}
+              {selectedSubmission.admin_notes && (
+                <div className={`p-4 rounded-lg border ${
+                  selectedSubmission.status === 'rejected' 
+                    ? 'bg-red-50 border-red-200' 
+                    : 'bg-green-50 border-green-200'
+                }`}>
+                  <p className="text-sm font-semibold mb-1">
+                    {selectedSubmission.status === 'rejected' ? 'Rejection Reason' : 'Admin Notes'}
+                  </p>
+                  <p className="text-sm">{selectedSubmission.admin_notes}</p>
+                </div>
+              )}
+
+              {/* Basic Information */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-3">Business Information</h3>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-gray-600">Business Name</p>
+                    <p className="font-medium">{selectedSubmission.business_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Business Type</p>
+                    <p className="font-medium capitalize">{selectedSubmission.business_type?.replace(/_/g, ' ')}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Owner Name</p>
+                    <p className="font-medium">{selectedSubmission.owner_name}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Email</p>
+                    <p className="font-medium">{selectedSubmission.owner_email}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Phone</p>
+                    <p className="font-medium">{selectedSubmission.owner_phone}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">Location</p>
+                    <p className="font-medium">
+                      {selectedSubmission.city}, {selectedSubmission.state} {selectedSubmission.pincode}
+                    </p>
+                  </div>
+                  {selectedSubmission.business_address && (
+                    <div className="col-span-2">
+                      <p className="text-gray-600">Address</p>
+                      <p className="font-medium">{selectedSubmission.business_address}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Services */}
+              {selectedSubmission.services_offered && Object.keys(selectedSubmission.services_offered).length > 0 && (
+                <div className="bg-purple-50 p-4 rounded-lg">
+                  <h3 className="font-semibold text-gray-900 mb-3">Services Offered</h3>
+                  <div className="space-y-3">
+                    {Object.entries(selectedSubmission.services_offered).map(([category, services]) => (
+                      <div key={category}>
+                        <p className="text-sm font-semibold text-purple-900 mb-2">{category}</p>
+                        <div className="space-y-2">
+                          {Array.isArray(services) && services.map((service, idx) => (
+                            <div key={idx} className="flex justify-between items-center bg-white p-2 rounded text-sm">
+                              <div>
+                                <span className="font-medium">{service.name}</span>
+                                {service.description && (
+                                  <p className="text-xs text-gray-600">{service.description}</p>
+                                )}
+                              </div>
+                              <div className="text-right">
+                                {service.price && <p className="font-semibold text-purple-600">₹{service.price}</p>}
+                                {service.duration_minutes && <p className="text-xs text-gray-500">{service.duration_minutes} min</p>}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Submission Timeline */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h3 className="font-semibold text-gray-900 mb-3">Timeline</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Submitted</span>
+                    <span className="font-medium">
+                      {new Date(selectedSubmission.created_at).toLocaleString()}
+                    </span>
+                  </div>
+                  {selectedSubmission.reviewed_at && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Reviewed</span>
+                      <span className="font-medium">
+                        {new Date(selectedSubmission.reviewed_at).toLocaleString()}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div className="flex justify-end pt-4 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setIsViewModalOpen(false);
+                    setSelectedSubmission(null);
+                  }}
+                >
+                  Close
+                </Button>
+              </div>
+            </div>
+          )}
+        </Modal>
       </div>
     </DashboardLayout>
   );

@@ -113,14 +113,22 @@ const RMLogin = () => {
       // Delay navigation to allow toast to show
       setTimeout(() => navigate('/hmr/dashboard'), 500);
     } catch (error) {
-      // RTK Query errors have a 'data' property
-      const errorMessage = error.data?.detail || error.message || 'Login failed';
+      // RTK Query errors have a 'data' property with 'detail'
+      const errorMessage = error.data?.detail || error.data?.message || error.message || 'Login failed';
       
-      // Map common errors to user-friendly messages
-      let msg = 'Login failed. Please try again.';
-      if (errorMessage.includes('Access denied')) msg = errorMessage;
-      else if (errorMessage.includes('Invalid')) msg = 'Invalid email or password';
-      else if (errorMessage) msg = errorMessage;
+      // Use backend message if available, otherwise provide user-friendly fallback
+      let msg = errorMessage;
+      
+      // Only map if backend didn't send a clear message
+      if (!errorMessage || errorMessage === 'Login failed') {
+        if (error.status === 401) {
+          msg = 'Invalid email or password. Please check your credentials.';
+        } else if (error.status === 403) {
+          msg = 'Access denied. This portal is for Relationship Managers only.';
+        } else {
+          msg = 'Login failed. Please try again.';
+        }
+      }
       
       showErrorToast(msg);
     }

@@ -112,7 +112,7 @@ const AddSalonForm = () => {
 
   // Load draft data if editing
   useEffect(() => {
-    if (draftId && draftData) {
+    if (draftId && draftData && serviceCategories.length > 0) { // FIX: Wait for categories to load
       // Populate form with draft data
       const draft = draftData;
       const documents = draft.documents || {};
@@ -132,6 +132,9 @@ const AddSalonForm = () => {
         state: draft.state || '',
         pincode: draft.pincode || '',
         description: documents.description || '',
+        // Location coordinates
+        latitude: draft.latitude || '',
+        longitude: draft.longitude || '',
         // Business hours
         monday: documents.business_hours?.monday || '9:00 AM - 6:00 PM',
         tuesday: documents.business_hours?.tuesday || '9:00 AM - 6:00 PM',
@@ -144,14 +147,29 @@ const AddSalonForm = () => {
       
       // Services - check both new and old format
       let loadedServices = [];
-      if (draft.services_offered) {
-        // New format: services_offered is a JSONB object with categories
-        Object.entries(draft.services_offered).forEach(([category, serviceList]) => {
+      
+      // FIX: Try documents.services first (most reliable)
+      if (documents.services && documents.services.length > 0) {
+        // Services already have category_id
+        loadedServices = documents.services;
+        console.log('✅ Loaded services from documents.services (with category_id)');
+      } else if (draft.services_offered) {
+        // New format: services_offered is a JSONB object with categories (category name as key)
+        console.log('⚠️ Loading services from services_offered (requires category lookup)');
+        Object.entries(draft.services_offered).forEach(([categoryName, serviceList]) => {
           if (Array.isArray(serviceList)) {
+            // Find category ID by name
+            const categoryObj = serviceCategories.find(cat => cat.name === categoryName);
+            const categoryId = categoryObj ? categoryObj.id : null;
+            
+            if (!categoryId) {
+              console.error(`❌ Could not find category_id for category: ${categoryName}`);
+            }
+            
             serviceList.forEach(service => {
               loadedServices.push({
                 name: service.name || '',
-                category: category,
+                category_id: categoryId, // Use category_id, not category
                 price: service.price || '',
                 duration_minutes: service.duration_minutes || 30,
                 description: service.description || ''
@@ -159,10 +177,16 @@ const AddSalonForm = () => {
             });
           }
         });
-      } else if (documents.services && documents.services.length > 0) {
-        // Old format: services in documents
-        loadedServices = documents.services;
       }
+      
+      console.log('=== SERVICE LOADING DEBUG ===');
+      console.log('Draft Services Offered:', draft.services_offered);
+      console.log('Document Services:', documents.services);
+      console.log('Loaded Services:', loadedServices);
+      console.log('Services with category_id:', loadedServices.filter(s => s.category_id).length);
+      console.log('Services WITHOUT category_id:', loadedServices.filter(s => !s.category_id).length);
+      console.log('Service Categories Available:', serviceCategories.length);
+      console.log('============================');
       
       if (loadedServices.length > 0) {
         setServices(loadedServices);
@@ -190,33 +214,24 @@ const AddSalonForm = () => {
         setSelectedHoursPreset('custom');
       }
       
-      // Determine which step to start on based on filled data
-      let startStep = 1;
+      // Use saved current step from draft (defaults to step 1 if not saved)
+      const startStep = documents.current_step && typeof documents.current_step === 'number' 
+        ? Math.min(Math.max(documents.current_step, 1), 4) // Cap between 1-4
+        : 1; // Default to step 1 if not saved
       
-      // Step 1: Check if basic info is complete
-      const hasBasicInfo = draft.business_name && draft.city && draft.state && draft.pincode;
-      
-      if (hasBasicInfo) {
-        // Move to step 2 if basic info is filled
-        startStep = 2;
-        
-        // Step 2: Check if services are added
-        if (loadedServices.length > 0) {
-          // Move to step 3 if services exist
-          startStep = 3;
-          
-          // Step 3: Check if images are uploaded
-          if (draft.cover_image_url || documents.cover_image) {
-            // Move to step 4 (review) if cover image exists
-            startStep = 4;
-          }
-        }
-      }
+      console.log('=== DRAFT LOADING DEBUG ===');
+      console.log('Draft ID:', draftId);
+      console.log('Saved Step:', documents.current_step);
+      console.log('Starting at Step:', startStep);
+      console.log('Business Name:', draft.business_name);
+      console.log('Services:', loadedServices.length);
+      console.log('Cover Image:', draft.cover_image_url || documents.cover_image ? 'yes' : 'no');
+      console.log('==========================');
       
       setCurrentStep(startStep);
       showInfoToast(`Draft loaded. Starting from Step ${startStep}...`);
     }
-  }, [draftId, draftData, reset]);
+  }, [draftId, draftData, serviceCategories, reset]); // FIX: Added serviceCategories to dependencies
 
   const handleImageUpload = async (e, type) => {
     const files = Array.from(e.target.files);
@@ -413,6 +428,24 @@ const AddSalonForm = () => {
       // Helper: Convert services to array format for documents.services
       // Backend reads from documents.services and needs category_id
       const prepareServicesArray = () => {
+        console.log('=== PREPARE SERVICES DEBUG ===');
+        console.log('Services State:', services);
+        console.log('Services with category_id:', services.filter(s => s.category_id));
+        console.log('Services WITHOUT category_id:', services.filter(s => !s.category_id));
+        console.log('Services filtered:', services.filter(s => s.name && s.price && s.category_id));
+        console.log('=============================');
+        
+        // FIX: Warn user if services are missing category_id
+        const servicesWithoutCategory = services.filter(s => s.name && s.price && !s.category_id);
+        if (servicesWithoutCategory.length > 0) {
+          const serviceNames = servicesWithoutCategory.map(s => s.name).join(', ');
+          console.error(`⚠️ WARNING: ${servicesWithoutCategory.length} services missing category_id: ${serviceNames}`);
+          showErrorToast(
+            `⚠️ ${servicesWithoutCategory.length} service(s) are missing a category: ${serviceNames}. ` +
+            `These services will NOT be visible to the vendor. Please select a category for each service.`
+          );
+        }
+        
         return services
           .filter(s => s.name && s.price && s.category_id)
           .map(s => ({
@@ -462,9 +495,9 @@ const AddSalonForm = () => {
         state: data.state,
         pincode: data.pincode,
         
-        // Optional location coordinates
-        latitude: data.latitude ? parseFloat(data.latitude) : null,
-        longitude: data.longitude ? parseFloat(data.longitude) : null,
+        // Optional location coordinates - handle empty strings and numeric values
+        latitude: data.latitude && typeof data.latitude === 'string' && data.latitude.trim() !== '' ? parseFloat(data.latitude) : (data.latitude && typeof data.latitude === 'number' ? data.latitude : null),
+        longitude: data.longitude && typeof data.longitude === 'string' && data.longitude.trim() !== '' ? parseFloat(data.longitude) : (data.longitude && typeof data.longitude === 'number' ? data.longitude : null),
         
         // Legal
         gst_number: data.gst_number || null,
@@ -491,6 +524,19 @@ const AddSalonForm = () => {
           phone: data.phone,
           logo: logo || null,
           services: prepareServicesArray(),
+          business_hours: {
+            monday: data.monday || 'Closed',
+            tuesday: data.tuesday || 'Closed',
+            wednesday: data.wednesday || 'Closed',
+            thursday: data.thursday || 'Closed',
+            friday: data.friday || 'Closed',
+            saturday: data.saturday || 'Closed',
+            sunday: data.sunday || 'Closed',
+          },
+          // Save current step so we can resume from the right place
+          current_step: currentStep,
+          images: uploadedImages.length > 0 ? uploadedImages : null,
+          cover_image: coverImage || null,
         },
       };
 
@@ -513,8 +559,11 @@ const AddSalonForm = () => {
         }).unwrap();
         
         if (submitForApproval) {
+          const isRejected = draftData?.status === 'rejected';
           showSuccessToast(
-            '✅ Draft submitted for approval! You will be notified once reviewed.',
+            isRejected 
+              ? '✅ Salon resubmitted successfully! Admin will review your corrections.' 
+              : '✅ Draft submitted for approval! You will be notified once reviewed.',
             { autoClose: 4000 }
           );
         } else {
@@ -643,6 +692,21 @@ const AddSalonForm = () => {
       return;
     }
     
+    // FIX: Validate that all services have category_id
+    if (currentStep === 2 && services.length > 0) {
+      const servicesWithoutCategory = services.filter(s => s.name && !s.category_id);
+      if (servicesWithoutCategory.length > 0) {
+        const serviceNames = servicesWithoutCategory.map(s => s.name || 'Unnamed').slice(0, 3).join(', ');
+        const moreCount = servicesWithoutCategory.length > 3 ? ` and ${servicesWithoutCategory.length - 3} more` : '';
+        showErrorToast(
+          `⚠️ Please select a category for all services! ` +
+          `${servicesWithoutCategory.length} service(s) missing category: ${serviceNames}${moreCount}. ` +
+          `Services without categories WILL NOT appear for the vendor!`
+        );
+        return;
+      }
+    }
+    
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -723,13 +787,30 @@ const AddSalonForm = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900 mb-2">
-              {isEditMode ? 'Edit Draft Salon' : 'Add New Salon'}
+              {isEditMode ? (draftData?.status === 'rejected' ? 'Edit & Resubmit Rejected Salon' : 'Edit Draft Salon') : 'Add New Salon'}
             </h1>
             <p className="text-gray-600 font-body">
-              {isEditMode ? 'Continue editing your draft or submit for approval' : 'Submit a new salon for approval'}
+              {isEditMode ? (draftData?.status === 'rejected' ? 'Fix the issues and resubmit for approval' : 'Continue editing your draft or submit for approval') : 'Submit a new salon for approval'}
             </p>
           </div>
         </div>
+
+        {/* Rejection Notice */}
+        {draftData?.status === 'rejected' && draftData?.admin_notes && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-red-800 mb-1">Rejection Reason from Admin</h3>
+                <p className="text-sm text-red-700">{draftData.admin_notes}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Step Indicator */}
         {renderStepIndicator()}
@@ -1073,19 +1154,96 @@ const AddSalonForm = () => {
                   {selectedHoursPreset === 'custom' && (
                     <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                       <p className="text-sm text-gray-600 font-body mb-3">
-                        Set custom hours for each day (e.g., "9:00 AM - 8:00 PM" or "Closed")
+                        Set custom hours for each day using the time picker
                       </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                          <div key={day} className="flex items-center gap-2">
-                            <span className="text-sm font-body font-medium text-gray-700 capitalize w-20">{day}</span>
-                            <input
-                              {...register(day)}
-                              placeholder="9:00 AM - 8:00 PM"
-                              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                            />
-                          </div>
-                        ))}
+                      <div className="space-y-3">
+                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                          const dayValue = watch(day) || '';
+                          const isClosed = dayValue.toLowerCase() === 'closed' || dayValue === '';
+                          
+                          // Parse existing value if it exists (e.g., "9:00 AM - 8:00 PM")
+                          let openTime = '09:00';
+                          let closeTime = '18:00';
+                          
+                          if (dayValue && !isClosed) {
+                            const match = dayValue.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+                            if (match) {
+                              let [, openHour, openMin, openAmPm, closeHour, closeMin, closeAmPm] = match;
+                              
+                              // Convert to 24-hour format
+                              openHour = parseInt(openHour);
+                              closeHour = parseInt(closeHour);
+                              
+                              if (openAmPm && openAmPm.toUpperCase() === 'PM' && openHour !== 12) openHour += 12;
+                              if (openAmPm && openAmPm.toUpperCase() === 'AM' && openHour === 12) openHour = 0;
+                              if (closeAmPm && closeAmPm.toUpperCase() === 'PM' && closeHour !== 12) closeHour += 12;
+                              if (closeAmPm && closeAmPm.toUpperCase() === 'AM' && closeHour === 12) closeHour = 0;
+                              
+                              openTime = `${String(openHour).padStart(2, '0')}:${openMin}`;
+                              closeTime = `${String(closeHour).padStart(2, '0')}:${closeMin}`;
+                            }
+                          }
+                          
+                          const updateDayHours = (open, close, closed) => {
+                            if (closed) {
+                              setValue(day, 'Closed');
+                            } else {
+                              // Convert 24-hour to 12-hour format for display
+                              const formatTime = (time24) => {
+                                const [hours, minutes] = time24.split(':').map(Number);
+                                const period = hours >= 12 ? 'PM' : 'AM';
+                                const hours12 = hours % 12 || 12;
+                                return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
+                              };
+                              
+                              setValue(day, `${formatTime(open)} - ${formatTime(close)}`);
+                            }
+                          };
+                          
+                          return (
+                            <div key={day} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
+                              <span className="text-sm font-body font-semibold text-gray-700 capitalize w-24">{day}</span>
+                              
+                              {!isClosed ? (
+                                <>
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <input
+                                      type="time"
+                                      value={openTime}
+                                      onChange={(e) => updateDayHours(e.target.value, closeTime, false)}
+                                      className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                                    />
+                                    <span className="text-gray-500">to</span>
+                                    <input
+                                      type="time"
+                                      value={closeTime}
+                                      onChange={(e) => updateDayHours(openTime, e.target.value, false)}
+                                      className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateDayHours(openTime, closeTime, true)}
+                                    className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                                  >
+                                    Closed
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="flex-1 text-sm text-gray-500 italic">Closed</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateDayHours('09:00', '18:00', false)}
+                                    className="px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium"
+                                  >
+                                    Open
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -1111,7 +1269,10 @@ const AddSalonForm = () => {
                   <FiInfo className="text-blue-500 mt-1 mr-3 flex-shrink-0" size={20} />
                   <div className="text-sm text-blue-800 font-body">
                     <p className="font-semibold mb-1">Add Salon Services</p>
-                    <p className="text-xs">Add services offered by the salon. Make sure to select the correct category for each service from the dropdown.</p>
+                    <p className="text-xs mb-2">Add services offered by the salon. Make sure to select the correct category for each service from the dropdown.</p>
+                    <p className="text-xs font-semibold text-red-700 bg-red-100 p-2 rounded mt-2">
+                      ⚠️ IMPORTANT: Services without a selected category will NOT be transferred to the vendor account and will be LOST!
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1176,17 +1337,27 @@ const AddSalonForm = () => {
                           <div>
                             <label className="block text-xs font-body font-medium text-gray-700 mb-1">
                               Category <span className="text-red-500">*</span>
+                              {!service.category_id && (
+                                <span className="ml-2 text-xs text-red-600 font-semibold">⚠️ Required for migration!</span>
+                              )}
                             </label>
                             <select
                               value={service.category_id || ''}
                               onChange={(e) => updateService(index, 'category_id', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                              className={`w-full px-3 py-2 border rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange ${
+                                !service.category_id ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                              }`}
                             >
-                              <option value="">Select category</option>
+                              <option value="">⚠️ Select category (REQUIRED)</option>
                               {serviceCategories.map(cat => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                               ))}
                             </select>
+                            {!service.category_id && service.name && (
+                              <p className="mt-1 text-xs text-red-600">
+                                This service will be SKIPPED if no category is selected!
+                              </p>
+                            )}
                           </div>
                           
                           <div>
@@ -1774,7 +1945,7 @@ const AddSalonForm = () => {
                   ) : (
                     <>
                       <FiCheck className="mr-2" />
-                      {isEditMode ? 'Submit Draft for Approval' : 'Submit for Approval'}
+                      {isEditMode ? (draftData?.status === 'rejected' ? 'Resubmit for Approval' : 'Submit Draft for Approval') : 'Submit for Approval'}
                     </>
                   )}
                 </Button>

@@ -133,7 +133,6 @@ export const getUserLocation = () => async (dispatch, getState) => {
         const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
         const reverseGeocodeUrl = `${BACKEND_URL}/api/v1/location/reverse-geocode?lat=${location.lat}&lon=${location.lon}`;
         
-        console.log('[Location] Fetching reverse geocode from backend');
         const response = await fetch(reverseGeocodeUrl);
         
         if (response.ok) {

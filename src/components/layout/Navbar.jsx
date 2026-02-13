@@ -4,10 +4,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { clearUser } from '../../store/slices/authSlice';
 import { useLogoutMutation } from '../../services/api/authApi';
 import { useGetVendorSalonQuery, useUpdateVendorSalonMutation } from '../../services/api/vendorApi';
-import { FiMenu, FiBell, FiUser, FiLogOut, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiMenu, FiUser, FiLogOut, FiCheckCircle, FiXCircle } from 'react-icons/fi';
 import { showSuccessToast } from '../../utils/toastConfig';
 
-const Navbar = ({ onMenuClick, role }) => {
+const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
   const { user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -94,7 +94,7 @@ const Navbar = ({ onMenuClick, role }) => {
         ? salonProfile.accepting_bookings
           ? 'bg-gradient-to-r from-green-50 via-white to-green-50 border-b-2 border-green-200'
           : 'bg-gradient-to-r from-red-50 via-white to-red-50 border-b-2 border-red-200'
-        : 'bg-white border-b border-gray-200'
+        : 'bg-white border-b border-gray-100'
     } fixed top-0 left-0 right-0 z-50 shadow-sm transition-all duration-300`}>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
@@ -107,17 +107,24 @@ const Navbar = ({ onMenuClick, role }) => {
               <FiMenu size={24} />
             </button>
             
+            <button
+              onClick={onSidebarToggle}
+              className="hidden lg:block text-gray-600 hover:text-orange-600 transition-colors p-2 hover:bg-orange-50 rounded-lg"
+              title="Toggle sidebar"
+            >
+              <FiMenu size={24} />
+            </button>
+            
             <Link to={getRoleBasedHome()} className="flex items-center gap-3">
               <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
                 <span className="text-white font-bold text-xl">
-                  {user?.role === 'relationship_manager' ? 'A' : 'S'}
+                  L
                 </span>
               </div>
               <div className="hidden sm:block">
-                <span className="text-xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
-                  {user?.role === 'relationship_manager' ? 'Agent Dashboard' : 'Salon Manager'}
+                <span className="text-lg font-bold text-gray-900">
+                  {user?.role === 'relationship_manager' ? 'Lubist - Beauty. Booking. Simplified.' : 'Salon Manager'}
                 </span>
-                <p className="text-xs text-gray-500 capitalize">{user?.role?.replace('_', ' ')}</p>
               </div>
             </Link>
           </div>
@@ -152,12 +159,6 @@ const Navbar = ({ onMenuClick, role }) => {
               </div>
             )}
             
-            {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:text-orange-600 hover:bg-orange-50 rounded-lg transition-colors">
-              <FiBell size={22} />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-orange-500 rounded-full ring-2 ring-white"></span>
-            </button>
-
             {/* User Menu */}
             <div className="relative">
               <button

@@ -5,7 +5,7 @@ import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import { useGetOwnVendorRequestsQuery, useDeleteVendorRequestMutation } from '../../services/api/rmApi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
-import { FiEdit2, FiTrash2, FiSend, FiClock, FiAlertCircle } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiSend, FiClock, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 
 /**
  * Drafts
@@ -22,8 +22,8 @@ import { FiEdit2, FiTrash2, FiSend, FiClock, FiAlertCircle } from 'react-icons/f
 const Drafts = () => {
   const navigate = useNavigate();
   
-  // RTK Query hooks
-  const { data: submissionsData, isLoading: submissionsLoading } = useGetOwnVendorRequestsQuery({ statusFilter: 'draft' });
+  // RTK Query hooks - Fix: use status_filter (snake_case) to match backend
+  const { data: submissionsData, isLoading: submissionsLoading, refetch, isFetching } = useGetOwnVendorRequestsQuery({ status_filter: 'draft' });
   // Include mutation loading state so we can disable UI while deleting
   const [deleteVendorRequest, { isLoading: deleteLoading }] = useDeleteVendorRequestMutation();
 
@@ -32,6 +32,21 @@ const Drafts = () => {
 
   // Filter only draft status
   const drafts = submissions?.filter(sub => sub.status === 'draft') || [];
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('=== DRAFTS PAGE DEBUG ===');
+    console.log('Submissions Data:', submissionsData);
+    console.log('Submissions:', submissions);
+    console.log('Drafts Count:', drafts.length);
+    console.log('Loading:', submissionsLoading);
+    console.log('Is Fetching:', isFetching);
+    if (drafts.length > 0) {
+      console.log('First Draft Services Offered:', drafts[0].services_offered);
+      console.log('First Draft Documents Services:', drafts[0].documents?.services);
+    }
+    console.log('========================');
+  }, [submissionsData, submissions, drafts, submissionsLoading, isFetching]);
 
   const handleEdit = (draftId) => {
     // Navigate to edit page (we'll create this next)
@@ -92,11 +107,14 @@ const Drafts = () => {
             </p>
           </div>
           <Button
-            variant="primary"
-            onClick={() => navigate('/hmr/add-salon')}
-            className="bg-gradient-orange w-full sm:w-auto justify-center whitespace-nowrap"
+            variant="outline"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="whitespace-nowrap"
+            title="Refresh drafts list"
           >
-            + Add New Salon
+            <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} size={16} />
+            {isFetching ? 'Refreshing...' : 'Refresh'}
           </Button>
         </div>
 
@@ -108,22 +126,32 @@ const Drafts = () => {
               <h3 className="text-xl font-display font-semibold text-gray-900 mb-2">
                 No Drafts Found
               </h3>
-              <p className="text-gray-600 font-body mb-6">
+              <p className="text-gray-600 font-body">
                 You haven't saved any salon submissions as drafts yet.
               </p>
-              <Button
-                variant="primary"
-                onClick={() => navigate('/hmr/add-salon')}
-                className="bg-gradient-orange"
-              >
-                Create New Salon Submission
-              </Button>
             </div>
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4">
             {drafts.map((draft) => {
               const documents = draft.documents || {};
+              
+              // Count services from both locations
+              let servicesCount = 0;
+              
+              // Check documents.services (array format)
+              if (documents.services && Array.isArray(documents.services)) {
+                servicesCount = documents.services.length;
+              }
+              
+              // Check draft.services_offered (grouped by category)
+              if (!servicesCount && draft.services_offered && typeof draft.services_offered === 'object') {
+                // Count all services across all categories
+                servicesCount = Object.values(draft.services_offered).reduce((total, categoryServices) => {
+                  return total + (Array.isArray(categoryServices) ? categoryServices.length : 0);
+                }, 0);
+              }
+              
               return (
                 <Card key={draft.id} className="hover:shadow-lg transition-shadow">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
@@ -150,7 +178,7 @@ const Drafts = () => {
                         <div className="flex items-center gap-2">
                           <span className="font-semibold">Services:</span>
                           <span>
-                            {documents.services?.length || 0} service(s) added
+                            {servicesCount} service(s) added
                           </span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -165,14 +193,14 @@ const Drafts = () => {
                           <div className={`flex items-center gap-1 ${draft.business_name ? 'text-green-600' : 'text-gray-400'}`}>
                             {draft.business_name ? '✓' : '○'} Basic Info
                           </div>
-                          <div className={`flex items-center gap-1 ${documents.services?.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                            {documents.services?.length > 0 ? '✓' : '○'} Services ({documents.services?.length || 0})
+                          <div className={`flex items-center gap-1 ${servicesCount > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                            {servicesCount > 0 ? '✓' : '○'} Services ({servicesCount})
                           </div>
-                          <div className={`flex items-center gap-1 ${documents.cover_image ? 'text-green-600' : 'text-gray-400'}`}>
-                            {documents.cover_image ? '✓' : '○'} Cover Image
+                          <div className={`flex items-center gap-1 ${draft.cover_image_url || documents.cover_image ? 'text-green-600' : 'text-gray-400'}`}>
+                            {draft.cover_image_url || documents.cover_image ? '✓' : '○'} Cover Image
                           </div>
-                          <div className={`flex items-center gap-1 ${documents.images?.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
-                            {documents.images?.length > 0 ? '✓' : '○'} Gallery ({documents.images?.length || 0})
+                          <div className={`flex items-center gap-1 ${draft.gallery_images?.length > 0 || documents.images?.length > 0 ? 'text-green-600' : 'text-gray-400'}`}>
+                            {draft.gallery_images?.length > 0 || documents.images?.length > 0 ? '✓' : '○'} Gallery ({draft.gallery_images?.length || documents.images?.length || 0})
                           </div>
                         </div>
                       </div>
