@@ -166,17 +166,23 @@ const VendorLogin = () => {
       }, 500);
 
     } catch (error) {
-      // RTK Query errors have a 'data' property
-      const errorMessage = error.data?.detail || error.message || 'Login failed. Please try again.';
+      // RTK Query errors have a 'data' property with 'detail'
+      const errorMessage = error.data?.detail || error.message || 'Login failed';
       
-      // Provide specific error messages based on error type
+      // Use backend message if available, otherwise provide user-friendly fallback
       let msg = errorMessage;
-      if (errorMessage.includes('Access denied')) {
-        msg = errorMessage;
-      } else if (errorMessage.includes('Invalid')) {
-        msg = 'Invalid email or password';
+      
+      // Only map if backend didn't send a clear message
+      if (!errorMessage || errorMessage === 'Login failed') {
+        if (error.status === 401) {
+          msg = 'Invalid email or password. Please check your credentials.';
+        } else if (error.status === 403) {
+          msg = 'Access denied. This portal is for salon owners only.';
+        } else {
+          msg = 'Login failed. Please try again.';
+        }
       }
-
+      
       showErrorToast(msg);
     }
   };

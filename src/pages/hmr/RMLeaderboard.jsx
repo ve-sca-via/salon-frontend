@@ -342,35 +342,6 @@ const RMLeaderboard = () => {
               </div>
             </>
           )}
-
-          {/* Footer Info */}
-          {!isLoading && !error && leaderboard.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600 font-body">
-                <div className="flex items-start gap-2">
-                  <FiStar className="text-yellow-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-gray-900">Scoring System</p>
-                    <p>+100 for approvals, +50 for verified salons, -50 for rejections</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <FiAward className="text-accent-orange mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-gray-900">Rankings Update</p>
-                    <p>Leaderboard refreshes in real-time as salons are reviewed</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2">
-                  <FiTrendingUp className="text-blue-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <p className="font-semibold text-gray-900">Climb Higher</p>
-                    <p>Add more salons and maintain high approval rates to rank up</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </Card>
       </div>
     </DashboardLayout>

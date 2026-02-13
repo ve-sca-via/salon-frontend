@@ -102,7 +102,7 @@ const PaymentProtectionWrapper = ({ children }) => {
             </div>
             
             <p className="text-xs text-gray-600 font-body mt-2">
-              One-time payment • Includes GST
+              One-time payment
             </p>
           </div>
 

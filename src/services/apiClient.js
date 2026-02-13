@@ -112,18 +112,59 @@ apiClient.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If error is not 401 or request already retried, reject
+    // If error is not 401 or request already retried, reject immediately
     if (!error.response || error.response.status !== 401 || originalRequest._retry) {
+      return Promise.reject(error);
+    }
+
+    // Skip token refresh for authentication endpoints (login, signup, etc.)
+    // Check both the full URL and relative path
+    const requestUrl = (originalRequest.url || '').toLowerCase();
+    const requestPath = (originalRequest.url || '').replace(/^https?:\/\/[^\/]+/, '').toLowerCase();
+    
+    const authEndpoints = [
+      'auth/login',
+      'auth/signup', 
+      'auth/password-reset',
+      'auth/refresh'
+    ];
+    
+    const isAuthEndpoint = authEndpoints.some(endpoint => 
+      requestUrl.includes(endpoint) || requestPath.includes(endpoint)
+    );
+    
+    // Always skip refresh for auth endpoints - just reject the error
+    if (isAuthEndpoint) {
+      return Promise.reject(error);
+    }
+
+    // If there's no access token or refresh token, don't try to refresh - just reject
+    const hasAccessToken = !!localStorage.getItem('access_token');
+    const hasRefreshToken = !!localStorage.getItem('refresh_token');
+    
+    if (!hasAccessToken || !hasRefreshToken) {
       return Promise.reject(error);
     }
 
     // Check if token was revoked (logged out elsewhere)
     const errorMessage = error.response?.data?.detail || '';
+    
     if (errorMessage === 'Token has been revoked') {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      
+      // Redirect to appropriate login page based on current location
+      const currentPath = window.location.pathname;
+      
+      if (currentPath.startsWith('/hmr') || currentPath.startsWith('/rm')) {
+        window.location.href = '/rm-login';
+      } else if (currentPath.startsWith('/vendor')) {
+        window.location.href = '/vendor-login';
+      } else {
+        window.location.href = '/login';
+      }
+      
       return Promise.reject(new Error('Session expired. Please login again.'));
     }
 
@@ -168,10 +209,19 @@ apiClient.interceptors.response.use(
           // Refresh failed - reject all queued requests
           processQueue(err, null);
           
-          // Logout user
+          // Logout user and redirect to appropriate login page
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
-          window.location.href = '/login';
+          
+          // Redirect to appropriate login page based on current location
+          const currentPath = window.location.pathname;
+          if (currentPath.startsWith('/hmr') || currentPath.startsWith('/rm')) {
+            window.location.href = '/rm-login';
+          } else if (currentPath.startsWith('/vendor')) {
+            window.location.href = '/vendor-login';
+          } else {
+            window.location.href = '/login';
+          }
           
           reject(err);
         })

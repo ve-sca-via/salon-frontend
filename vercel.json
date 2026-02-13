@@ -1,5 +1,17 @@
 {
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
+  ],
+  "redirects": [
+    {
+      "source": "https://rm.lubist.com/:path*",
+      "destination": "https://www.lubist.com/rm-login/:path*",
+      "permanent": false
+    },
+    {
+      "source": "https://vendor.lubist.com/:path*",
+      "destination": "https://www.lubist.com/vendor-login/:path*",
+      "permanent": false
+    }
   ]
 }

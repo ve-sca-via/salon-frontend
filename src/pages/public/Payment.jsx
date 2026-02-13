@@ -89,7 +89,7 @@ export default function Payment() {
   if (!checkoutData) return null;
 
   const { cart, selectedDate, selectedTimes, bookingFeePercentage, pricing } = checkoutData;
-  const { servicesTotalAmount, bookingFee, gst, totalBookingAmount, remainingAmount } = pricing;
+  const { servicesTotalAmount, bookingFee, totalBookingAmount, remainingAmount } = pricing;
 
   /**
    * Process payment with Razorpay
@@ -120,7 +120,6 @@ export default function Payment() {
         })),
         total_amount: servicesTotalAmount,
         booking_fee: bookingFee,
-        gst_amount: gst,
         amount_paid: totalBookingAmount,
         remaining_amount: remainingAmount,
         payment_status: 'pending', // Will be updated after payment verification
@@ -288,10 +287,6 @@ export default function Payment() {
               <div className="flex justify-between font-body text-[14px]">
                 <span className="text-neutral-gray-500">Booking Fee ({bookingFeePercentage}%)</span>
                 <span className="text-neutral-black font-semibold">₹{bookingFee}</span>
-              </div>
-              <div className="flex justify-between font-body text-[14px]">
-                <span className="text-neutral-gray-500">GST (18%)</span>
-                <span className="text-neutral-black font-semibold">₹{gst}</span>
               </div>
               <div className="pt-3 border-t-2 border-neutral-gray-600">
                 <div className="flex justify-between font-body text-[18px]">
