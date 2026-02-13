@@ -60,7 +60,6 @@ import {
 
 // Payment configuration
 const PAYMENT_CONFIG = {
-  REGISTRATION_FEE: 5000,
   SUCCESS_SCREEN_DURATION: 2000, // 2 seconds
 };
 
@@ -73,6 +72,7 @@ const VendorPayment = () => {
   const [verifyPayment, { isLoading: isVerifying }] = useVerifyVendorRegistrationPaymentMutation();
   
   const salonProfile = salonData?.salon;
+  const registrationFee = salonProfile?.registration_fee_amount || 1000; // Dynamic from backend
   
   // Payment flow state: 1 = Details, 2 = Processing, 3 = Success
   const [processing, setProcessing] = useState(false);
@@ -351,7 +351,7 @@ const VendorPayment = () => {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-3xl font-display font-bold text-gray-900">₹{PAYMENT_CONFIG.REGISTRATION_FEE.toLocaleString()}</p>
+                    <p className="text-3xl font-display font-bold text-gray-900">₹{registrationFee.toLocaleString()}</p>
                     <p className="text-sm text-gray-500 font-body">One-time payment</p>
                   </div>
                 </div>
@@ -410,14 +410,14 @@ const VendorPayment = () => {
                 onClick={handlePayment}
                 disabled={processing || isCreatingOrder || isVerifying || !razorpayLoaded}
                 className="w-full bg-gradient-to-r from-[#F89C02] to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-heading font-bold py-4 text-lg shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                aria-label={`Complete payment of ${PAYMENT_CONFIG.REGISTRATION_FEE} rupees`}
+                aria-label={`Complete payment of ${registrationFee} rupees`}
               >
                 <FiLock className="mr-2" size={20} />
                 {processing || isCreatingOrder || isVerifying 
                   ? 'Processing...' 
                   : !razorpayLoaded 
                   ? 'Loading Payment Gateway...'
-                  : `Complete Payment - ₹${PAYMENT_CONFIG.REGISTRATION_FEE.toLocaleString()}`}
+                  : `Complete Payment - ₹${registrationFee.toLocaleString()}`}
               </Button>
 
               <p className="text-center text-sm text-gray-500 font-body mt-4">
@@ -435,7 +435,7 @@ const VendorPayment = () => {
               <div className="space-y-3 mb-6">
                 <div className="border-t border-gray-200 pt-3 flex justify-between font-heading font-bold text-gray-900 text-lg">
                   <span>Total</span>
-                  <span>₹{PAYMENT_CONFIG.REGISTRATION_FEE.toLocaleString()}</span>
+                  <span>₹{registrationFee.toLocaleString()}</span>
                 </div>
               </div>
 
