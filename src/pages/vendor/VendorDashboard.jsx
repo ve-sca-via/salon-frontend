@@ -507,7 +507,7 @@ const VendorDashboard = () => {
                     <FiCreditCard className="text-orange-600 text-xl" />
                     <span className="font-body font-semibold text-gray-900">Registration Fee</span>
                   </div>
-                  <span className="text-2xl font-display font-bold text-orange-600">₹{salonProfile?.registration_fee_amount?.toLocaleString() || '1,000'}</span>
+                  <span className="text-2xl font-display font-bold text-orange-600">₹{salonProfile?.registration_fee_amount?.toLocaleString() ?? 'N/A'}</span>
                 </div>
                 <p className="text-xs text-gray-600 font-body mt-2">One-time payment • Includes GST</p>
               </div>
