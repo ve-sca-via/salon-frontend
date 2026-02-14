@@ -34,7 +34,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
-import { FiLock, FiCheckCircle, FiAlertCircle, FiShield, FiCheck, FiUser } from 'react-icons/fi';
+import { FiLock, FiCheckCircle, FiAlertCircle, FiShield, FiCheck, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useCompleteVendorRegistrationMutation } from '../../services/api/vendorApi';
 import { setUser } from '../../store/slices/authSlice';
 import Button from '../../components/shared/Button';
@@ -71,6 +71,10 @@ const CompleteRegistration = () => {
     hasNumber: false,
     hasSpecialChar: false,
   });
+
+  // Password visibility state
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   /**
    * Validate and decode JWT token on mount
@@ -314,10 +318,10 @@ const CompleteRegistration = () => {
             </div>
 
             {/* Password Input */}
-            <div>
+            <div className="relative">
               <InputField
                 label="Create Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
@@ -326,6 +330,14 @@ const CompleteRegistration = () => {
                 required
                 autoComplete="new-password"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
             </div>
 
             {/* Password Strength Indicator */}
@@ -358,10 +370,10 @@ const CompleteRegistration = () => {
             )}
 
             {/* Confirm Password Input */}
-            <div>
+            <div className="relative">
               <InputField
                 label="Confirm Password"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
@@ -370,6 +382,14 @@ const CompleteRegistration = () => {
                 required
                 autoComplete="new-password"
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                {showConfirmPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
             </div>
 
             {/* Password Match Indicator */}

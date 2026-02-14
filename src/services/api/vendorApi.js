@@ -19,8 +19,14 @@ export const vendorApi = createApi({
         method: 'get',
       }),
       transformResponse: (response) => {
+        // DEBUG: Log raw API response
+        console.log('🔍 vendorApi.getVendorSalon - Raw API Response:', response);
+        console.log('🔍 registration_fee_amount:', response?.registration_fee_amount);
+        
         // Backend returns salon data directly, wrap it for consistency
-        return { salon: response };
+        const result = { salon: response };
+        console.log('🔍 vendorApi.getVendorSalon - Transformed Result:', result);
+        return result;
       },
       providesTags: ['VendorSalon'],
       keepUnusedDataFor: 300, // Cache for 5 minutes

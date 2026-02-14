@@ -34,6 +34,14 @@ const PaymentProtectionWrapper = ({ children }) => {
   const { data: salonData, isLoading } = useGetVendorSalonQuery();
   const salonProfile = salonData?.salon || salonData;
 
+  // DEBUG: Log the data to see what's being received
+  console.log('🔍 PaymentProtectionWrapper DEBUG:', {
+    salonData,
+    salonProfile,
+    registration_fee_amount: salonProfile?.registration_fee_amount,
+    typeof_amount: typeof salonProfile?.registration_fee_amount
+  });
+
   // Loading state
   if (isLoading) {
     return (
@@ -98,7 +106,7 @@ const PaymentProtectionWrapper = ({ children }) => {
                 <FiCreditCard className="text-orange-600 text-xl" />
                 <span className="font-body font-semibold text-gray-900">Registration Fee</span>
               </div>
-              <span className="text-2xl font-display font-bold text-orange-600">₹{salonProfile?.registration_fee_amount?.toLocaleString() || '1,000'}</span>
+              <span className="text-2xl font-display font-bold text-orange-600">₹{salonProfile?.registration_fee_amount?.toLocaleString() ?? 'N/A'}</span>
             </div>
             
             <p className="text-xs text-gray-600 font-body mt-2">

@@ -82,6 +82,15 @@ export const salonApi = createApi({
       keepUnusedDataFor: 3600, // Cache for 1 hour (config doesn't change often)
     }),
 
+    // Get public system configuration
+    getPublicConfig: builder.query({
+      query: () => ({
+        url: '/api/v1/salons/config/public',
+        method: 'get',
+      }),
+      keepUnusedDataFor: 3600, // Cache for 1 hour (config rarely changes)
+    }),
+
     // Get popular cities (aggregated from database)
     getPopularCities: builder.query({
       query: ({ limit = 8 } = {}) => ({
@@ -104,6 +113,7 @@ export const {
   useGetSalonServicesQuery,
   useGetSalonAvailableSlotsQuery,
   useGetBookingFeePercentageQuery,
+  useGetPublicConfigQuery,
   useGetPopularCitiesQuery, // New hook for popular cities
   useLazySearchSalonsQuery, // Lazy query for manual triggering
   useLazyGetSalonsQuery,

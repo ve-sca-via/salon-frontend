@@ -31,10 +31,10 @@
  * 9. Show success screen for 2 seconds
  * 10. Redirect to vendor dashboard
  * 
- * Demo Mode:
- * - Uses demo Razorpay credentials (test mode)
- * - Actual payment gateway flow but with test keys
- * - No real money transactions
+ * Environment-Aware Payment Display:
+ * - In production: Shows secure payment information
+ * - In development/demo: Shows demo mode warning with test credentials
+ * - Automatically detects environment via IS_PRODUCTION constant
  * 
  * Configuration:
  * - Registration fee: ₹5,000 (one-time payment)
@@ -44,6 +44,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccessToast, showInfoToast, showErrorToast } from '../../utils/toastConfig';
+import { IS_PRODUCTION } from '../../utils/constants';
 import { 
   FiCreditCard, FiCheckCircle, FiLock, FiShield, 
   FiDollarSign, FiCalendar, FiInfo, FiAlertTriangle
@@ -72,7 +73,16 @@ const VendorPayment = () => {
   const [verifyPayment, { isLoading: isVerifying }] = useVerifyVendorRegistrationPaymentMutation();
   
   const salonProfile = salonData?.salon;
-  const registrationFee = salonProfile?.registration_fee_amount || 1000; // Dynamic from backend
+  const registrationFee = salonProfile?.registration_fee_amount ?? 0; // Dynamic from backend
+  
+  // DEBUG: Log the data to see what's being received
+  console.log('🔍 VendorPayment DEBUG:', {
+    salonData,
+    salonProfile,
+    registrationFee,
+    registration_fee_amount: salonProfile?.registration_fee_amount,
+    typeof_amount: typeof salonProfile?.registration_fee_amount
+  });
   
   // Payment flow state: 1 = Details, 2 = Processing, 3 = Success
   const [processing, setProcessing] = useState(false);
@@ -315,23 +325,45 @@ const VendorPayment = () => {
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Payment Summary */}
           <div className="lg:col-span-2">
-            {/* Demo Mode Warning - Prominent Display */}
-            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-400 rounded-lg p-6 mb-6 shadow-lg">
-              <div className="flex items-start">
-                <FiInfo className="text-blue-600 mt-1 mr-4 flex-shrink-0 text-2xl" />
-                <div>
-                  <h3 className="font-heading font-bold text-blue-900 text-lg mb-2">
-                    💳 Razorpay Payment Integration
-                  </h3>
-                  <p className="text-sm text-blue-800 font-body mb-2">
-                    This is a <strong>demo Razorpay integration</strong> using test credentials.
-                  </p>
-                  <p className="text-sm text-blue-800 font-body">
-                    You'll be redirected to Razorpay's secure payment gateway to complete the transaction.
-                  </p>
+            {/* Demo Mode Warning - Only show in non-production environments */}
+            {!IS_PRODUCTION && (
+              <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-400 rounded-lg p-6 mb-6 shadow-lg">
+                <div className="flex items-start">
+                  <FiInfo className="text-blue-600 mt-1 mr-4 flex-shrink-0 text-2xl" />
+                  <div>
+                    <h3 className="font-heading font-bold text-blue-900 text-lg mb-2">
+                      💳 Demo Mode - Test Payment
+                    </h3>
+                    <p className="text-sm text-blue-800 font-body mb-2">
+                      This is a <strong>demo Razorpay integration</strong> using test credentials.
+                    </p>
+                    <p className="text-sm text-blue-800 font-body">
+                      You'll be redirected to Razorpay's secure payment gateway to complete the transaction.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* Production Payment Info - Only show in production */}
+            {IS_PRODUCTION && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-400 rounded-lg p-6 mb-6 shadow-lg">
+                <div className="flex items-start">
+                  <FiShield className="text-green-600 mt-1 mr-4 flex-shrink-0 text-2xl" />
+                  <div>
+                    <h3 className="font-heading font-bold text-green-900 text-lg mb-2">
+                      🔒 Secure Payment
+                    </h3>
+                    <p className="text-sm text-green-800 font-body mb-2">
+                      Your payment is processed through <strong>Razorpay's secure payment gateway</strong>.
+                    </p>
+                    <p className="text-sm text-green-800 font-body">
+                      All transactions are encrypted and PCI-DSS compliant.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <Card className="mb-6">
               <h2 className="text-xl font-display font-bold text-gray-900 mb-4">
