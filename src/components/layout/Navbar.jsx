@@ -4,11 +4,13 @@ import { useSelector, useDispatch } from 'react-redux';
 import { clearUser } from '../../store/slices/authSlice';
 import { useLogoutMutation } from '../../services/api/authApi';
 import { useGetVendorSalonQuery, useUpdateVendorSalonMutation } from '../../services/api/vendorApi';
-import { FiMenu, FiUser, FiLogOut, FiCheckCircle, FiXCircle } from 'react-icons/fi';
+import { FiMenu, FiUser, FiLogOut, FiCheckCircle, FiXCircle, FiMapPin } from 'react-icons/fi';
 import { showSuccessToast } from '../../utils/toastConfig';
+import { getUserLocation } from '../../store/slices/locationSlice';
 
 const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
   const { user } = useSelector((state) => state.auth);
+  const { locationName, userLocation } = useSelector((state) => state.location);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = React.useState(false);
@@ -122,9 +124,29 @@ const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
                 </span>
               </div>
               <div className="hidden sm:block">
-                <span className="text-lg font-bold text-gray-900">
+                <span className="text-lg font-bold text-gray-900 block">
                   {user?.role === 'relationship_manager' ? 'Lubist - Beauty. Booking. Simplified.' : 'Salon Manager'}
                 </span>
+                {/* Location Display */}
+                {locationName && (
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      dispatch(getUserLocation());
+                    }}
+                    className="flex items-center gap-1 text-xs text-gray-600 hover:text-orange-600 transition-colors mt-0.5 group"
+                    title="Click to refresh location"
+                  >
+                    <FiMapPin className="w-3 h-3 group-hover:scale-110 transition-transform" />
+                    <span className="truncate max-w-[200px]">{locationName}</span>
+                  </button>
+                )}
+                {userLocation && !locationName && (
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                    <FiMapPin className="w-3 h-3" />
+                    <span>Getting location...</span>
+                  </div>
+                )}
               </div>
             </Link>
           </div>
