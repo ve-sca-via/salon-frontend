@@ -255,7 +255,14 @@ const AddSalonForm = () => {
         showSuccessToast(`${files.length} image(s) uploaded!`);
       }
     } catch (error) {
-      showErrorToast(error?.message || 'Failed to upload image');
+      console.error(`Upload error for ${type}:`, error);
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to upload image';
+      showErrorToast(`${type} upload failed: ${errorMessage}`);
     } finally {
       setUploading(false);
     }
