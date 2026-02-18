@@ -269,20 +269,20 @@ export default function Checkout() {
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="animate-pulse mb-6">
-            <div className="h-8 w-48 bg-gray-200 rounded"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
+          <div className="animate-pulse mb-4 sm:mb-6">
+            <div className="h-6 sm:h-8 w-48 bg-gray-200 rounded"></div>
           </div>
-          <div className="grid lg:grid-cols-3 gap-6">
+          <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
             <div className="lg:col-span-2 space-y-4">
               {[1, 2, 3].map((i) => (
                 <SkeletonServiceCard key={i} />
               ))}
             </div>
             <div>
-              <div className="bg-primary-white rounded-xl shadow-md p-6 animate-pulse">
-                <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
-                <div className="space-y-4">
+              <div className="bg-primary-white rounded-xl shadow-md p-4 sm:p-6 animate-pulse">
+                <div className="h-5 sm:h-6 w-32 bg-gray-200 rounded mb-4"></div>
+                <div className="space-y-3 sm:space-y-4">
                   {[1, 2, 3, 4].map((i) => (
                     <div key={i} className="h-4 bg-gray-200 rounded"></div>
                   ))}
@@ -299,9 +299,9 @@ export default function Checkout() {
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-600">Failed to load cart. Please try again.</p>
+            <p className="text-red-600 text-sm sm:text-base">Failed to load cart. Please try again.</p>
           </div>
         </div>
       </div>
@@ -312,38 +312,38 @@ export default function Checkout() {
     <div className="min-h-screen bg-bg-secondary">
       <PublicNavbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <button
             onClick={() => navigate("/cart")}
-            className="flex items-center gap-2 text-neutral-gray-500 hover:text-neutral-black mb-4"
+            className="flex items-center gap-2 text-neutral-gray-500 hover:text-neutral-black mb-3 sm:mb-4"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
             Back to Cart
           </button>
-          <h1 className="font-display font-bold text-[32px] text-neutral-black mb-2">
+          <h1 className="font-display font-bold text-[24px] sm:text-[32px] text-neutral-black mb-2">
             Schedule Appointment
           </h1>
-          <p className="font-body text-[16px] text-neutral-gray-500">
+          <p className="font-body text-[14px] sm:text-[16px] text-neutral-gray-500">
             Select your preferred date and time
           </p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Left Column - Date & Time Selection */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 min-w-0">
             {/* Date & Time Selection Card */}
-            <div className="bg-primary-white rounded-lg p-6 shadow-lg">
-              <h3 className="font-body font-semibold text-[18px] text-neutral-black mb-4">
+            <div className="bg-primary-white rounded-lg p-4 sm:p-6 shadow-lg">
+              <h3 className="font-body font-semibold text-[16px] sm:text-[18px] text-neutral-black mb-3 sm:mb-4">
                 Select Date & Time
               </h3>
 
               {/* Selected Date Display */}
-              <div className="mb-4 p-3 border border-neutral-gray-600 rounded-lg">
-                <p className="font-body text-[14px] text-neutral-black">
+              <div className="mb-3 sm:mb-4 p-3 border border-neutral-gray-600 rounded-lg bg-gray-50">
+                <p className="font-body text-[13px] sm:text-[14px] text-neutral-black font-medium">
                   {selectedDate
                     ? new Date(selectedDate).toLocaleDateString("en-US", {
                         day: "numeric",
@@ -356,24 +356,24 @@ export default function Checkout() {
               </div>
 
               {/* Date Selector */}
-              <div className="mb-6">
-                <div className="flex gap-3 overflow-x-auto pb-4">
+              <div className="mb-4 sm:mb-6">
+                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-3 sm:pb-4 scrollbar-hide">
                   {dates.map((date, index) => (
                     <button
                       key={index}
                       onClick={() => setSelectedDate(date.value)}
-                      className={`flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-lg border-2 transition-all ${
+                      className={`flex-shrink-0 flex flex-col items-center justify-center w-[70px] sm:w-16 h-[84px] sm:h-20 rounded-lg border-2 transition-all ${
                         selectedDate === date.value
                           ? "bg-neutral-black border-neutral-black text-primary-white"
-                          : "border-neutral-gray-600 hover:border-accent-orange"
+                          : "border-neutral-gray-600 hover:border-accent-orange active:border-accent-orange"
                       }`}
                     >
-                      <span className={`font-body font-semibold text-[12px] mb-1 ${
+                      <span className={`font-body font-semibold text-[11px] sm:text-[12px] mb-1 ${
                         selectedDate === date.value ? "text-primary-white" : "text-neutral-gray-500"
                       }`}>
                         {date.day}
                       </span>
-                      <span className="font-body font-bold text-[20px] mb-0.5">
+                      <span className="font-body font-bold text-[22px] sm:text-[20px] mb-0.5">
                         {date.date}
                       </span>
                       <span className="font-body text-[10px] uppercase">
@@ -387,24 +387,24 @@ export default function Checkout() {
               {/* Time Slot Selector */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <p className="font-body text-[13px] text-neutral-gray-500">
-                    You can select up to 3 time slots
+                  <p className="font-body text-[12px] sm:text-[13px] text-neutral-gray-500">
+                    Select up to 3 time slots
                   </p>
                   {selectedTimes.length > 0 && (
-                    <span className="font-body text-[12px] text-accent-orange font-semibold">
+                    <span className="font-body text-[11px] sm:text-[12px] text-accent-orange font-semibold">
                       {selectedTimes.length}/3 selected
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
                   {timeSlots.map((time, index) => (
                     <button
                       key={index}
                       onClick={() => handleTimeSelection(time)}
-                      className={`py-2 px-3 rounded-lg border text-[13px] font-body font-medium transition-all ${
+                      className={`py-2.5 sm:py-2 px-3 rounded-lg border text-[12px] sm:text-[13px] font-body font-medium transition-all min-h-[44px] sm:min-h-0 ${
                         selectedTimes.includes(time)
                           ? "bg-accent-orange border-accent-orange text-primary-white"
-                          : "border-neutral-gray-600 text-neutral-black hover:border-accent-orange"
+                          : "border-neutral-gray-600 text-neutral-black hover:border-accent-orange active:bg-orange-50"
                       }`}
                     >
                       {time}
@@ -417,35 +417,35 @@ export default function Checkout() {
 
           {/* Right Column - Order Summary */}
           <div className="lg:col-span-1">
-            <div className="bg-primary-white rounded-lg p-6 shadow-lg sticky top-8">
-              <h3 className="font-body font-semibold text-[18px] text-neutral-black mb-4">
+            <div className="bg-primary-white rounded-lg p-4 sm:p-6 shadow-lg lg:sticky lg:top-8">
+              <h3 className="font-body font-semibold text-[16px] sm:text-[18px] text-neutral-black mb-3 sm:mb-4">
                 Order Summary
               </h3>
 
               {/* Services */}
-              <div className="mb-4 pb-4 border-b border-neutral-gray-600">
-                <p className="font-body text-[14px] text-neutral-gray-500 mb-2">
+              <div className="mb-4 pb-3 sm:pb-4 border-b border-neutral-gray-600">
+                <p className="font-body text-[13px] sm:text-[14px] text-neutral-gray-500 mb-2">
                   {cart?.items?.length || 0} service{cart?.items?.length !== 1 ? 's' : ''} from{" "}
-                  <span className="font-semibold text-neutral-black">{cart?.salon_name}</span>
+                  <span className="font-semibold text-neutral-black break-words">{cart?.salon_name}</span>
                 </p>
               </div>
 
               {/* Pricing Breakdown */}
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between font-body text-[14px]">
+              <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
+                <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
                   <span className="text-neutral-gray-500">Service Total</span>
                   <span className="text-neutral-black font-semibold">₹{servicesTotalAmount}</span>
                 </div>
-                <div className="flex justify-between font-body text-[14px]">
+                <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
                   <span className="text-neutral-gray-500">Booking Fee ({bookingFeePercentage}%)</span>
                   <span className="text-neutral-black font-semibold">₹{bookingFee}</span>
                 </div>
-                <div className="pt-3 border-t border-neutral-gray-600">
-                  <div className="flex justify-between font-body text-[16px]">
+                <div className="pt-2.5 sm:pt-3 border-t border-neutral-gray-600">
+                  <div className="flex justify-between font-body text-[15px] sm:text-[16px]">
                     <span className="text-neutral-black font-bold">Pay Now</span>
                     <span className="text-accent-orange font-bold">₹{totalBookingAmount}</span>
                   </div>
-                  <p className="text-[11px] text-neutral-gray-500 mt-1">
+                  <p className="text-[10px] sm:text-[11px] text-neutral-gray-500 mt-1">
                     Pay ₹{remainingAmount} at salon
                   </p>
                 </div>
@@ -455,7 +455,7 @@ export default function Checkout() {
               <button
                 onClick={handleProceedToPayment}
                 disabled={!selectedDate || selectedTimes.length === 0 || isProcessingPayment || isCreatingOrder || isCheckingOut}
-                className="w-full bg-accent-orange hover:opacity-90 text-primary-white font-body font-semibold text-[16px] py-3 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full bg-accent-orange hover:opacity-90 active:opacity-80 text-primary-white font-body font-semibold text-[14px] sm:text-[16px] py-3.5 sm:py-3 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {(isProcessingPayment || isCreatingOrder || isCheckingOut) ? (
                   <>

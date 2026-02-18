@@ -107,21 +107,21 @@ function StarRating({ rating = 5, size = "small" }) {
  */
 function Breadcrumb({ city, salonName }) {
   return (
-    <nav className="flex items-center gap-2 text-sm font-body mb-6 bg-white px-4 py-3 rounded-lg shadow-sm">
-      <Link to="/" className="text-gray-700 hover:text-accent-orange font-medium transition-colors">
+    <nav className="flex items-center gap-2 text-sm font-body mb-6 bg-white px-4 py-3 rounded-lg shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <Link to="/" className="text-gray-700 hover:text-accent-orange font-medium transition-colors flex-shrink-0">
         Home
       </Link>
-      <span className="text-gray-400">/</span>
+      <span className="text-gray-400 flex-shrink-0">/</span>
       <Link
         to="/salons"
-        className="text-gray-700 hover:text-accent-orange font-medium transition-colors"
+        className="text-gray-700 hover:text-accent-orange font-medium transition-colors flex-shrink-0"
       >
         Salons
       </Link>
-      <span className="text-gray-400">/</span>
-      <span className="text-gray-700 font-medium">{city}</span>
-      <span className="text-gray-400">/</span>
-      <span className="text-neutral-black font-semibold">{salonName}</span>
+      <span className="text-gray-400 flex-shrink-0">/</span>
+      <span className="text-gray-700 font-medium flex-shrink-0">{city}</span>
+      <span className="text-gray-400 flex-shrink-0">/</span>
+      <span className="text-neutral-black font-semibold flex-shrink-0">{salonName}</span>
     </nav>
   );
 }
@@ -471,28 +471,28 @@ export default function SalonDetail() {
 
 
   return (
-    <div className="min-h-screen bg-bg-secondary">
+    <div className="min-h-screen bg-bg-secondary overflow-x-hidden">
       <PublicNavbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Breadcrumb
           city={salon.city || "City"}
           salonName={salon.business_name || salon.name}
         />
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column - Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 min-w-0">
             {/* Image Gallery */}
             <div className="bg-white rounded-xl overflow-hidden shadow-lg">
               <div 
-                className="relative h-[500px] bg-gray-100 cursor-pointer group"
+                className="relative h-[300px] sm:h-[400px] lg:h-[500px] bg-gray-100 cursor-pointer group"
                 onClick={() => setIsImagePreviewOpen(true)}
               >
                 <img
                   src={salonImages[selectedImage]}
                   alt={salon.business_name || salon.name}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain max-w-full"
                 />
                 {/* Preview Overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
@@ -559,10 +559,10 @@ export default function SalonDetail() {
                         e.stopPropagation();
                         setSelectedImage((prev) => (prev > 0 ? prev - 1 : salonImages.length - 1));
                       }}
-                      className="absolute left-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-3"
+                      className="absolute left-2 sm:left-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3"
                       aria-label="Previous image"
                     >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
@@ -571,10 +571,10 @@ export default function SalonDetail() {
                         e.stopPropagation();
                         setSelectedImage((prev) => (prev < salonImages.length - 1 ? prev + 1 : 0));
                       }}
-                      className="absolute right-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-3"
+                      className="absolute right-2 sm:right-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3"
                       aria-label="Next image"
                     >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
@@ -584,7 +584,7 @@ export default function SalonDetail() {
                 <img
                   src={salonImages[selectedImage]}
                   alt={salon.business_name || salon.name}
-                  className="max-w-full max-h-full object-contain"
+                  className="max-w-full max-h-full w-auto h-auto object-contain"
                   onClick={(e) => e.stopPropagation()}
                 />
                 
@@ -597,10 +597,10 @@ export default function SalonDetail() {
 
 
             {/* Salon Info */}
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h1 className="font-display font-bold text-[32px] text-neutral-black mb-2">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row items-start justify-between mb-4 gap-4">
+                <div className="flex-1 min-w-0">
+                  <h1 className="font-display font-bold text-[24px] sm:text-[32px] text-neutral-black mb-2 break-words">
                     {salon.business_name || salon.name}
                   </h1>
                   {/* COMMENTED OUT - Star rating and reviews not yet implemented
@@ -617,25 +617,25 @@ export default function SalonDetail() {
                     </span>
                   </div>
                   */}
-                  <div className="flex items-center gap-2 text-neutral-gray-700 mt-2">
-                    <FiMapPin className="w-5 h-5 text-accent-orange" />
-                    <span className="font-body text-[15px]">
+                  <div className="flex items-start gap-2 text-neutral-gray-700 mt-2">
+                    <FiMapPin className="w-5 h-5 text-accent-orange flex-shrink-0 mt-0.5" />
+                    <span className="font-body text-[15px] break-words">
                       {salon.address || `${salon.city}, ${salon.state}`}
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                   {salon.phone && (
                     <a
                       href={`tel:${salon.phone}`}
-                      className="flex items-center gap-2 px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors"
+                      className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors flex-1 sm:flex-initial"
                       aria-label={`Call ${salon.business_name || salon.name}`}
                     >
                       <FiPhone className="w-5 h-5" />
-                      <span className="font-body font-medium">Call</span>
+                      <span className="font-body font-medium text-sm sm:text-base">Call</span>
                     </a>
                   )}
-                  <button className="flex items-center gap-2 px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors">
+                  <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors flex-1 sm:flex-initial">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -649,14 +649,14 @@ export default function SalonDetail() {
                         d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
                       />
                     </svg>
-                    <span className="font-body font-medium">Share</span>
+                    <span className="font-body font-medium text-sm sm:text-base">Share</span>
                   </button>
                 </div>
               </div>
 
               {salon.description && (
                 <div className="border-t border-neutral-gray-300 pt-4">
-                  <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed">
+                  <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed break-words overflow-wrap-anywhere">
                     {salon.description}
                   </p>
                 </div>
@@ -665,10 +665,10 @@ export default function SalonDetail() {
 
             {/* Tabs */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="flex border-b border-neutral-gray-300">
+              <div className="flex border-b border-neutral-gray-300 overflow-x-auto scrollbar-hide">
                 <button
                   onClick={() => setActiveTab("services")}
-                  className={`flex-1 px-6 py-4 font-body font-semibold text-[16px] transition-colors ${
+                  className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-body font-semibold text-[14px] sm:text-[16px] transition-colors whitespace-nowrap ${
                     activeTab === "services"
                       ? "text-accent-orange border-b-2 border-accent-orange"
                       : "text-neutral-gray-600 hover:text-neutral-black"
@@ -690,7 +690,7 @@ export default function SalonDetail() {
                 */}
                 <button
                   onClick={() => setActiveTab("about")}
-                  className={`flex-1 px-6 py-4 font-body font-semibold text-[16px] transition-colors ${
+                  className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-body font-semibold text-[14px] sm:text-[16px] transition-colors whitespace-nowrap ${
                     activeTab === "about"
                       ? "text-accent-orange border-b-2 border-accent-orange"
                       : "text-neutral-gray-600 hover:text-neutral-black"
@@ -700,7 +700,7 @@ export default function SalonDetail() {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {activeTab === "services" && (
                   <div>
                     <h3 className="font-display font-bold text-[24px] text-neutral-black mb-6">
@@ -754,7 +754,7 @@ export default function SalonDetail() {
                       <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-3">
                         About the Salon
                       </h3>
-                      <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed">
+                      <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed break-words overflow-wrap-anywhere">
                         {salon.description || "Welcome to our salon! We provide premium beauty and grooming services with experienced professionals."}
                       </p>
                     </div>
@@ -784,9 +784,9 @@ export default function SalonDetail() {
 
           {/* Right Column - Booking Card */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-6 shadow-lg sticky top-24">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg lg:sticky lg:top-24">
               {/* Salon Name */}
-              <h3 className="font-display font-bold text-[24px] text-neutral-black mb-4">
+              <h3 className="font-display font-bold text-[20px] sm:text-[24px] text-neutral-black mb-4 break-words">
                 {salon.business_name || salon.name}
               </h3>
 
@@ -794,8 +794,8 @@ export default function SalonDetail() {
                 {/* Email */}
                 {salon.email && (
                   <div className="flex items-center gap-3">
-                    <FiMail className="w-5 h-5 text-accent-orange" />
-                    <span className="font-body text-[15px] text-neutral-black font-medium">
+                    <FiMail className="w-5 h-5 text-accent-orange flex-shrink-0" />
+                    <span className="font-body text-[15px] text-neutral-black font-medium break-all">
                       {salon.email}
                     </span>
                   </div>
@@ -852,8 +852,8 @@ export default function SalonDetail() {
 
                 {/* Address */}
                 <div className="flex items-start gap-3">
-                  <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5" />
-                  <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed">
+                  <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5 flex-shrink-0" />
+                  <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
                     {salon.address || `${salon.city}, ${salon.state}`}
                   </span>
                 </div>
