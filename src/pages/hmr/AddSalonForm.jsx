@@ -13,7 +13,7 @@ import {
   useGetVendorRequestByIdQuery,
   useGetServiceCategoriesQuery
 } from '../../services/api/rmApi';
-import { uploadSalonImage } from '../../services/api/uploadApi';
+import { uploadSalonImage, uploadAgreementDocument, getAgreementDocumentSignedUrl } from '../../services/api/uploadApi';
 import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../../utils/toastConfig';
 import { 
   INDIAN_STATES, 
@@ -98,6 +98,7 @@ const AddSalonForm = () => {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [coverImage, setCoverImage] = useState(null);
   const [logo, setLogo] = useState(null);
+  const [agreementDocument, setAgreementDocument] = useState(null);
   
   // Upload progress state
   const [uploading, setUploading] = useState(false);
@@ -203,6 +204,11 @@ const AddSalonForm = () => {
         setLogo(documents.logo);
       }
       
+      // Load agreement document from draft
+      if (draft.registration_certificate) {
+        setAgreementDocument(draft.registration_certificate);
+      }
+      
       if (draft.gallery_images && draft.gallery_images.length > 0) {
         setUploadedImages(draft.gallery_images);
       } else if (documents.images && documents.images.length > 0) {
@@ -253,6 +259,10 @@ const AddSalonForm = () => {
         );
         setUploadedImages([...uploadedImages, ...urls]);
         showSuccessToast(`${files.length} image(s) uploaded!`);
+      } else if (type === 'agreement') {
+        const url = await uploadAgreementDocument(files[0]);
+        setAgreementDocument(url);
+        showSuccessToast('Agreement document uploaded!');
       }
     } catch (error) {
       console.error(`Upload error for ${type}:`, error);
@@ -355,6 +365,11 @@ const AddSalonForm = () => {
     try {
       // Validate required fields only for final submission (not draft)
       if (!isDraft && !submitForApproval) {
+        if (!agreementDocument) {
+          showErrorToast('Agreement document is required for submission');
+          setCurrentStep(1);
+          return;
+        }
         if (!coverImage) {
           showErrorToast('Cover image is required for submission');
           setCurrentStep(3);
@@ -510,7 +525,7 @@ const AddSalonForm = () => {
         gst_number: data.gst_number || null,
         pan_number: data.pan_number || null,
         business_license: data.business_license || null,
-        registration_certificate: data.registration_certificate || null,
+        registration_certificate: agreementDocument || null,  // Agreement document URL
         
         // Media fields (direct columns)
         cover_image_url: coverImage || null,
@@ -679,6 +694,11 @@ const AddSalonForm = () => {
       
       if (missingFields.length > 0) {
         showErrorToast(`Please fill: ${missingFields.join(', ')}`);
+        return;
+      }
+      
+      if (!agreementDocument) {
+        showErrorToast('Please upload the agreement document before proceeding');
         return;
       }
       
@@ -1124,6 +1144,84 @@ const AddSalonForm = () => {
                     <p className="text-xs text-gray-500 ml-auto">
                       {watch('description')?.length || 0} / 500 characters
                     </p>
+                  </div>
+                </div>
+
+                {/* Agreement Document Upload */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
+                    Agreement Document <span className="text-red-500">*</span>
+                  </label>
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                    <div className="flex items-start mb-3">
+                      <FiInfo className="text-purple-500 mt-1 mr-3 flex-shrink-0" size={18} />
+                      <div className="text-xs text-purple-800 font-body">
+                        <p className="font-semibold mb-1">Upload salon agreement document</p>
+                        <p>Accepted formats: PDF, JPEG, PNG, WebP (Max 10MB)</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="file"
+                        id="agreement-upload"
+                        className="hidden"
+                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                        onChange={(e) => handleImageUpload(e, 'agreement')}
+                        disabled={uploading === 'agreement'}
+                      />
+                      
+                      <label
+                        htmlFor="agreement-upload"
+                        className={`flex items-center px-4 py-2 bg-white border border-purple-300 rounded-lg font-body text-sm cursor-pointer hover:bg-purple-50 transition-colors ${
+                          uploading === 'agreement' ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        {uploading === 'agreement' ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full mr-2"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <FiUpload className="mr-2" size={16} />
+                            Choose File
+                          </>
+                        )}
+                      </label>
+                      
+                      {agreementDocument && (
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <a
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              try {
+                                const signedUrl = await getAgreementDocumentSignedUrl(agreementDocument);
+                                window.open(signedUrl, '_blank', 'noopener,noreferrer');
+                              } catch (error) {
+                                console.error('Failed to get signed URL:', error);
+                              }
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-300 rounded-lg text-sm text-green-700 hover:bg-green-100 transition-colors truncate cursor-pointer"
+                          >
+                            <FiCheck className="flex-shrink-0" size={16} />
+                            <span className="truncate">Document Uploaded</span>
+                          </a>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setAgreementDocument(null);
+                              showInfoToast('Agreement document removed');
+                            }}
+                            className="border-red-300 text-red-600 hover:bg-red-50"
+                          >
+                            <FiTrash2 size={14} />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -1856,6 +1954,49 @@ const AddSalonForm = () => {
                   </div>
                 </div>
 
+                {/* Agreement Document */}
+                <div className="border-l-4 border-indigo-500 pl-4">
+                  <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
+                    <span className="bg-indigo-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">📄</span>
+                    Agreement Document
+                  </h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    {agreementDocument ? (
+                      <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-green-100 p-2 rounded-lg">
+                            <FiCheck className="text-green-600" size={24} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-green-700 text-sm">Document Uploaded</p>
+                            <p className="text-xs text-gray-600 mt-1">Agreement document is attached</p>
+                          </div>
+                        </div>
+                        <a
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            try {
+                              const signedUrl = await getAgreementDocumentSignedUrl(agreementDocument);
+                              window.open(signedUrl, '_blank', 'noopener,noreferrer');
+                            } catch (error) {
+                              console.error('Failed to get signed URL:', error);
+                            }
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors cursor-pointer"
+                        >
+                          <FiImage size={16} />
+                          View Document
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg text-sm font-body flex items-center gap-2">
+                        <FiInfo className="flex-shrink-0" size={20} />
+                        <span>⚠️ No agreement document uploaded. Please go back to Step 1 to upload the document.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Final Checklist */}
                 <div className="bg-gradient-to-br from-green-50 to-blue-50 p-6 rounded-xl border-2 border-green-200">
                   <h4 className="font-display font-bold text-gray-900 mb-4 flex items-center">
@@ -1886,6 +2027,14 @@ const AddSalonForm = () => {
                         <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
                       )}
                       <span>Cover image uploaded</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${agreementDocument ? 'text-green-700' : 'text-gray-600'}`}>
+                      {agreementDocument ? (
+                        <FiCheck className="text-green-600" size={16} />
+                      ) : (
+                        <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
+                      )}
+                      <span>Agreement document uploaded</span>
                     </div>
                     <div className={`flex items-center gap-2 ${uploadedImages.length >= 3 ? 'text-green-700' : 'text-yellow-700'}`}>
                       {uploadedImages.length >= 3 ? (
