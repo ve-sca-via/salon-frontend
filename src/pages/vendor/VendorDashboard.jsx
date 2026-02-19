@@ -39,7 +39,7 @@ import {
   useUpdateVendorSalonMutation
 } from '../../services/api/vendorApi';
 import { 
-  FiCalendar, FiDollarSign, FiShoppingBag, FiUsers, 
+  FiCalendar, FiTrendingUp, FiShoppingBag, FiUsers, 
   FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle, FiLock
 } from 'react-icons/fi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
@@ -226,7 +226,7 @@ const VendorDashboard = () => {
     {
       title: 'Revenue',
       value: `₹${analytics?.total_revenue || 0}`,
-      icon: <FiDollarSign className="text-green-600" size={24} />,
+      icon: <FiTrendingUp className="text-green-600" size={24} />,
       bgColor: 'bg-green-100',
       change: analytics?.revenue_change || null,
       changeType: 'increase',

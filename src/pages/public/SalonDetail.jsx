@@ -414,45 +414,37 @@ export default function SalonDetail() {
 
   // Parse business hours - handle both formats
   const getBusinessHours = () => {
-    // Helper to format time from 24-hour to 12-hour
-    const formatTime = (time24) => {
-      if (!time24) return '';
-      const [hours24, minutes] = time24.split(':').map(Number);
-      const period = hours24 >= 12 ? 'PM' : 'AM';
-      const hours12 = hours24 % 12 || 12;
-      return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
-    };
-
-    // Check if new business_hours JSONB field exists
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // If business_hours JSONB exists, use it (new format - stores strings like "9:00 AM - 6:00 PM" or "Closed")
     if (salon.business_hours && typeof salon.business_hours === 'object') {
-      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-      return days.map(day => {
-        const dayData = salon.business_hours[day] || {};
-        const hours = dayData.closed 
-          ? "Closed" 
-          : dayData.open && dayData.close
-          ? `${dayData.open} - ${dayData.close}`
-          : "9:00 AM - 8:00 PM";
-        return [day.charAt(0).toUpperCase() + day.slice(1), hours];
+      return daysOfWeek.map(day => {
+        const dayKey = day.toLowerCase();
+        const hours = salon.business_hours[dayKey] || 'Closed';
+        return [day, hours];
       });
     }
     
-    // Use database fields: opening_time, closing_time, working_days
+    // Fallback to legacy format (opening_time, closing_time, working_days)
     if (salon.opening_time && salon.closing_time) {
+      // Helper to format time from 24-hour to 12-hour
+      const formatTime = (time24) => {
+        if (!time24) return '';
+        const [hours24, minutes] = time24.split(':').map(Number);
+        const period = hours24 >= 12 ? 'PM' : 'AM';
+        const hours12 = hours24 % 12 || 12;
+        return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+      };
+      
       const openTime = formatTime(salon.opening_time);
       const closeTime = formatTime(salon.closing_time);
-      const hours = `${openTime} - ${closeTime}`;
+      const hoursStr = `${openTime} - ${closeTime}`;
       
-      // Get working days (normalize to lowercase for comparison)
-      const workingDays = (salon.working_days || []).map(d => d.toLowerCase());
-      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      const workingDays = (salon.working_days || []).map(d => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase());
       
-      return days.map(day => {
-        const isWorking = workingDays.includes(day);
-        return [
-          day.charAt(0).toUpperCase() + day.slice(1),
-          isWorking ? hours : "Closed"
-        ];
+      return daysOfWeek.map(day => {
+        const hours = workingDays.includes(day) ? hoursStr : 'Closed';
+        return [day, hours];
       });
     }
     
