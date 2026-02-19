@@ -43,7 +43,6 @@ import {
   FiCalendar,
   FiClock,
   FiUser,
-  FiDollarSign,
   FiFilter,
   FiDownload,
   FiSearch,
@@ -610,8 +609,7 @@ const BookingsManagement = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <div className="flex items-center text-sm font-body font-semibold text-green-600">
-                            <FiDollarSign className="mr-1" />
+                          <div className="text-sm font-body font-semibold text-green-600">
                             ₹{booking.service_price?.toLocaleString() || 0}
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5">To collect</p>

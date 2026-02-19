@@ -47,7 +47,7 @@ import { showSuccessToast, showInfoToast, showErrorToast } from '../../utils/toa
 import { IS_PRODUCTION } from '../../utils/constants';
 import { 
   FiCreditCard, FiCheckCircle, FiLock, FiShield, 
-  FiDollarSign, FiCalendar, FiInfo, FiAlertTriangle
+  FiCalendar, FiInfo, FiAlertTriangle
 } from 'react-icons/fi';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
@@ -481,7 +481,7 @@ const VendorPayment = () => {
                   Secure checkout
                 </div>
                 <div className="flex items-center text-sm text-gray-600 font-body">
-                  <FiDollarSign className="mr-2 text-gray-400" size={16} />
+                  <FiCreditCard className="mr-2 text-gray-400" size={16} />
                   One-time payment
                 </div>
               </div>
