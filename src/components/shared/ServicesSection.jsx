@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
-import service1 from "../../assets/images/Service_Image_1.png";
-import service2 from "../../assets/images/Service_Image_2.png";
-import service3 from "../../assets/images/service Image_3.png";
-import service4 from "../../assets/images/service_image_4.png";
+import service1 from "../../assets/images/optimized/Service_Image_1.webp";
+import service2 from "../../assets/images/optimized/Service_Image_2.webp";
+import service3 from "../../assets/images/optimized/service Image_3.webp";
+import service4 from "../../assets/images/optimized/service_image_4.webp";
+import service5 from "../../assets/images/optimized/service_image_5.webp";
 import svgPaths from "../../utils/svgPaths";
 
 // Scissors Icon for Header
@@ -82,7 +83,7 @@ function Header() {
 // Service Card Component
 function ServiceCard({ service }) {
   return (
-    <div className="relative w-full max-w-[306px] h-[428px] rounded-[10px] overflow-hidden group cursor-pointer">
+    <div className="relative w-full max-w-[280px] h-[380px] rounded-[10px] overflow-hidden group cursor-pointer">
       {/* Service Image */}
       <img
         src={service.image}
@@ -103,10 +104,11 @@ function ServiceCard({ service }) {
           {service.name}
         </h3>
 
-        {/* Service Count */}
+        {/* COMMENTED OUT - Salon count not yet implemented
         <p className="font-body font-normal text-[16px] leading-[24px] text-white">
           {service.count}
         </p>
+        */}
       </div>
     </div>
   );
@@ -164,22 +166,27 @@ export default function ServicesSection() {
 
   const services = [
     {
-      name: "Haircut",
+      name: "SPA",
       count: "25 Saloons",
-      image: service1,
+      image: service5,
       icon: (
         <div className="flex items-center justify-center relative w-[45px] h-[45px]">
           <svg
             className="block size-full"
             fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 42 26"
+            viewBox="0 0 45 45"
           >
             <g>
-              <path d={svgPaths.p287f2700} fill="white" />
-              <path d={svgPaths.p38a96200} fill="white" />
-              <path d={svgPaths.p3c4d1280} fill="white" />
-              <path d={svgPaths.p26de5800} fill="white" />
+              {/* Spa lotus/flower icon */}
+              <circle cx="22.5" cy="22.5" r="4" fill="white" />
+              <ellipse cx="22.5" cy="15" rx="5" ry="7" fill="white" opacity="0.8" />
+              <ellipse cx="22.5" cy="30" rx="5" ry="7" fill="white" opacity="0.8" />
+              <ellipse cx="15" cy="22.5" rx="7" ry="5" fill="white" opacity="0.8" />
+              <ellipse cx="30" cy="22.5" rx="7" ry="5" fill="white" opacity="0.8" />
+              <ellipse cx="17" cy="17" rx="4" ry="6" fill="white" opacity="0.6" transform="rotate(-45 17 17)" />
+              <ellipse cx="28" cy="17" rx="4" ry="6" fill="white" opacity="0.6" transform="rotate(45 28 17)" />
+              <ellipse cx="17" cy="28" rx="4" ry="6" fill="white" opacity="0.6" transform="rotate(45 17 28)" />
+              <ellipse cx="28" cy="28" rx="4" ry="6" fill="white" opacity="0.6" transform="rotate(-45 28 28)" />
             </g>
           </svg>
         </div>
@@ -314,9 +321,9 @@ export default function ServicesSection() {
   );
 
   return (
-    <section className="w-full py-16 bg-bg-secondary">
+    <section className="w-full py-8 md:py-16 bg-bg-secondary">
       <div className="max-w-[1320px] mx-auto px-4">
-        <div className="flex flex-col gap-10 items-center">
+        <div className="flex flex-col gap-6 md:gap-10 items-center">
           <Header />
 
           {/* Services Carousel/Grid */}

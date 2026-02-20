@@ -6,13 +6,14 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import InputField from '../../components/shared/InputField';
 import Button from '../../components/shared/Button';
+import { SkeletonFormField } from '../../components/shared/Skeleton';
 import { 
   useSubmitVendorRequestMutation, 
   useUpdateVendorRequestMutation,
   useGetVendorRequestByIdQuery,
   useGetServiceCategoriesQuery
 } from '../../services/api/rmApi';
-import { uploadSalonImage } from '../../services/api/uploadApi';
+import { uploadSalonImage, uploadAgreementDocument, getAgreementDocumentSignedUrl } from '../../services/api/uploadApi';
 import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../../utils/toastConfig';
 import { 
   INDIAN_STATES, 
@@ -97,9 +98,13 @@ const AddSalonForm = () => {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [coverImage, setCoverImage] = useState(null);
   const [logo, setLogo] = useState(null);
+  const [agreementDocument, setAgreementDocument] = useState(null);
   
   // Upload progress state
   const [uploading, setUploading] = useState(false);
+  
+  // Location state
+  const [gettingLocation, setGettingLocation] = useState(false);
 
   // Edit mode derived from URL param
   const isEditMode = Boolean(draftId);
@@ -108,7 +113,7 @@ const AddSalonForm = () => {
 
   // Load draft data if editing
   useEffect(() => {
-    if (draftId && draftData) {
+    if (draftId && draftData && serviceCategories.length > 0) { // FIX: Wait for categories to load
       // Populate form with draft data
       const draft = draftData;
       const documents = draft.documents || {};
@@ -128,6 +133,9 @@ const AddSalonForm = () => {
         state: draft.state || '',
         pincode: draft.pincode || '',
         description: documents.description || '',
+        // Location coordinates
+        latitude: draft.latitude || '',
+        longitude: draft.longitude || '',
         // Business hours
         monday: documents.business_hours?.monday || '9:00 AM - 6:00 PM',
         tuesday: documents.business_hours?.tuesday || '9:00 AM - 6:00 PM',
@@ -140,14 +148,29 @@ const AddSalonForm = () => {
       
       // Services - check both new and old format
       let loadedServices = [];
-      if (draft.services_offered) {
-        // New format: services_offered is a JSONB object with categories
-        Object.entries(draft.services_offered).forEach(([category, serviceList]) => {
+      
+      // FIX: Try documents.services first (most reliable)
+      if (documents.services && documents.services.length > 0) {
+        // Services already have category_id
+        loadedServices = documents.services;
+        console.log('✅ Loaded services from documents.services (with category_id)');
+      } else if (draft.services_offered) {
+        // New format: services_offered is a JSONB object with categories (category name as key)
+        console.log('⚠️ Loading services from services_offered (requires category lookup)');
+        Object.entries(draft.services_offered).forEach(([categoryName, serviceList]) => {
           if (Array.isArray(serviceList)) {
+            // Find category ID by name
+            const categoryObj = serviceCategories.find(cat => cat.name === categoryName);
+            const categoryId = categoryObj ? categoryObj.id : null;
+            
+            if (!categoryId) {
+              console.error(`❌ Could not find category_id for category: ${categoryName}`);
+            }
+            
             serviceList.forEach(service => {
               loadedServices.push({
                 name: service.name || '',
-                category: category,
+                category_id: categoryId, // Use category_id, not category
                 price: service.price || '',
                 duration_minutes: service.duration_minutes || 30,
                 description: service.description || ''
@@ -155,10 +178,16 @@ const AddSalonForm = () => {
             });
           }
         });
-      } else if (documents.services && documents.services.length > 0) {
-        // Old format: services in documents
-        loadedServices = documents.services;
       }
+      
+      console.log('=== SERVICE LOADING DEBUG ===');
+      console.log('Draft Services Offered:', draft.services_offered);
+      console.log('Document Services:', documents.services);
+      console.log('Loaded Services:', loadedServices);
+      console.log('Services with category_id:', loadedServices.filter(s => s.category_id).length);
+      console.log('Services WITHOUT category_id:', loadedServices.filter(s => !s.category_id).length);
+      console.log('Service Categories Available:', serviceCategories.length);
+      console.log('============================');
       
       if (loadedServices.length > 0) {
         setServices(loadedServices);
@@ -175,6 +204,11 @@ const AddSalonForm = () => {
         setLogo(documents.logo);
       }
       
+      // Load agreement document from draft
+      if (draft.registration_certificate) {
+        setAgreementDocument(draft.registration_certificate);
+      }
+      
       if (draft.gallery_images && draft.gallery_images.length > 0) {
         setUploadedImages(draft.gallery_images);
       } else if (documents.images && documents.images.length > 0) {
@@ -186,33 +220,24 @@ const AddSalonForm = () => {
         setSelectedHoursPreset('custom');
       }
       
-      // Determine which step to start on based on filled data
-      let startStep = 1;
+      // Use saved current step from draft (defaults to step 1 if not saved)
+      const startStep = documents.current_step && typeof documents.current_step === 'number' 
+        ? Math.min(Math.max(documents.current_step, 1), 4) // Cap between 1-4
+        : 1; // Default to step 1 if not saved
       
-      // Step 1: Check if basic info is complete
-      const hasBasicInfo = draft.business_name && draft.city && draft.state && draft.pincode;
-      
-      if (hasBasicInfo) {
-        // Move to step 2 if basic info is filled
-        startStep = 2;
-        
-        // Step 2: Check if services are added
-        if (loadedServices.length > 0) {
-          // Move to step 3 if services exist
-          startStep = 3;
-          
-          // Step 3: Check if images are uploaded
-          if (draft.cover_image_url || documents.cover_image) {
-            // Move to step 4 (review) if cover image exists
-            startStep = 4;
-          }
-        }
-      }
+      console.log('=== DRAFT LOADING DEBUG ===');
+      console.log('Draft ID:', draftId);
+      console.log('Saved Step:', documents.current_step);
+      console.log('Starting at Step:', startStep);
+      console.log('Business Name:', draft.business_name);
+      console.log('Services:', loadedServices.length);
+      console.log('Cover Image:', draft.cover_image_url || documents.cover_image ? 'yes' : 'no');
+      console.log('==========================');
       
       setCurrentStep(startStep);
       showInfoToast(`Draft loaded. Starting from Step ${startStep}...`);
     }
-  }, [draftId, draftData, reset]);
+  }, [draftId, draftData, serviceCategories, reset]); // FIX: Added serviceCategories to dependencies
 
   const handleImageUpload = async (e, type) => {
     const files = Array.from(e.target.files);
@@ -234,9 +259,20 @@ const AddSalonForm = () => {
         );
         setUploadedImages([...uploadedImages, ...urls]);
         showSuccessToast(`${files.length} image(s) uploaded!`);
+      } else if (type === 'agreement') {
+        const url = await uploadAgreementDocument(files[0]);
+        setAgreementDocument(url);
+        showSuccessToast('Agreement document uploaded!');
       }
     } catch (error) {
-      showErrorToast(error?.message || 'Failed to upload image');
+      console.error(`Upload error for ${type}:`, error);
+      console.error('Error details:', {
+        message: error?.message,
+        response: error?.response?.data,
+        status: error?.response?.status
+      });
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to upload image';
+      showErrorToast(`${type} upload failed: ${errorMessage}`);
     } finally {
       setUploading(false);
     }
@@ -261,10 +297,79 @@ const AddSalonForm = () => {
     setServices(updated);
   };
 
+  // Get user's current location
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      showErrorToast('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setGettingLocation(true);
+    showInfoToast('Getting your location...');
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude, accuracy, altitude, altitudeAccuracy, heading, speed } = position.coords;
+        const timestamp = new Date(position.timestamp).toLocaleString();
+        
+        // Console log all the details
+        console.log('=== GEOLOCATION DATA ===');
+        console.log('Latitude:', latitude);
+        console.log('Longitude:', longitude);
+        console.log('Accuracy:', accuracy, 'meters');
+        console.log('Altitude:', altitude, 'meters');
+        console.log('Altitude Accuracy:', altitudeAccuracy, 'meters');
+        console.log('Heading:', heading, 'degrees');
+        console.log('Speed:', speed, 'm/s');
+        console.log('Timestamp:', timestamp);
+        console.log('Full Position Object:', position);
+        console.log('========================');
+        
+        // Set the latitude and longitude in the form
+        setValue('latitude', latitude.toFixed(6));
+        setValue('longitude', longitude.toFixed(6));
+        
+        setGettingLocation(false);
+        showSuccessToast(`Location captured! Accuracy: ${Math.round(accuracy)}m`);
+      },
+      (error) => {
+        setGettingLocation(false);
+        console.error('Geolocation error:', error);
+        
+        let errorMessage = 'Failed to get location';
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = 'Location permission denied. Please enable location access.';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = 'Location information unavailable';
+            break;
+          case error.TIMEOUT:
+            errorMessage = 'Location request timed out';
+            break;
+          default:
+            errorMessage = 'An unknown error occurred';
+        }
+        
+        showErrorToast(errorMessage);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      }
+    );
+  };
+
   const onSubmit = async (data, isDraft = false, submitForApproval = false) => {
     try {
       // Validate required fields only for final submission (not draft)
       if (!isDraft && !submitForApproval) {
+        if (!agreementDocument) {
+          showErrorToast('Agreement document is required for submission');
+          setCurrentStep(1);
+          return;
+        }
         if (!coverImage) {
           showErrorToast('Cover image is required for submission');
           setCurrentStep(3);
@@ -345,6 +450,24 @@ const AddSalonForm = () => {
       // Helper: Convert services to array format for documents.services
       // Backend reads from documents.services and needs category_id
       const prepareServicesArray = () => {
+        console.log('=== PREPARE SERVICES DEBUG ===');
+        console.log('Services State:', services);
+        console.log('Services with category_id:', services.filter(s => s.category_id));
+        console.log('Services WITHOUT category_id:', services.filter(s => !s.category_id));
+        console.log('Services filtered:', services.filter(s => s.name && s.price && s.category_id));
+        console.log('=============================');
+        
+        // FIX: Warn user if services are missing category_id
+        const servicesWithoutCategory = services.filter(s => s.name && s.price && !s.category_id);
+        if (servicesWithoutCategory.length > 0) {
+          const serviceNames = servicesWithoutCategory.map(s => s.name).join(', ');
+          console.error(`⚠️ WARNING: ${servicesWithoutCategory.length} services missing category_id: ${serviceNames}`);
+          showErrorToast(
+            `⚠️ ${servicesWithoutCategory.length} service(s) are missing a category: ${serviceNames}. ` +
+            `These services will NOT be visible to the vendor. Please select a category for each service.`
+          );
+        }
+        
         return services
           .filter(s => s.name && s.price && s.category_id)
           .map(s => ({
@@ -394,22 +517,21 @@ const AddSalonForm = () => {
         state: data.state,
         pincode: data.pincode,
         
-        // Optional location
-        latitude: null,
-        longitude: null,
+        // Optional location coordinates - handle empty strings and numeric values
+        latitude: data.latitude && typeof data.latitude === 'string' && data.latitude.trim() !== '' ? parseFloat(data.latitude) : (data.latitude && typeof data.latitude === 'number' ? data.latitude : null),
+        longitude: data.longitude && typeof data.longitude === 'string' && data.longitude.trim() !== '' ? parseFloat(data.longitude) : (data.longitude && typeof data.longitude === 'number' ? data.longitude : null),
         
         // Legal
         gst_number: data.gst_number || null,
         pan_number: data.pan_number || null,
         business_license: data.business_license || null,
-        registration_certificate: data.registration_certificate || null,
+        registration_certificate: agreementDocument || null,  // Agreement document URL
         
         // Media fields (direct columns)
         cover_image_url: coverImage || null,
         gallery_images: uploadedImages.length > 0 ? uploadedImages : null,
         
         // Operations fields (direct columns) - BUSINESS HOURS FIX
-        staff_count: data.staff_count ? parseInt(data.staff_count) : 1,
         opening_time: opening_time,  // From parseBusinessHours()
         closing_time: closing_time,  // From parseBusinessHours()
         working_days: working_days.length > 0 ? working_days : null,  // From parseBusinessHours()
@@ -424,8 +546,31 @@ const AddSalonForm = () => {
           phone: data.phone,
           logo: logo || null,
           services: prepareServicesArray(),
+          business_hours: {
+            monday: data.monday || 'Closed',
+            tuesday: data.tuesday || 'Closed',
+            wednesday: data.wednesday || 'Closed',
+            thursday: data.thursday || 'Closed',
+            friday: data.friday || 'Closed',
+            saturday: data.saturday || 'Closed',
+            sunday: data.sunday || 'Closed',
+          },
+          // Save current step so we can resume from the right place
+          current_step: currentStep,
+          images: uploadedImages.length > 0 ? uploadedImages : null,
+          cover_image: coverImage || null,
         },
       };
+
+      // Console log the vendor request data including lat/long
+      console.log('=== FORM SUBMISSION DATA ===');
+      console.log('Business Name:', vendorRequestData.business_name);
+      console.log('Latitude:', vendorRequestData.latitude);
+      console.log('Longitude:', vendorRequestData.longitude);
+      console.log('Full Address:', vendorRequestData.business_address);
+      console.log('City:', vendorRequestData.city, 'State:', vendorRequestData.state);
+      console.log('Full Vendor Request Data:', vendorRequestData);
+      console.log('============================');
 
       // Update existing draft or create new using RTK Query mutations
       if (isEditMode && draftId) {
@@ -436,8 +581,11 @@ const AddSalonForm = () => {
         }).unwrap();
         
         if (submitForApproval) {
+          const isRejected = draftData?.status === 'rejected';
           showSuccessToast(
-            '✅ Draft submitted for approval! You will be notified once reviewed.',
+            isRejected 
+              ? '✅ Salon resubmitted successfully! Admin will review your corrections.' 
+              : '✅ Draft submitted for approval! You will be notified once reviewed.',
             { autoClose: 4000 }
           );
         } else {
@@ -549,6 +697,11 @@ const AddSalonForm = () => {
         return;
       }
       
+      if (!agreementDocument) {
+        showErrorToast('Please upload the agreement document before proceeding');
+        return;
+      }
+      
       if (allValues.description && allValues.description.length < 50) {
         showErrorToast('Description must be at least 50 characters');
         return;
@@ -564,6 +717,21 @@ const AddSalonForm = () => {
     if (currentStep === 2 && services.length === 0) {
       showWarningToast('Please add at least one service before proceeding');
       return;
+    }
+    
+    // FIX: Validate that all services have category_id
+    if (currentStep === 2 && services.length > 0) {
+      const servicesWithoutCategory = services.filter(s => s.name && !s.category_id);
+      if (servicesWithoutCategory.length > 0) {
+        const serviceNames = servicesWithoutCategory.map(s => s.name || 'Unnamed').slice(0, 3).join(', ');
+        const moreCount = servicesWithoutCategory.length > 3 ? ` and ${servicesWithoutCategory.length - 3} more` : '';
+        showErrorToast(
+          `⚠️ Please select a category for all services! ` +
+          `${servicesWithoutCategory.length} service(s) missing category: ${serviceNames}${moreCount}. ` +
+          `Services without categories WILL NOT appear for the vendor!`
+        );
+        return;
+      }
     }
     
     if (currentStep < totalSteps) {
@@ -622,11 +790,18 @@ const AddSalonForm = () => {
   if (loadingDraft) {
     return (
       <DashboardLayout role="hmr">
-        <div className="flex justify-center items-center min-h-screen">
-          <div className="text-center">
-            <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-body">Loading draft...</p>
+        <div className="max-w-5xl mx-auto p-4 md:p-6">
+          <div className="animate-pulse mb-8">
+            <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 w-96 bg-gray-200 rounded"></div>
           </div>
+          <Card>
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <SkeletonFormField key={i} />
+              ))}
+            </div>
+          </Card>
         </div>
       </DashboardLayout>
     );
@@ -639,13 +814,30 @@ const AddSalonForm = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900 mb-2">
-              {isEditMode ? 'Edit Draft Salon' : 'Add New Salon'}
+              {isEditMode ? (draftData?.status === 'rejected' ? 'Edit & Resubmit Rejected Salon' : 'Edit Draft Salon') : 'Add New Salon'}
             </h1>
             <p className="text-gray-600 font-body">
-              {isEditMode ? 'Continue editing your draft or submit for approval' : 'Submit a new salon for approval'}
+              {isEditMode ? (draftData?.status === 'rejected' ? 'Fix the issues and resubmit for approval' : 'Continue editing your draft or submit for approval') : 'Submit a new salon for approval'}
             </p>
           </div>
         </div>
+
+        {/* Rejection Notice */}
+        {draftData?.status === 'rejected' && draftData?.admin_notes && (
+          <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0">
+                <svg className="h-6 w-6 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-red-800 mb-1">Rejection Reason from Admin</h3>
+                <p className="text-sm text-red-700">{draftData.admin_notes}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Step Indicator */}
         {renderStepIndicator()}
@@ -858,6 +1050,78 @@ const AddSalonForm = () => {
                   />
                 </div>
 
+                {/* Latitude and Longitude Section */}
+                <div className="md:col-span-2">
+                  <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className="text-sm font-body font-semibold text-gray-900 flex items-center">
+                        <FiMapPin className="mr-2 text-blue-600" />
+                        Location Coordinates (Optional)
+                      </h3>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleUseMyLocation}
+                        disabled={gettingLocation}
+                        className="bg-white hover:bg-blue-50 border-blue-300"
+                      >
+                        {gettingLocation ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 border-2 border-blue-600 border-t-transparent rounded-full mr-2"></div>
+                            Getting Location...
+                          </>
+                        ) : (
+                          <>
+                            <FiMapPin className="mr-2" size={16} />
+                            Use My Location
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <InputField
+                        label="Latitude"
+                        type="text"
+                        {...register('latitude', {
+                          pattern: {
+                            value: /^-?([0-8]?[0-9]|90)(\.[0-9]{1,10})?$/,
+                            message: 'Invalid latitude format'
+                          }
+                        })}
+                        error={errors.latitude?.message}
+                        placeholder="e.g., 19.076090"
+                        helperText="Range: -90 to 90"
+                      />
+                      
+                      <InputField
+                        label="Longitude"
+                        type="text"
+                        {...register('longitude', {
+                          pattern: {
+                            value: /^-?((1[0-7][0-9])|([0-9]?[0-9]))(\.[0-9]{1,10})?$/,
+                            message: 'Invalid longitude format'
+                          }
+                        })}
+                        error={errors.longitude?.message}
+                        placeholder="e.g., 72.877426"
+                        helperText="Range: -180 to 180"
+                      />
+                    </div>
+                    
+                    <div className="mt-3 text-xs text-gray-600 bg-white p-3 rounded border border-blue-100">
+                      <p className="flex items-start">
+                        <FiInfo className="mr-2 mt-0.5 flex-shrink-0 text-blue-600" size={14} />
+                        <span>
+                          Click "Use My Location" to automatically capture your current coordinates, 
+                          or enter them manually. Check browser console for detailed location data.
+                        </span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-body font-medium text-gray-700 mb-1">
                     Description <span className="text-red-500">*</span>
@@ -880,6 +1144,84 @@ const AddSalonForm = () => {
                     <p className="text-xs text-gray-500 ml-auto">
                       {watch('description')?.length || 0} / 500 characters
                     </p>
+                  </div>
+                </div>
+
+                {/* Agreement Document Upload */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
+                    Agreement Document <span className="text-red-500">*</span>
+                  </label>
+                  <div className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-lg border border-purple-200">
+                    <div className="flex items-start mb-3">
+                      <FiInfo className="text-purple-500 mt-1 mr-3 flex-shrink-0" size={18} />
+                      <div className="text-xs text-purple-800 font-body">
+                        <p className="font-semibold mb-1">Upload salon agreement document</p>
+                        <p>Accepted formats: PDF, JPEG, PNG, WebP (Max 10MB)</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="file"
+                        id="agreement-upload"
+                        className="hidden"
+                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                        onChange={(e) => handleImageUpload(e, 'agreement')}
+                        disabled={uploading === 'agreement'}
+                      />
+                      
+                      <label
+                        htmlFor="agreement-upload"
+                        className={`flex items-center px-4 py-2 bg-white border border-purple-300 rounded-lg font-body text-sm cursor-pointer hover:bg-purple-50 transition-colors ${
+                          uploading === 'agreement' ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                      >
+                        {uploading === 'agreement' ? (
+                          <>
+                            <div className="animate-spin h-4 w-4 border-2 border-purple-600 border-t-transparent rounded-full mr-2"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <FiUpload className="mr-2" size={16} />
+                            Choose File
+                          </>
+                        )}
+                      </label>
+                      
+                      {agreementDocument && (
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <a
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              try {
+                                const signedUrl = await getAgreementDocumentSignedUrl(agreementDocument);
+                                window.open(signedUrl, '_blank', 'noopener,noreferrer');
+                              } catch (error) {
+                                console.error('Failed to get signed URL:', error);
+                              }
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-300 rounded-lg text-sm text-green-700 hover:bg-green-100 transition-colors truncate cursor-pointer"
+                          >
+                            <FiCheck className="flex-shrink-0" size={16} />
+                            <span className="truncate">Document Uploaded</span>
+                          </a>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setAgreementDocument(null);
+                              showInfoToast('Agreement document removed');
+                            }}
+                            className="border-red-300 text-red-600 hover:bg-red-50"
+                          >
+                            <FiTrash2 size={14} />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -917,19 +1259,96 @@ const AddSalonForm = () => {
                   {selectedHoursPreset === 'custom' && (
                     <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
                       <p className="text-sm text-gray-600 font-body mb-3">
-                        Set custom hours for each day (e.g., "9:00 AM - 8:00 PM" or "Closed")
+                        Set custom hours for each day using the time picker
                       </p>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                          <div key={day} className="flex items-center gap-2">
-                            <span className="text-sm font-body font-medium text-gray-700 capitalize w-20">{day}</span>
-                            <input
-                              {...register(day)}
-                              placeholder="9:00 AM - 8:00 PM"
-                              className="flex-1 px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                            />
-                          </div>
-                        ))}
+                      <div className="space-y-3">
+                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                          const dayValue = watch(day) || '';
+                          const isClosed = dayValue.toLowerCase() === 'closed' || dayValue === '';
+                          
+                          // Parse existing value if it exists (e.g., "9:00 AM - 8:00 PM")
+                          let openTime = '09:00';
+                          let closeTime = '18:00';
+                          
+                          if (dayValue && !isClosed) {
+                            const match = dayValue.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+                            if (match) {
+                              let [, openHour, openMin, openAmPm, closeHour, closeMin, closeAmPm] = match;
+                              
+                              // Convert to 24-hour format
+                              openHour = parseInt(openHour);
+                              closeHour = parseInt(closeHour);
+                              
+                              if (openAmPm && openAmPm.toUpperCase() === 'PM' && openHour !== 12) openHour += 12;
+                              if (openAmPm && openAmPm.toUpperCase() === 'AM' && openHour === 12) openHour = 0;
+                              if (closeAmPm && closeAmPm.toUpperCase() === 'PM' && closeHour !== 12) closeHour += 12;
+                              if (closeAmPm && closeAmPm.toUpperCase() === 'AM' && closeHour === 12) closeHour = 0;
+                              
+                              openTime = `${String(openHour).padStart(2, '0')}:${openMin}`;
+                              closeTime = `${String(closeHour).padStart(2, '0')}:${closeMin}`;
+                            }
+                          }
+                          
+                          const updateDayHours = (open, close, closed) => {
+                            if (closed) {
+                              setValue(day, 'Closed');
+                            } else {
+                              // Convert 24-hour to 12-hour format for display
+                              const formatTime = (time24) => {
+                                const [hours, minutes] = time24.split(':').map(Number);
+                                const period = hours >= 12 ? 'PM' : 'AM';
+                                const hours12 = hours % 12 || 12;
+                                return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
+                              };
+                              
+                              setValue(day, `${formatTime(open)} - ${formatTime(close)}`);
+                            }
+                          };
+                          
+                          return (
+                            <div key={day} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
+                              <span className="text-sm font-body font-semibold text-gray-700 capitalize w-24">{day}</span>
+                              
+                              {!isClosed ? (
+                                <>
+                                  <div className="flex items-center gap-2 flex-1">
+                                    <input
+                                      type="time"
+                                      value={openTime}
+                                      onChange={(e) => updateDayHours(e.target.value, closeTime, false)}
+                                      className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                                    />
+                                    <span className="text-gray-500">to</span>
+                                    <input
+                                      type="time"
+                                      value={closeTime}
+                                      onChange={(e) => updateDayHours(openTime, e.target.value, false)}
+                                      className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                                    />
+                                  </div>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateDayHours(openTime, closeTime, true)}
+                                    className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                                  >
+                                    Closed
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="flex-1 text-sm text-gray-500 italic">Closed</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => updateDayHours('09:00', '18:00', false)}
+                                    className="px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium"
+                                  >
+                                    Open
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   )}
@@ -955,7 +1374,10 @@ const AddSalonForm = () => {
                   <FiInfo className="text-blue-500 mt-1 mr-3 flex-shrink-0" size={20} />
                   <div className="text-sm text-blue-800 font-body">
                     <p className="font-semibold mb-1">Add Salon Services</p>
-                    <p className="text-xs">Add services offered by the salon. Make sure to select the correct category for each service from the dropdown.</p>
+                    <p className="text-xs mb-2">Add services offered by the salon. Make sure to select the correct category for each service from the dropdown.</p>
+                    <p className="text-xs font-semibold text-red-700 bg-red-100 p-2 rounded mt-2">
+                      ⚠️ IMPORTANT: Services without a selected category will NOT be transferred to the vendor account and will be LOST!
+                    </p>
                   </div>
                 </div>
               </div>
@@ -1020,17 +1442,27 @@ const AddSalonForm = () => {
                           <div>
                             <label className="block text-xs font-body font-medium text-gray-700 mb-1">
                               Category <span className="text-red-500">*</span>
+                              {!service.category_id && (
+                                <span className="ml-2 text-xs text-red-600 font-semibold">⚠️ Required for migration!</span>
+                              )}
                             </label>
                             <select
                               value={service.category_id || ''}
                               onChange={(e) => updateService(index, 'category_id', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                              className={`w-full px-3 py-2 border rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange ${
+                                !service.category_id ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                              }`}
                             >
-                              <option value="">Select category</option>
+                              <option value="">⚠️ Select category (REQUIRED)</option>
                               {serviceCategories.map(cat => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                               ))}
                             </select>
+                            {!service.category_id && service.name && (
+                              <p className="mt-1 text-xs text-red-600">
+                                This service will be SKIPPED if no category is selected!
+                              </p>
+                            )}
                           </div>
                           
                           <div>
@@ -1362,6 +1794,24 @@ const AddSalonForm = () => {
                         {', '}{watch('city')}, {watch('state')} - {watch('pincode')}
                       </p>
                     </div>
+                    {(watch('latitude') || watch('longitude')) && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+                        <div>
+                          <p className="text-gray-600 text-xs mb-1 flex items-center">
+                            <FiMapPin className="mr-1" size={12} />
+                            Latitude
+                          </p>
+                          <p className="font-semibold text-blue-600">{watch('latitude') || '-'}</p>
+                        </div>
+                        <div>
+                          <p className="text-gray-600 text-xs mb-1 flex items-center">
+                            <FiMapPin className="mr-1" size={12} />
+                            Longitude
+                          </p>
+                          <p className="font-semibold text-blue-600">{watch('longitude') || '-'}</p>
+                        </div>
+                      </div>
+                    )}
                     <div>
                       <p className="text-gray-600 text-xs mb-1">Description</p>
                       <p className="text-gray-700 text-xs leading-relaxed">
@@ -1504,6 +1954,49 @@ const AddSalonForm = () => {
                   </div>
                 </div>
 
+                {/* Agreement Document */}
+                <div className="border-l-4 border-indigo-500 pl-4">
+                  <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
+                    <span className="bg-indigo-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">📄</span>
+                    Agreement Document
+                  </h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    {agreementDocument ? (
+                      <div className="flex items-center justify-between bg-white p-4 rounded-lg border border-green-200">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-green-100 p-2 rounded-lg">
+                            <FiCheck className="text-green-600" size={24} />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-green-700 text-sm">Document Uploaded</p>
+                            <p className="text-xs text-gray-600 mt-1">Agreement document is attached</p>
+                          </div>
+                        </div>
+                        <a
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            try {
+                              const signedUrl = await getAgreementDocumentSignedUrl(agreementDocument);
+                              window.open(signedUrl, '_blank', 'noopener,noreferrer');
+                            } catch (error) {
+                              console.error('Failed to get signed URL:', error);
+                            }
+                          }}
+                          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 transition-colors cursor-pointer"
+                        >
+                          <FiImage size={16} />
+                          View Document
+                        </a>
+                      </div>
+                    ) : (
+                      <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg text-sm font-body flex items-center gap-2">
+                        <FiInfo className="flex-shrink-0" size={20} />
+                        <span>⚠️ No agreement document uploaded. Please go back to Step 1 to upload the document.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Final Checklist */}
                 <div className="bg-gradient-to-br from-green-50 to-blue-50 p-6 rounded-xl border-2 border-green-200">
                   <h4 className="font-display font-bold text-gray-900 mb-4 flex items-center">
@@ -1534,6 +2027,14 @@ const AddSalonForm = () => {
                         <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
                       )}
                       <span>Cover image uploaded</span>
+                    </div>
+                    <div className={`flex items-center gap-2 ${agreementDocument ? 'text-green-700' : 'text-gray-600'}`}>
+                      {agreementDocument ? (
+                        <FiCheck className="text-green-600" size={16} />
+                      ) : (
+                        <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
+                      )}
+                      <span>Agreement document uploaded</span>
                     </div>
                     <div className={`flex items-center gap-2 ${uploadedImages.length >= 3 ? 'text-green-700' : 'text-yellow-700'}`}>
                       {uploadedImages.length >= 3 ? (
@@ -1600,7 +2101,7 @@ const AddSalonForm = () => {
                   ) : (
                     <>
                       <FiCheck className="mr-2" />
-                      {isEditMode ? 'Submit Draft for Approval' : 'Submit for Approval'}
+                      {isEditMode ? (draftData?.status === 'rejected' ? 'Resubmit for Approval' : 'Submit Draft for Approval') : 'Submit for Approval'}
                     </>
                   )}
                 </Button>

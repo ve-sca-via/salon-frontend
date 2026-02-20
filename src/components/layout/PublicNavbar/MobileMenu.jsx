@@ -127,7 +127,8 @@ export function MobileMenu({ isOpen, onClose }) {
           More
         </MobileDropdown>
 
-        <div className="border-t border-neutral-gray-600 mt-2 pt-2 px-4 pb-4 space-y-2">
+        {/* CTA Button */}
+        <div className="border-t border-neutral-gray-600 mt-2 pt-4 px-4">
           <button
             className="w-full bg-gradient-orange flex gap-2 items-center justify-center px-4 py-3 rounded-md hover:opacity-90 transition-opacity"
             onClick={() => {
@@ -139,36 +140,80 @@ export function MobileMenu({ isOpen, onClose }) {
               Book Appointment
             </span>
           </button>
+        </div>
 
-          {isAuthenticated && user ? (
-            <>
-              <div className="text-center py-2">
-                <p className="font-body text-sm text-neutral-black">
-                  Welcome,{" "}
-                  <span className="font-medium">{truncateName(user.full_name)}</span>
-                </p>
-              </div>
+        {/* User Menu Section */}
+        {isAuthenticated && user ? (
+          <div className="border-t border-neutral-gray-600 mt-4">
+            {/* User Welcome Header */}
+            <div className="px-4 py-3 bg-gray-50">
+              <p className="font-body text-[12px] text-neutral-gray-500 uppercase tracking-wide">
+                Account
+              </p>
+              <p className="font-body text-[14px] text-neutral-black font-medium mt-1">
+                {truncateName(user.full_name)}
+              </p>
+            </div>
+            
+            {/* Customer Menu Items */}
+            {user.role === 'customer' && (
+              <>
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3 text-neutral-black hover:bg-gray-50 transition-colors border-b border-neutral-gray-600"
+                  onClick={() => {
+                    navigate("/my-bookings");
+                    onClose();
+                  }}
+                >
+                  <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="font-body font-medium text-[15px]">My Bookings</span>
+                </button>
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3 text-neutral-black hover:bg-gray-50 transition-colors border-b border-neutral-gray-600"
+                  onClick={() => {
+                    navigate("/cart");
+                    onClose();
+                  }}
+                >
+                  <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                  <span className="font-body font-medium text-[15px]">My Cart</span>
+                </button>
+              </>
+            )}
+            
+            {/* Non-customer: Dashboard Link */}
+            {user.role !== 'customer' && (
               <button
-                className="w-full bg-primary-600 flex gap-2 items-center justify-center px-4 py-3 rounded-md hover:opacity-90 transition-opacity"
+                className="w-full flex items-center gap-3 px-4 py-3 text-neutral-black hover:bg-gray-50 transition-colors border-b border-neutral-gray-600"
                 onClick={() => {
                   navigate(getRoleBasedDashboard());
                   onClose();
                 }}
               >
-                <span className="font-body font-medium text-[14px] text-white">
-                  Go to Dashboard
-                </span>
+                <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+                <span className="font-body font-medium text-[15px]">Dashboard</span>
               </button>
-              <button
-                className="w-full bg-neutral-black flex gap-2 items-center justify-center px-4 py-3 rounded-md hover:opacity-90 transition-opacity"
-                onClick={handleLogout}
-              >
-                <span className="font-body font-medium text-[14px] text-white">
-                  Logout
-                </span>
-              </button>
-            </>
-          ) : (
+            )}
+            
+            {/* Logout */}
+            <button
+              className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors"
+              onClick={handleLogout}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              <span className="font-body font-medium text-[15px]">Logout</span>
+            </button>
+          </div>
+        ) : (
+          <div className="border-t border-neutral-gray-600 mt-4 px-4 py-4">
             <button
               className="w-full bg-neutral-black flex gap-2 items-center justify-center px-4 py-3 rounded-md hover:opacity-90 transition-opacity"
               onClick={() => {
@@ -180,8 +225,8 @@ export function MobileMenu({ isOpen, onClose }) {
                 Login / Sign Up
               </span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );

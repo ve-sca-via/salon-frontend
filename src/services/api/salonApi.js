@@ -11,7 +11,7 @@ import axiosBaseQuery from './baseQuery';
 export const salonApi = createApi({
   reducerPath: 'salonApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['Salons', 'SalonDetails', 'SalonServices', 'SalonStaff'],
+  tagTypes: ['Salons', 'SalonDetails', 'SalonServices'],
   endpoints: (builder) => ({
     // Get all public salons
     getSalons: builder.query({
@@ -62,16 +62,6 @@ export const salonApi = createApi({
       keepUnusedDataFor: 600, // Cache for 10 minutes
     }),
 
-    // Get salon staff
-    getSalonStaff: builder.query({
-      query: (salonId) => ({
-        url: `/api/v1/salons/${salonId}/staff`,
-        method: 'get',
-      }),
-      providesTags: (result, error, salonId) => [{ type: 'SalonStaff', id: salonId }],
-      keepUnusedDataFor: 600, // Cache for 10 minutes
-    }),
-
     // Get salon available slots
     getSalonAvailableSlots: builder.query({
       query: ({ salonId, date, serviceIds }) => ({
@@ -91,6 +81,27 @@ export const salonApi = createApi({
       }),
       keepUnusedDataFor: 3600, // Cache for 1 hour (config doesn't change often)
     }),
+
+    // Get public system configuration
+    getPublicConfig: builder.query({
+      query: () => ({
+        url: '/api/v1/salons/config/public',
+        method: 'get',
+      }),
+      keepUnusedDataFor: 3600, // Cache for 1 hour (config rarely changes)
+    }),
+
+    // Get popular cities (aggregated from database)
+    getPopularCities: builder.query({
+      query: ({ limit = 8 } = {}) => ({
+        url: '/api/v1/salons/popular-cities',
+        method: 'get',
+        params: { limit },
+      }),
+      providesTags: [{ type: 'Salons', id: 'CITIES' }],
+      keepUnusedDataFor: 600, // Cache for 10 minutes
+      transformResponse: (response) => response, // Pass through backend response
+    }),
   }),
 });
 
@@ -100,9 +111,10 @@ export const {
   useGetSalonByIdQuery,
   useSearchSalonsQuery,
   useGetSalonServicesQuery,
-  useGetSalonStaffQuery,
   useGetSalonAvailableSlotsQuery,
   useGetBookingFeePercentageQuery,
+  useGetPublicConfigQuery,
+  useGetPopularCitiesQuery, // New hook for popular cities
   useLazySearchSalonsQuery, // Lazy query for manual triggering
   useLazyGetSalonsQuery,
 } = salonApi;

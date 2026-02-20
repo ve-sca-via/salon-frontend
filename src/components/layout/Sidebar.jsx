@@ -6,7 +6,7 @@ import {
   FiPlusCircle, FiList, FiUser, FiSave, FiAward
 } from 'react-icons/fi';
 
-const Sidebar = ({ role, isOpen, onClose }) => {
+const Sidebar = ({ role, isOpen, onClose, isCollapsed }) => {
   const getMenuItems = () => {
     switch (role) {
       case 'customer':
@@ -29,7 +29,6 @@ const Sidebar = ({ role, isOpen, onClose }) => {
           { path: '/vendor/dashboard', icon: <FiHome />, label: 'Dashboard' },
           { path: '/vendor/profile', icon: <FiSettings />, label: 'Salon Profile' },
           { path: '/vendor/services', icon: <FiShoppingBag />, label: 'Services' },
-          { path: '/vendor/staff', icon: <FiUsers />, label: 'Staff' },
           { path: '/vendor/bookings', icon: <FiCalendar />, label: 'Bookings' },
         ];
       case 'hmr':
@@ -69,8 +68,9 @@ const Sidebar = ({ role, isOpen, onClose }) => {
       {/* Sidebar */}
       <aside
         className={`
-          fixed lg:fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white border-r border-gray-200 z-40
-          w-64 transform transition-transform duration-300 ease-in-out overflow-y-auto
+          fixed lg:fixed top-16 left-0 h-[calc(100vh-4rem)] bg-white border-r border-gray-100 z-40
+          transform transition-all duration-300 ease-in-out overflow-y-auto shadow-sm
+          ${isCollapsed ? 'w-20' : 'w-64'}
           ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
         `}
       >
@@ -91,11 +91,12 @@ const Sidebar = ({ role, isOpen, onClose }) => {
                         isActive 
                           ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md' 
                           : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
-                      }`
+                      } ${isCollapsed ? 'justify-center' : ''}`
                     }
+                    title={isCollapsed ? item.label : ''}
                   >
                     <span className="text-xl">{item.icon}</span>
-                    <span className="font-medium">{item.label}</span>
+                    <span className={`font-medium ${isCollapsed ? 'hidden' : ''}`}>{item.label}</span>
                   </NavLink>
                 </li>
               ))}
@@ -103,16 +104,18 @@ const Sidebar = ({ role, isOpen, onClose }) => {
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-200">
-            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-4 border border-orange-100">
-              <p className="text-xs text-orange-900 font-semibold">
-                Need help?
-              </p>
-              <p className="text-xs text-orange-700 mt-1">
-                Contact support
-              </p>
+          {!isCollapsed && (
+            <div className="p-4 border-t border-gray-200">
+              <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-4 border border-orange-100">
+                <p className="text-xs text-orange-900 font-semibold">
+                  Need help?
+                </p>
+                <p className="text-xs text-orange-700 mt-1">
+                  Contact support
+                </p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </aside>
     </>

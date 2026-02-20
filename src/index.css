@@ -1,5 +1,5 @@
 @import url("https://fonts.googleapis.com/css2?family=Marcellus&family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap");
-@import "react-big-calendar/lib/css/react-big-calendar.css";
+
 
 @tailwind base;
 @tailwind components;
@@ -142,24 +142,10 @@
 }
 
 /* React Toastify Custom Styles */
+/* Note: Toast colors are managed via inline styles in toastConfig.js */
+/* This ensures design token alignment and centralized configuration */
 .Toastify__toast {
   @apply rounded-lg shadow-lg;
-}
-
-.Toastify__toast--success {
-  @apply bg-green-500;
-}
-
-.Toastify__toast--error {
-  @apply bg-red-500;
-}
-
-.Toastify__toast--info {
-  @apply bg-blue-500;
-}
-
-.Toastify__toast--warning {
-  @apply bg-yellow-500;
 }
 
 /* Loading Spinner */
@@ -171,6 +157,16 @@
 
 .animate-spin {
   animation: spin 1s linear infinite;
+}
+
+/* Skeleton Shimmer Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 /* Payment Modal Animations */
@@ -213,4 +209,24 @@
 
 .animate-progress {
   animation: progress 2s ease-out;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Text overflow utilities */
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
+.break-words {
+  word-break: break-word;
+  overflow-wrap: break-word;
 }

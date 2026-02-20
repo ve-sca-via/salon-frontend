@@ -48,8 +48,8 @@ import { useLoginMutation } from "../../services/api/authApi";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import Button from "../../components/shared/Button";
 import InputField from "../../components/shared/InputField";
-import { FiMail, FiLock, FiShoppingBag, FiUsers } from "react-icons/fi";
-import bgImage from "../../assets/images/bg.png";
+import { FiMail, FiLock, FiShoppingBag, FiUsers, FiEye, FiEyeOff } from "react-icons/fi";
+import bgImage from "../../assets/images/optimized/bg.webp";
 
 const Login = () => {
   // Form state
@@ -58,6 +58,7 @@ const Login = () => {
     password: "",
     rememberMe: false 
   });
+  const [showPassword, setShowPassword] = useState(false);
   
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -151,9 +152,24 @@ const Login = () => {
       }, 500);
 
     } catch (error) {
-      // RTK Query errors have a 'data' property
+      // RTK Query errors have a 'data' property with 'detail'
       const errorMessage = error.data?.detail || error.message || 'Login failed';
-      showErrorToast(errorMessage);
+      
+      // Use backend message if available, otherwise provide user-friendly fallback
+      let msg = errorMessage;
+      
+      // Only map if backend didn't send a clear message
+      if (!errorMessage || errorMessage === 'Login failed') {
+        if (error.status === 401) {
+          msg = 'Invalid email or password. Please check your credentials.';
+        } else if (error.status === 403) {
+          msg = 'Access denied. Please contact support.';
+        } else {
+          msg = 'Login failed. Please try again.';
+        }
+      }
+      
+      showErrorToast(msg);
     }
   };
 
@@ -239,18 +255,29 @@ const Login = () => {
                 />
                 
                 {/* Password Input */}
-                <InputField
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter your password"
-                  icon={<FiLock />}
-                  disabled={isLoading}
-                  required
-                  aria-label="Password"
-                />
+                <div className="relative">
+                  <InputField
+                    label="Password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Enter your password"
+                    icon={<FiLock />}
+                    disabled={isLoading}
+                    required
+                    aria-label="Password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                  </button>
+                </div>
                 
                 {/* Remember Me & Forgot Password */}
                 <div className="flex items-center justify-between">
@@ -268,7 +295,6 @@ const Login = () => {
                       Remember me
                     </span>
                   </label>
-                  {/* TODO: Implement forgot password functionality */}
                   <Link
                     to="/forgot-password"
                     className="font-body text-sm text-accent-orange hover:opacity-80 transition-opacity"
@@ -325,12 +351,11 @@ const Login = () => {
               </div>
 
               {/* Alternative Login Portals */}
-              <div className="mt-6 pt-6 border-t border-neutral-gray-600">
+              {/* <div className="mt-6 pt-6 border-t border-neutral-gray-600">
                 <p className="text-center text-sm text-neutral-gray-500 mb-3 font-body">
                   Looking for a different portal?
                 </p>
                 <div className="flex flex-col gap-2">
-                  {/* Vendor/Salon Portal Link */}
                   <Link
                     to="/vendor-login"
                     className="font-body text-sm text-neutral-black hover:bg-neutral-gray-600 transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 border border-neutral-gray-600"
@@ -338,7 +363,6 @@ const Login = () => {
                     <FiShoppingBag className="text-lg" />
                     <span>Vendor/Salon Login</span>
                   </Link>
-                  {/* Relationship Manager Portal Link */}
                   <Link
                     to="/rm-login"
                     className="font-body text-sm text-neutral-black hover:bg-neutral-gray-600 transition-colors px-4 py-2 rounded-md flex items-center justify-center gap-2 border border-neutral-gray-600"
@@ -347,7 +371,7 @@ const Login = () => {
                     <span>Relationship Manager Login</span>
                   </Link>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </div>

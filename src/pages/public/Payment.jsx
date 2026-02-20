@@ -55,12 +55,12 @@ export default function Payment() {
   // Redirect if no checkout data or user not logged in
   useEffect(() => {
     if (!checkoutData) {
-      showErrorToast("Invalid checkout session", { position: "top-center" });
+      showErrorToast("Invalid checkout session");
       navigate("/cart");
       return;
     }
     if (!user) {
-      showErrorToast("Please login to complete payment", { position: "top-center" });
+      showErrorToast("Please login to complete payment");
       navigate("/login");
     }
   }, [checkoutData, user, navigate]);
@@ -78,7 +78,7 @@ export default function Payment() {
       script.async = true;
       script.onload = () => setRazorpayLoaded(true);
       script.onerror = () => {
-        showErrorToast("Failed to load payment gateway", { position: "top-center" });
+        showErrorToast("Failed to load payment gateway");
       };
       document.body.appendChild(script);
     };
@@ -89,7 +89,7 @@ export default function Payment() {
   if (!checkoutData) return null;
 
   const { cart, selectedDate, selectedTimes, bookingFeePercentage, pricing } = checkoutData;
-  const { servicesTotalAmount, bookingFee, gst, totalBookingAmount, remainingAmount } = pricing;
+  const { servicesTotalAmount, bookingFee, totalBookingAmount, remainingAmount } = pricing;
 
   /**
    * Process payment with Razorpay
@@ -97,7 +97,7 @@ export default function Payment() {
    */
   const handlePayNow = async () => {
     if (!razorpayLoaded) {
-      showErrorToast("Payment gateway not loaded. Please refresh.", { position: "top-center" });
+      showErrorToast("Payment gateway not loaded. Please refresh.");
       return;
     }
 
@@ -120,7 +120,6 @@ export default function Payment() {
         })),
         total_amount: servicesTotalAmount,
         booking_fee: bookingFee,
-        gst_amount: gst,
         amount_paid: totalBookingAmount,
         remaining_amount: remainingAmount,
         payment_status: 'pending', // Will be updated after payment verification
@@ -288,10 +287,6 @@ export default function Payment() {
               <div className="flex justify-between font-body text-[14px]">
                 <span className="text-neutral-gray-500">Booking Fee ({bookingFeePercentage}%)</span>
                 <span className="text-neutral-black font-semibold">₹{bookingFee}</span>
-              </div>
-              <div className="flex justify-between font-body text-[14px]">
-                <span className="text-neutral-gray-500">GST (18%)</span>
-                <span className="text-neutral-black font-semibold">₹{gst}</span>
               </div>
               <div className="pt-3 border-t-2 border-neutral-gray-600">
                 <div className="flex justify-between font-body text-[18px]">

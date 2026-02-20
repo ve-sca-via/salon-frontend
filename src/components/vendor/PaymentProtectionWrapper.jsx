@@ -24,6 +24,7 @@ import { useGetVendorSalonQuery } from '../../services/api/vendorApi';
 import { FiCreditCard, FiLock, FiCheckCircle, FiShoppingBag, FiUsers, FiCalendar, FiStar } from 'react-icons/fi';
 import Button from '../shared/Button';
 import DashboardLayout from '../layout/DashboardLayout';
+import { SkeletonStatCard } from '../shared/Skeleton';
 
 const PaymentProtectionWrapper = ({ children }) => {
   const navigate = useNavigate();
@@ -33,14 +34,27 @@ const PaymentProtectionWrapper = ({ children }) => {
   const { data: salonData, isLoading } = useGetVendorSalonQuery();
   const salonProfile = salonData?.salon || salonData;
 
+  // DEBUG: Log the data to see what's being received
+  console.log('🔍 PaymentProtectionWrapper DEBUG:', {
+    salonData,
+    salonProfile,
+    registration_fee_amount: salonProfile?.registration_fee_amount,
+    typeof_amount: typeof salonProfile?.registration_fee_amount
+  });
+
   // Loading state
   if (isLoading) {
     return (
       <DashboardLayout role="vendor">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-body">Loading...</p>
+        <div className="p-4 md:p-6 space-y-6">
+          <div className="animate-pulse">
+            <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 w-64 bg-gray-200 rounded"></div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <SkeletonStatCard key={i} />
+            ))}
           </div>
         </div>
       </DashboardLayout>
@@ -92,11 +106,11 @@ const PaymentProtectionWrapper = ({ children }) => {
                 <FiCreditCard className="text-orange-600 text-xl" />
                 <span className="font-body font-semibold text-gray-900">Registration Fee</span>
               </div>
-              <span className="text-2xl font-display font-bold text-orange-600">₹5,000</span>
+              <span className="text-2xl font-display font-bold text-orange-600">₹{salonProfile?.registration_fee_amount?.toLocaleString() ?? 'N/A'}</span>
             </div>
             
             <p className="text-xs text-gray-600 font-body mt-2">
-              One-time payment • Includes GST
+              One-time payment
             </p>
           </div>
 
@@ -110,10 +124,6 @@ const PaymentProtectionWrapper = ({ children }) => {
               <li className="flex items-center gap-2">
                 <FiShoppingBag className="text-gray-400" />
                 Manage Services & Pricing
-              </li>
-              <li className="flex items-center gap-2">
-                <FiUsers className="text-gray-400" />
-                Add & Manage Staff
               </li>
               <li className="flex items-center gap-2">
                 <FiCalendar className="text-gray-400" />

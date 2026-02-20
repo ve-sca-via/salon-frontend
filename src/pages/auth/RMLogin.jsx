@@ -19,22 +19,42 @@ import { setUser } from '../../store/slices/authSlice';
 import { useLoginMutation } from '../../services/api/authApi';
 import Button from '../../components/shared/Button';
 import InputField from '../../components/shared/InputField';
-import { FiMail, FiLock, FiUser, FiShoppingBag, FiUsers } from 'react-icons/fi';
+import { FiMail, FiLock, FiUser, FiShoppingBag, FiUsers, FiEye, FiEyeOff } from 'react-icons/fi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
-import rmBgImage from '../../assets/images/rm_portal_bg.jpg';
+import rmBgMobile from '../../assets/images/optimized/rm_portal_bg_mobile.webp';
+import rmBgTablet from '../../assets/images/optimized/rm_portal_bg_tablet.webp';
+import rmBgDesktop from '../../assets/images/optimized/rm_portal_bg_desktop.webp';
 
 const RMLogin = () => {
   const [formData, setFormData] = useState({ email: '', password: '', rememberMe: false });
+  const [showPassword, setShowPassword] = useState(false);
+  const [bgImage, setBgImage] = useState(rmBgDesktop);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   
   // RTK Query mutation hook - provides loading state automatically
   const [login, { isLoading }] = useLoginMutation();
 
-  // Load remembered email for RM portal if available
+  /**
+   * Get responsive background image
+   */
+  const getResponsiveBg = () => {
+    const width = window.innerWidth;
+    if (width < 768) return rmBgMobile;
+    if (width < 1024) return rmBgTablet;
+    return rmBgDesktop;
+  };
+
+  // Load remembered email for RM portal if available and set responsive background
   useEffect(() => {
     const saved = localStorage.getItem('rmRememberedEmail');
     if (saved) setFormData(prev => ({ ...prev, email: saved, rememberMe: true }));
+
+    // Set initial background and listen for resize
+    setBgImage(getResponsiveBg());
+    const handleResize = () => setBgImage(getResponsiveBg());
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   /**
@@ -93,14 +113,22 @@ const RMLogin = () => {
       // Delay navigation to allow toast to show
       setTimeout(() => navigate('/hmr/dashboard'), 500);
     } catch (error) {
-      // RTK Query errors have a 'data' property
-      const errorMessage = error.data?.detail || error.message || 'Login failed';
+      // RTK Query errors have a 'data' property with 'detail'
+      const errorMessage = error.data?.detail || error.data?.message || error.message || 'Login failed';
       
-      // Map common errors to user-friendly messages
-      let msg = 'Login failed. Please try again.';
-      if (errorMessage.includes('Access denied')) msg = errorMessage;
-      else if (errorMessage.includes('Invalid')) msg = 'Invalid email or password';
-      else if (errorMessage) msg = errorMessage;
+      // Use backend message if available, otherwise provide user-friendly fallback
+      let msg = errorMessage;
+      
+      // Only map if backend didn't send a clear message
+      if (!errorMessage || errorMessage === 'Login failed') {
+        if (error.status === 401) {
+          msg = 'Invalid email or password. Please check your credentials.';
+        } else if (error.status === 403) {
+          msg = 'Access denied. This portal is for Relationship Managers only.';
+        } else {
+          msg = 'Login failed. Please try again.';
+        }
+      }
       
       showErrorToast(msg);
     }
@@ -108,10 +136,10 @@ const RMLogin = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
-      {/* Background Image */}
+      {/* Background Image - Optimized WebP */}
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{ backgroundImage: `url(${rmBgImage})` }}
+        style={{ backgroundImage: `url(${bgImage})` }}
       >
         <div className="absolute inset-0 bg-neutral-black/70" />
       </div>
@@ -186,18 +214,29 @@ const RMLogin = () => {
                 />
 
                 {/* Password Input */}
-                <InputField
-                  label="Password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  placeholder="Enter your password"
-                  icon={<FiLock />}
-                  disabled={isLoading}
-                  required
-                  aria-label="Password"
-                />
+                <div className="relative">
+                  <InputField
+                    label="Password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    value={formData.password}
+                    onChange={handleChange}
+                    placeholder="Enter your password"
+                    icon={<FiLock />}
+                    disabled={isLoading}
+                    required
+                    aria-label="Password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+                  </button>
+                </div>
 
                 {/* Remember Me & Forgot Password */}
                 <div className="flex items-center justify-between">
@@ -215,7 +254,6 @@ const RMLogin = () => {
                       Remember me
                     </span>
                   </label>
-                  {/* TODO: Implement forgot password functionality */}
                   <Link
                     to="/forgot-password"
                     className="font-body text-sm text-accent-orange hover:opacity-80 transition-opacity"

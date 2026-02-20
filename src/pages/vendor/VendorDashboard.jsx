@@ -10,21 +10,19 @@
  * - Analytics data from RTK Query (useGetVendorAnalyticsQuery)
  * - Recent bookings from RTK Query (useGetVendorBookingsQuery)
  * - Auth state from Redux (user display name)
- * - Real-time booking updates via Supabase subscription
  * 
  * Key Features:
  * - Payment status check for new vendors (registration fee)
- * - Analytics cards (bookings, revenue, services, staff, rating, pending)
- * - Quick action links (add service, add staff, view bookings)
+ * - Analytics cards (bookings, revenue, services, rating, pending)
+ * - Quick action links (add service, add view bookings)
  * - Recent bookings table (last 5 bookings)
- * - Real-time notifications for new bookings
  * - Responsive grid layouts
  * 
  * User Flow:
  * 1. Vendor logs in and lands on dashboard
  * 2. If payment pending: sees payment CTA and limited access
  * 3. If payment complete: sees full analytics and bookings
- * 4. Can navigate to manage services, staff, or bookings
+ * 4. Can navigate to manage services, or bookings
  * 5. Receives real-time notifications when customers book
  */
 
@@ -41,11 +39,11 @@ import {
   useUpdateVendorSalonMutation
 } from '../../services/api/vendorApi';
 import { 
-  FiCalendar, FiDollarSign, FiShoppingBag, FiUsers, 
+  FiCalendar, FiTrendingUp, FiShoppingBag, FiUsers, 
   FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle, FiLock
 } from 'react-icons/fi';
-import { toast } from 'react-toastify';
-import { supabase } from '../../config/supabase';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { SkeletonStatCard, SkeletonTableRow } from '../../components/shared/Skeleton';
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
@@ -71,48 +69,15 @@ const VendorDashboard = () => {
     : (bookingsData?.bookings || []).slice(0, 5);
 
   /**
-   * Real-time subscription for new bookings
-   * Listens to INSERT events on bookings table and refetches data
+   * TODO: Real-time booking notifications
+   * Consider implementing via WebSocket connection to FastAPI backend
+   * or polling mechanism for new bookings
+   * 
+   * Alternative approaches:
+   * 1. WebSocket: Backend can push real-time updates
+   * 2. Polling: Refetch bookings every N seconds
+   * 3. Server-Sent Events (SSE): Backend streams updates
    */
-  useEffect(() => {
-    if (!salonProfile?.id) return;
-
-    // Subscribe to new bookings for this salon
-    const bookingSubscription = supabase
-      .channel(`bookings:salon_id=eq.${salonProfile.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'bookings',
-          filter: `salon_id=eq.${salonProfile.id}`
-        },
-        (payload) => {
-          // Show toast notification
-          toast.success(
-            `🔔 New booking from ${payload.new.customer_name || 'a customer'}!`,
-            {
-              position: 'top-right',
-              autoClose: 5000,
-              hideProgressBar: false,
-              closeOnClick: true,
-              pauseOnHover: true,
-              draggable: true,
-            }
-          );
-          
-          // Refetch bookings and analytics to update dashboard
-          refetchBookings();
-        }
-      )
-      .subscribe();
-
-    // Cleanup subscription on unmount
-    return () => {
-      supabase.removeChannel(bookingSubscription);
-    };
-  }, [salonProfile?.id, refetchBookings]);
 
   /**
    * Toggle accepting_bookings status
@@ -121,16 +86,13 @@ const VendorDashboard = () => {
     try {
       const newStatus = !salonProfile.accepting_bookings;
       await updateSalon({ accepting_bookings: newStatus }).unwrap();
-      toast.success(
+      showSuccessToast(
         newStatus 
           ? 'Bookings enabled! Customers can now book your services.' 
-          : 'Bookings disabled. Customers cannot book until you enable it again.',
-        { position: 'top-center' }
+          : 'Bookings disabled. Customers cannot book until you enable it again.'
       );
     } catch (error) {
-      toast.error(error?.data?.message || 'Failed to update booking status', {
-        position: 'top-center'
-      });
+      showErrorToast(error?.data?.message || 'Failed to update booking status');
     }
   };
 
@@ -162,7 +124,7 @@ const VendorDashboard = () => {
         return 'N/A';
       }
       
-      // Get first service name and show count if multiple
+      // Get first service name - check multiple possible field names
       const firstName = services[0].service_name || services[0].name || 'Service';
       
       if (services.length === 1) {
@@ -171,20 +133,51 @@ const VendorDashboard = () => {
         return `${firstName} +${services.length - 1} more`;
       }
     } catch (error) {
+      console.error('Error parsing services:', error);
       return 'N/A';
     }
   };
 
   /**
-   * Loading state - show spinner while fetching initial data
+   * Loading state - show skeleton cards while fetching initial data
    */
   if ((analyticsLoading && !analytics) || (salonLoading && !salonProfile)) {
     return (
       <DashboardLayout role="vendor">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin h-16 w-16 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-body">Loading dashboard...</p>
+        <div className="space-y-8 p-4 md:p-6">
+          {/* Header Skeleton */}
+          <div className="animate-pulse">
+            <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 w-48 bg-gray-200 rounded"></div>
+          </div>
+          
+          {/* Stats Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <SkeletonStatCard key={i} />
+            ))}
+          </div>
+          
+          {/* Bookings Table Skeleton */}
+          <div className="bg-primary-white rounded-xl shadow-md overflow-hidden">
+            <div className="p-6">
+              <div className="h-6 w-48 bg-gray-200 rounded mb-4 animate-pulse"></div>
+              <table className="w-full">
+                <thead className="bg-neutral-gray-600">
+                  <tr>
+                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
+                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
+                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
+                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <SkeletonTableRow key={i} columns={4} />
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </DashboardLayout>
@@ -233,7 +226,7 @@ const VendorDashboard = () => {
     {
       title: 'Revenue',
       value: `₹${analytics?.total_revenue || 0}`,
-      icon: <FiDollarSign className="text-green-600" size={24} />,
+      icon: <FiTrendingUp className="text-green-600" size={24} />,
       bgColor: 'bg-green-100',
       change: analytics?.revenue_change || null,
       changeType: 'increase',
@@ -244,14 +237,6 @@ const VendorDashboard = () => {
       icon: <FiShoppingBag className="text-accent-orange" size={24} />,
       bgColor: 'bg-orange-100',
       change: analytics?.services_change || null,
-      changeType: 'neutral',
-    },
-    {
-      title: 'Total Staff',
-      value: analytics?.total_staff || 0,
-      icon: <FiUsers className="text-orange-600" size={24} />,
-      bgColor: 'bg-orange-100',
-      change: analytics?.staff_change || null,
       changeType: 'neutral',
     },
     {
@@ -348,19 +333,6 @@ const VendorDashboard = () => {
             </Link>
 
             <Link
-              to="/vendor/staff"
-              className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                  <FiPlus className="text-white" size={20} />
-                </div>
-                <span className="font-body font-semibold text-gray-900">Add Staff</span>
-              </div>
-              <FiArrowRight className="text-blue-600" />
-            </Link>
-
-            <Link
               to="/vendor/bookings"
               className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
             >
@@ -424,15 +396,26 @@ const VendorDashboard = () => {
                         <td className="px-6 py-4 text-sm font-body text-gray-900">
                           {getServiceNames(booking)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-600">
-                          {booking.booking_date
-                            ? new Date(booking.booking_date).toLocaleDateString("en-US", {
-                                weekday: "short",
-                                month: "short",
-                                day: "numeric",
-                                year: "numeric",
-                              }) + ` at ${booking.booking_time || ''}`
-                            : 'N/A'}
+                        <td className="px-6 py-4 text-sm font-body text-gray-600">
+                          {booking.booking_date ? (
+                            <>
+                              <div>
+                                {new Date(booking.booking_date).toLocaleDateString("en-US", {
+                                  weekday: "short",
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                })}
+                              </div>
+                              <div className="text-xs text-gray-500 mt-1">
+                                {booking.time_slots && booking.time_slots.length > 0
+                                  ? booking.time_slots.join(', ')
+                                  : 'N/A'}
+                              </div>
+                            </>
+                          ) : (
+                            'N/A'
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
@@ -524,7 +507,7 @@ const VendorDashboard = () => {
                     <FiCreditCard className="text-orange-600 text-xl" />
                     <span className="font-body font-semibold text-gray-900">Registration Fee</span>
                   </div>
-                  <span className="text-2xl font-display font-bold text-orange-600">₹{salonProfile?.registration_fee_amount || 5000}</span>
+                  <span className="text-2xl font-display font-bold text-orange-600">₹{salonProfile?.registration_fee_amount?.toLocaleString() ?? 'N/A'}</span>
                 </div>
                 <p className="text-xs text-gray-600 font-body mt-2">One-time payment • Includes GST</p>
               </div>
@@ -539,10 +522,6 @@ const VendorDashboard = () => {
                   <li className="flex items-center gap-2">
                     <FiShoppingBag className="text-gray-400" />
                     Manage Services & Pricing
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <FiUsers className="text-gray-400" />
-                    Add & Manage Staff
                   </li>
                   <li className="flex items-center gap-2">
                     <FiCalendar className="text-gray-400" />

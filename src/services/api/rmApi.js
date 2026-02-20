@@ -36,7 +36,8 @@ export const rmApi = createApi({
               { type: 'VendorRequests', id: 'LIST' },
             ]
           : [{ type: 'VendorRequests', id: 'LIST' }],
-      keepUnusedDataFor: 120, // Cache for 2 minutes
+      keepUnusedDataFor: 30, // Reduce cache time to 30 seconds for more frequent updates
+      refetchOnMountOrArgChange: true, // Always refetch when component mounts or args change
       refetchOnFocus: true,
     }),
 

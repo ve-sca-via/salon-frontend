@@ -9,7 +9,6 @@
  * - Bookings from RTK Query (useGetVendorBookingsQuery)
  * - Status updates via RTK Query mutation (useUpdateBookingStatusMutation)
  * - Local state for filters, search, and modal
- * - Real-time booking updates via Supabase subscription
  * 
  * Key Features:
  * - Real-time booking statistics (total, pending, confirmed, completed, cancelled, revenue)
@@ -17,8 +16,7 @@
  * - Booking status management (confirm, complete, cancel)
  * - Detailed booking view modal
  * - Responsive table layout
- * - Search by customer, service, or staff name
- * - Real-time notifications for new bookings
+ * - Search by customer, service
  * 
  * User Flow:
  * 1. Vendor views all bookings with stats
@@ -45,7 +43,6 @@ import {
   FiCalendar,
   FiClock,
   FiUser,
-  FiDollarSign,
   FiFilter,
   FiDownload,
   FiSearch,
@@ -53,7 +50,6 @@ import {
   FiXCircle,
   FiAlertCircle,
 } from 'react-icons/fi';
-import { supabase } from '../../config/supabase';
 
 const BookingsManagement = () => {
   // RTK Query hooks
@@ -75,40 +71,10 @@ const BookingsManagement = () => {
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
   /**
-   * Real-time subscription for new bookings
-   * Listens to INSERT events on bookings table and refetches data
+   * TODO: Real-time booking notifications
+   * Consider implementing via WebSocket connection to FastAPI backend
+   * or polling mechanism for new bookings
    */
-  useEffect(() => {
-    if (!salonProfile?.id) return;
-
-    // Subscribe to new bookings for this salon
-    const bookingSubscription = supabase
-      .channel(`bookings:salon_id=eq.${salonProfile.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'bookings',
-          filter: `salon_id=eq.${salonProfile.id}`
-        },
-        (payload) => {
-          // Show toast notification with customer name
-          showSuccessToast(
-            `🔔 New booking from ${payload.new.customer_name || 'a customer'}!`
-          );
-          
-          // Refetch bookings to update the list
-          refetchBookings();
-        }
-      )
-      .subscribe();
-
-    // Cleanup subscription on unmount
-    return () => {
-      supabase.removeChannel(bookingSubscription);
-    };
-  }, [salonProfile?.id, refetchBookings]);
 
   /**
    * handleStatusUpdate - Updates booking status (confirm, complete, cancel)
@@ -445,7 +411,7 @@ const BookingsManagement = () => {
               <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search by customer, service, or staff..."
+                placeholder="Search by customer or service..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
@@ -586,9 +552,6 @@ const BookingsManagement = () => {
                       Service
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
-                      Staff
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
                       Date & Time
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
@@ -607,7 +570,7 @@ const BookingsManagement = () => {
                     <tr key={booking.id} className="hover:bg-gray-50">
                       <td className="px-4 py-3">
                         <span className="text-sm font-body text-gray-900 font-mono">
-                          #{booking.id?.substring(0, 8)}
+                          {booking.booking_number || `#${booking.id?.substring(0, 8)}`}
                         </span>
                       </td>
                       <td className="px-4 py-3">
@@ -633,11 +596,6 @@ const BookingsManagement = () => {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm font-body text-gray-900">
-                          {booking.staff_name || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
                         <div className="flex items-center text-sm font-body text-gray-900">
                           <FiCalendar className="mr-2 text-gray-400" />
                           <div>
@@ -651,8 +609,7 @@ const BookingsManagement = () => {
                       </td>
                       <td className="px-4 py-3">
                         <div>
-                          <div className="flex items-center text-sm font-body font-semibold text-green-600">
-                            <FiDollarSign className="mr-1" />
+                          <div className="text-sm font-body font-semibold text-green-600">
                             ₹{booking.service_price?.toLocaleString() || 0}
                           </div>
                           <p className="text-xs text-gray-500 mt-0.5">To collect</p>
@@ -689,7 +646,7 @@ const BookingsManagement = () => {
                 <div key={booking.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
                   <div className="flex justify-between items-start mb-3">
                     <div>
-                      <p className="text-xs text-gray-500 font-mono mb-1">#{booking.id?.substring(0, 8)}</p>
+                      <p className="text-xs text-gray-500 font-mono mb-1">{booking.booking_number || `#${booking.id?.substring(0, 8)}`}</p>
                       <p className="font-semibold text-gray-900">{booking.customer_name || 'N/A'}</p>
                       {booking.customer_phone && (
                         <p className="text-xs text-gray-500">{booking.customer_phone}</p>
@@ -709,10 +666,6 @@ const BookingsManagement = () => {
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Service:</span>
                       <span className="font-medium text-gray-900">{formatServicesDisplay(booking)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-600">Staff:</span>
-                      <span className="font-medium text-gray-900">{booking.staff_name || 'N/A'}</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-600">Date:</span>
@@ -756,7 +709,7 @@ const BookingsManagement = () => {
               <div>
                 <p className="text-sm text-gray-600 font-body mb-1">Booking ID</p>
                 <p className="text-lg font-display font-bold text-gray-900 font-mono">
-                  #{selectedBooking.id?.substring(0, 8)}
+                  {selectedBooking.booking_number || `#${selectedBooking.id?.substring(0, 8)}`}
                 </p>
               </div>
               <span
@@ -829,12 +782,6 @@ const BookingsManagement = () => {
                 Appointment Details
               </h3>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 font-body">Staff:</span>
-                  <span className="text-sm font-body font-semibold text-gray-900">
-                    {selectedBooking.staff_name || 'N/A'}
-                  </span>
-                </div>
                 <div className="flex justify-between">
                   <span className="text-sm text-gray-600 font-body">Date:</span>
                   <span className="text-sm font-body font-semibold text-gray-900">

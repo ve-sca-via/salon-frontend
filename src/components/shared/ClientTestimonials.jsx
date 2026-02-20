@@ -118,34 +118,6 @@ function ClientInfo() {
   );
 }
 
-// Client Avatars
-function ClientAvatars() {
-  const avatars = [
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Client1",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Client2",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Client3",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Client4",
-    "https://api.dicebear.com/7.x/avataaars/svg?seed=Client5",
-  ];
-
-  return (
-    <div className="flex gap-[17px] items-center justify-center">
-      {avatars.map((avatar, index) => (
-        <div
-          key={index}
-          className="w-[58px] h-[58px] rounded-full overflow-hidden border-4 border-primary-white shadow-lg"
-        >
-          <img
-            src={avatar}
-            alt={`Client ${index + 1}`}
-            className="w-full h-full object-cover"
-          />
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function ClientTestimonials() {
   return (
     <section className="relative w-full py-20  bg-neutral-black overflow-hidden">
@@ -167,8 +139,6 @@ export default function ClientTestimonials() {
             <TestimonialContent />
             <ClientInfo />
           </div>
-
-          <ClientAvatars />
         </div>
       </div>
     </section>

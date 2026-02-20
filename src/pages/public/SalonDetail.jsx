@@ -34,6 +34,8 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock } from "react-icons/fi";
+import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
+import { NotFound } from "../../components/shared/ErrorFallback";
 
 /**
  * getCategoryImage - Returns category-specific image URL
@@ -105,21 +107,21 @@ function StarRating({ rating = 5, size = "small" }) {
  */
 function Breadcrumb({ city, salonName }) {
   return (
-    <nav className="flex items-center gap-2 text-sm font-body mb-6 bg-white px-4 py-3 rounded-lg shadow-sm">
-      <Link to="/" className="text-gray-700 hover:text-accent-orange font-medium transition-colors">
+    <nav className="flex items-center gap-2 text-sm font-body mb-6 bg-white px-4 py-3 rounded-lg shadow-sm overflow-x-auto whitespace-nowrap scrollbar-hide">
+      <Link to="/" className="text-gray-700 hover:text-accent-orange font-medium transition-colors flex-shrink-0">
         Home
       </Link>
-      <span className="text-gray-400">/</span>
+      <span className="text-gray-400 flex-shrink-0">/</span>
       <Link
         to="/salons"
-        className="text-gray-700 hover:text-accent-orange font-medium transition-colors"
+        className="text-gray-700 hover:text-accent-orange font-medium transition-colors flex-shrink-0"
       >
         Salons
       </Link>
-      <span className="text-gray-400">/</span>
-      <span className="text-gray-700 font-medium">{city}</span>
-      <span className="text-gray-400">/</span>
-      <span className="text-neutral-black font-semibold">{salonName}</span>
+      <span className="text-gray-400 flex-shrink-0">/</span>
+      <span className="text-gray-700 font-medium flex-shrink-0">{city}</span>
+      <span className="text-gray-400 flex-shrink-0">/</span>
+      <span className="text-neutral-black font-semibold flex-shrink-0">{salonName}</span>
     </nav>
   );
 }
@@ -201,7 +203,9 @@ function CategoryCard({ category, onClick }) {
 /**
  * ReviewCard - Customer review display card
  * Shows customer avatar, name, rating, date, and comment
+ * COMMENTED OUT - Review functionality not yet implemented
  */
+/*
 function ReviewCard({ review }) {
   return (
     <div className="bg-white border border-neutral-gray-300 rounded-xl p-5">
@@ -229,6 +233,7 @@ function ReviewCard({ review }) {
     </div>
   );
 }
+*/
 
 export default function SalonDetail() {
   const { id } = useParams();
@@ -286,32 +291,104 @@ export default function SalonDetail() {
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full" />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {/* Hero Skeleton */}
+          <div className="animate-pulse mb-8">
+            <div className="h-96 w-full bg-gray-200 rounded-xl mb-6"></div>
+            <div className="h-10 w-64 bg-gray-200 rounded mb-3"></div>
+            <div className="h-5 w-96 bg-gray-200 rounded"></div>
           </div>
-          <h2 className="font-display text-3xl font-bold text-neutral-black mb-4">
-            Loading salon details...
-          </h2>
+          
+          {/* Services Skeleton */}
+          <div>
+            <div className="h-8 w-48 bg-gray-200 rounded mb-6 animate-pulse"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <SkeletonServiceCard key={i} />
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (error || !salon) {
+  // Handle API errors (404, network errors, etc.)
+  if (error) {
+    const is404 = error.status === 404;
+    const isNetworkError = error.status === 'FETCH_ERROR' || !error.status;
+    
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <h2 className="font-display text-3xl font-bold text-neutral-black mb-4">
-            {error || "Salon Not Found"}
-          </h2>
-          <button
-            onClick={() => navigate("/salons")}
-            className="bg-accent-orange text-primary-white px-6 py-3 rounded-lg font-body font-medium hover:opacity-90"
-          >
-            Back to Salons
-          </button>
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          {is404 ? (
+            <NotFound message="The salon you're looking for doesn't exist or has been removed." />
+          ) : isNetworkError ? (
+            <div className="flex flex-col items-center justify-center min-h-[500px] p-6">
+              <div className="text-center max-w-md">
+                <div className="mb-6">
+                  <svg className="w-20 h-20 text-gray-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-2.83m-1.414 5.658a9 9 0 01-2.167-9.238m7.824 2.167a1 1 0 111.414 1.414m-1.414-1.414L3 3m8.293 8.293l1.414 1.414" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                  Connection Problem
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  We couldn't connect to our servers. Please check your internet connection and try again.
+                </p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="bg-accent-orange hover:bg-orange-600 text-white font-semibold py-3 px-8 rounded-lg transition-colors duration-200"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center min-h-[500px] p-6">
+              <div className="text-center max-w-md">
+                <div className="mb-6">
+                  <svg className="w-20 h-20 text-red-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-3">
+                  Unable to Load Salon
+                </h2>
+                <p className="text-gray-600 mb-6">
+                  There was a problem loading this salon's information. Please try again.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="bg-accent-orange hover:bg-orange-600 text-white font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200"
+                  >
+                    Retry
+                  </button>
+                  <button
+                    onClick={() => navigate('/salons')}
+                    className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-6 rounded-lg transition-colors duration-200"
+                  >
+                    Back to Salons
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // If no salon data returned (shouldn't happen if no error, but safety check)
+  if (!salon) {
+    return (
+      <div className="min-h-screen bg-bg-secondary">
+        <PublicNavbar />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <NotFound message="The salon you're looking for doesn't exist." />
         </div>
       </div>
     );
@@ -337,45 +414,37 @@ export default function SalonDetail() {
 
   // Parse business hours - handle both formats
   const getBusinessHours = () => {
-    // Helper to format time from 24-hour to 12-hour
-    const formatTime = (time24) => {
-      if (!time24) return '';
-      const [hours24, minutes] = time24.split(':').map(Number);
-      const period = hours24 >= 12 ? 'PM' : 'AM';
-      const hours12 = hours24 % 12 || 12;
-      return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
-    };
-
-    // Check if new business_hours JSONB field exists
+    const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    
+    // If business_hours JSONB exists, use it (new format - stores strings like "9:00 AM - 6:00 PM" or "Closed")
     if (salon.business_hours && typeof salon.business_hours === 'object') {
-      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-      return days.map(day => {
-        const dayData = salon.business_hours[day] || {};
-        const hours = dayData.closed 
-          ? "Closed" 
-          : dayData.open && dayData.close
-          ? `${dayData.open} - ${dayData.close}`
-          : "9:00 AM - 8:00 PM";
-        return [day.charAt(0).toUpperCase() + day.slice(1), hours];
+      return daysOfWeek.map(day => {
+        const dayKey = day.toLowerCase();
+        const hours = salon.business_hours[dayKey] || 'Closed';
+        return [day, hours];
       });
     }
     
-    // Use database fields: opening_time, closing_time, working_days
+    // Fallback to legacy format (opening_time, closing_time, working_days)
     if (salon.opening_time && salon.closing_time) {
+      // Helper to format time from 24-hour to 12-hour
+      const formatTime = (time24) => {
+        if (!time24) return '';
+        const [hours24, minutes] = time24.split(':').map(Number);
+        const period = hours24 >= 12 ? 'PM' : 'AM';
+        const hours12 = hours24 % 12 || 12;
+        return `${hours12}:${minutes.toString().padStart(2, '0')} ${period}`;
+      };
+      
       const openTime = formatTime(salon.opening_time);
       const closeTime = formatTime(salon.closing_time);
-      const hours = `${openTime} - ${closeTime}`;
+      const hoursStr = `${openTime} - ${closeTime}`;
       
-      // Get working days (normalize to lowercase for comparison)
-      const workingDays = (salon.working_days || []).map(d => d.toLowerCase());
-      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+      const workingDays = (salon.working_days || []).map(d => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase());
       
-      return days.map(day => {
-        const isWorking = workingDays.includes(day);
-        return [
-          day.charAt(0).toUpperCase() + day.slice(1),
-          isWorking ? hours : "Closed"
-        ];
+      return daysOfWeek.map(day => {
+        const hours = workingDays.includes(day) ? hoursStr : 'Closed';
+        return [day, hours];
       });
     }
     
@@ -391,57 +460,31 @@ export default function SalonDetail() {
     ];
   };
 
-  // Sample reviews (will be replaced with real reviews from API later)
-  const displayReviews = [
-    {
-      id: 1,
-      name: "Priya Sharma",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Priya",
-      rating: 5,
-      date: "2 days ago",
-      comment: "Excellent service! The staff was very professional and friendly. Loved my new haircut!",
-    },
-    {
-      id: 2,
-      name: "Rahul Kumar",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Rahul",
-      rating: 4,
-      date: "1 week ago",
-      comment: "Great experience overall. The salon is clean and well-maintained. Will visit again.",
-    },
-    {
-      id: 3,
-      name: "Anjali Verma",
-      avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Anjali",
-      rating: 5,
-      date: "2 weeks ago",
-      comment: "Best salon in the area! Amazing hair spa treatment. Highly recommended!",
-    },
-  ];
+
 
   return (
-    <div className="min-h-screen bg-bg-secondary">
+    <div className="min-h-screen bg-bg-secondary overflow-x-hidden">
       <PublicNavbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
         <Breadcrumb
           city={salon.city || "City"}
           salonName={salon.business_name || salon.name}
         />
 
-        <div className="grid lg:grid-cols-3 gap-8">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column - Main Content */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4 sm:space-y-6 min-w-0">
             {/* Image Gallery */}
             <div className="bg-white rounded-xl overflow-hidden shadow-lg">
               <div 
-                className="relative h-[500px] bg-gray-100 cursor-pointer group"
+                className="relative h-[300px] sm:h-[400px] lg:h-[500px] bg-gray-100 cursor-pointer group"
                 onClick={() => setIsImagePreviewOpen(true)}
               >
                 <img
                   src={salonImages[selectedImage]}
                   alt={salon.business_name || salon.name}
-                  className="w-full h-full object-contain"
+                  className="w-full h-full object-contain max-w-full"
                 />
                 {/* Preview Overlay */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all flex items-center justify-center">
@@ -508,10 +551,10 @@ export default function SalonDetail() {
                         e.stopPropagation();
                         setSelectedImage((prev) => (prev > 0 ? prev - 1 : salonImages.length - 1));
                       }}
-                      className="absolute left-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-3"
+                      className="absolute left-2 sm:left-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3"
                       aria-label="Previous image"
                     >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                       </svg>
                     </button>
@@ -520,10 +563,10 @@ export default function SalonDetail() {
                         e.stopPropagation();
                         setSelectedImage((prev) => (prev < salonImages.length - 1 ? prev + 1 : 0));
                       }}
-                      className="absolute right-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-3"
+                      className="absolute right-2 sm:right-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3"
                       aria-label="Next image"
                     >
-                      <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </button>
@@ -533,7 +576,7 @@ export default function SalonDetail() {
                 <img
                   src={salonImages[selectedImage]}
                   alt={salon.business_name || salon.name}
-                  className="max-w-full max-h-full object-contain"
+                  className="max-w-full max-h-full w-auto h-auto object-contain"
                   onClick={(e) => e.stopPropagation()}
                 />
                 
@@ -546,12 +589,13 @@ export default function SalonDetail() {
 
 
             {/* Salon Info */}
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h1 className="font-display font-bold text-[32px] text-neutral-black mb-2">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
+              <div className="flex flex-col sm:flex-row items-start justify-between mb-4 gap-4">
+                <div className="flex-1 min-w-0">
+                  <h1 className="font-display font-bold text-[24px] sm:text-[32px] text-neutral-black mb-2 break-words">
                     {salon.business_name || salon.name}
                   </h1>
+                  {/* COMMENTED OUT - Star rating and reviews not yet implemented
                   <div className="flex items-center gap-2 mb-2">
                     <StarRating
                       rating={Math.floor(salon.average_rating || 4.5)}
@@ -564,34 +608,47 @@ export default function SalonDetail() {
                       ({salon.review_count || '45'} reviews)
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 text-neutral-gray-700">
-                    <FiMapPin className="w-5 h-5 text-accent-orange" />
-                    <span className="font-body text-[15px]">
+                  */}
+                  <div className="flex items-start gap-2 text-neutral-gray-700 mt-2">
+                    <FiMapPin className="w-5 h-5 text-accent-orange flex-shrink-0 mt-0.5" />
+                    <span className="font-body text-[15px] break-words">
                       {salon.address || `${salon.city}, ${salon.state}`}
                     </span>
                   </div>
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors">
-                  <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                    />
-                  </svg>
-                  <span className="font-body font-medium">Share</span>
-                </button>
+                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                  {salon.phone && (
+                    <a
+                      href={`tel:${salon.phone}`}
+                      className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors flex-1 sm:flex-initial"
+                      aria-label={`Call ${salon.business_name || salon.name}`}
+                    >
+                      <FiPhone className="w-5 h-5" />
+                      <span className="font-body font-medium text-sm sm:text-base">Call</span>
+                    </a>
+                  )}
+                  <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors flex-1 sm:flex-initial">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                      />
+                    </svg>
+                    <span className="font-body font-medium text-sm sm:text-base">Share</span>
+                  </button>
+                </div>
               </div>
 
               {salon.description && (
                 <div className="border-t border-neutral-gray-300 pt-4">
-                  <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed">
+                  <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed break-words overflow-wrap-anywhere">
                     {salon.description}
                   </p>
                 </div>
@@ -600,10 +657,10 @@ export default function SalonDetail() {
 
             {/* Tabs */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="flex border-b border-neutral-gray-300">
+              <div className="flex border-b border-neutral-gray-300 overflow-x-auto scrollbar-hide">
                 <button
                   onClick={() => setActiveTab("services")}
-                  className={`flex-1 px-6 py-4 font-body font-semibold text-[16px] transition-colors ${
+                  className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-body font-semibold text-[14px] sm:text-[16px] transition-colors whitespace-nowrap ${
                     activeTab === "services"
                       ? "text-accent-orange border-b-2 border-accent-orange"
                       : "text-neutral-gray-600 hover:text-neutral-black"
@@ -611,6 +668,7 @@ export default function SalonDetail() {
                 >
                   Services
                 </button>
+                {/* COMMENTED OUT - Reviews tab not yet implemented
                 <button
                   onClick={() => setActiveTab("reviews")}
                   className={`flex-1 px-6 py-4 font-body font-semibold text-[16px] transition-colors ${
@@ -621,9 +679,10 @@ export default function SalonDetail() {
                 >
                   Reviews
                 </button>
+                */}
                 <button
                   onClick={() => setActiveTab("about")}
-                  className={`flex-1 px-6 py-4 font-body font-semibold text-[16px] transition-colors ${
+                  className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-body font-semibold text-[14px] sm:text-[16px] transition-colors whitespace-nowrap ${
                     activeTab === "about"
                       ? "text-accent-orange border-b-2 border-accent-orange"
                       : "text-neutral-gray-600 hover:text-neutral-black"
@@ -633,7 +692,7 @@ export default function SalonDetail() {
                 </button>
               </div>
 
-              <div className="p-6">
+              <div className="p-4 sm:p-6">
                 {activeTab === "services" && (
                   <div>
                     <h3 className="font-display font-bold text-[24px] text-neutral-black mb-6">
@@ -641,9 +700,13 @@ export default function SalonDetail() {
                     </h3>
                     
                     {servicesLoading ? (
-                      <div className="text-center py-12">
-                        <div className="animate-spin h-8 w-8 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-3" />
-                        <p className="text-neutral-gray-600">Loading categories...</p>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {[1, 2, 3, 4, 5].map((i) => (
+                          <div key={i} className="animate-pulse">
+                            <div className="h-32 bg-gray-200 rounded-xl mb-3"></div>
+                            <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+                          </div>
+                        ))}
                       </div>
                     ) : serviceCategories.length > 0 ? (
                       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
@@ -664,6 +727,7 @@ export default function SalonDetail() {
                   </div>
                 )}
 
+                {/* COMMENTED OUT - Reviews tab content not yet implemented
                 {activeTab === "reviews" && (
                   <div className="space-y-4">
                     <h3 className="font-display font-bold text-[24px] text-neutral-black mb-6">
@@ -674,6 +738,7 @@ export default function SalonDetail() {
                     ))}
                   </div>
                 )}
+                */}
 
                 {activeTab === "about" && (
                   <div className="space-y-6">
@@ -681,7 +746,7 @@ export default function SalonDetail() {
                       <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-3">
                         About the Salon
                       </h3>
-                      <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed">
+                      <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed break-words overflow-wrap-anywhere">
                         {salon.description || "Welcome to our salon! We provide premium beauty and grooming services with experienced professionals."}
                       </p>
                     </div>
@@ -711,28 +776,18 @@ export default function SalonDetail() {
 
           {/* Right Column - Booking Card */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-6 shadow-lg sticky top-24">
+            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg lg:sticky lg:top-24">
               {/* Salon Name */}
-              <h3 className="font-display font-bold text-[24px] text-neutral-black mb-4">
+              <h3 className="font-display font-bold text-[20px] sm:text-[24px] text-neutral-black mb-4 break-words">
                 {salon.business_name || salon.name}
               </h3>
 
               <div className="space-y-4 mb-6">
-                {/* Contact Number */}
-                {salon.phone && (
-                  <div className="flex items-center gap-3">
-                    <FiPhone className="w-5 h-5 text-accent-orange" />
-                    <span className="font-body text-[15px] text-neutral-black font-medium">
-                      {salon.phone}
-                    </span>
-                  </div>
-                )}
-
                 {/* Email */}
                 {salon.email && (
                   <div className="flex items-center gap-3">
-                    <FiMail className="w-5 h-5 text-accent-orange" />
-                    <span className="font-body text-[15px] text-neutral-black font-medium">
+                    <FiMail className="w-5 h-5 text-accent-orange flex-shrink-0" />
+                    <span className="font-body text-[15px] text-neutral-black font-medium break-all">
                       {salon.email}
                     </span>
                   </div>
@@ -789,8 +844,8 @@ export default function SalonDetail() {
 
                 {/* Address */}
                 <div className="flex items-start gap-3">
-                  <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5" />
-                  <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed">
+                  <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5 flex-shrink-0" />
+                  <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
                     {salon.address || `${salon.city}, ${salon.state}`}
                   </span>
                 </div>

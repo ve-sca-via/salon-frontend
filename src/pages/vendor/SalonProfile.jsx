@@ -30,7 +30,7 @@
  * 5. View status indicators and quick stats
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
@@ -39,8 +39,11 @@ import {
   useGetVendorSalonQuery, 
   useUpdateVendorSalonMutation 
 } from '../../services/api/vendorApi';
-import { FiEdit2, FiSave, FiX, FiMapPin, FiPhone, FiMail, FiClock, FiImage } from 'react-icons/fi';
-import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { FiEdit2, FiSave, FiX, FiMapPin, FiPhone, FiMail, FiClock, FiImage, FiUpload, FiTrash2, FiNavigation, FiFileText } from 'react-icons/fi';
+import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../../utils/toastConfig';
+import { SkeletonFormField } from '../../components/shared/Skeleton';
+import { uploadSalonImage, uploadAgreementDocument, getAgreementDocumentSignedUrl } from '../../services/api/uploadApi';
+import { INDIAN_STATES } from '../../utils/salonFormConstants';
 
 const SalonProfile = () => {
   // RTK Query hooks for fetching and updating salon data
@@ -54,6 +57,19 @@ const SalonProfile = () => {
   // Edit mode toggle state
   const [isEditing, setIsEditing] = useState(false);
   
+  // File input refs
+  const logoInputRef = useRef(null);
+  const coverInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
+  const agreementInputRef = useRef(null);
+  
+  // Upload states
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingGallery, setUploadingGallery] = useState(false);
+  const [uploadingAgreement, setUploadingAgreement] = useState(false);
+  const [fetchingLocation, setFetchingLocation] = useState(false);
+  
   // Form data state - synced with salon profile from API
   const [formData, setFormData] = useState({
     business_name: '',
@@ -65,8 +81,14 @@ const SalonProfile = () => {
     state: '',
     pincode: '',
     description: '',
+    latitude: '',
+    longitude: '',
     logo_url: '',
     cover_images: [],
+    agreement_document_url: '',
+    opening_time: '',
+    closing_time: '',
+    working_days: [],
     business_hours: {
       monday: '',
       tuesday: '',
@@ -138,8 +160,14 @@ const SalonProfile = () => {
         state: salonProfile.state || '',
         pincode: salonProfile.pincode || '',
         description: salonProfile.description || '',
+        latitude: salonProfile.latitude || '',
+        longitude: salonProfile.longitude || '',
         logo_url: salonProfile.logo_url || '',
         cover_images: salonProfile.cover_images || [],
+        agreement_document_url: salonProfile.agreement_document_url || '',
+        opening_time: salonProfile.opening_time || '',
+        closing_time: salonProfile.closing_time || '',
+        working_days: salonProfile.working_days || [],
         business_hours: convertDbToBusinessHours(salonProfile),
       });
     }
@@ -216,11 +244,26 @@ const SalonProfile = () => {
    */
   const handleSave = async () => {
     try {
-      await updateSalonProfile(formData).unwrap();
+      // Prepare data with proper formatting
+      const dataToSend = {
+        ...formData,
+        // Include business_hours for detailed day-by-day schedule
+        business_hours: formData.business_hours,
+        // Ensure times are in HH:MM:SS format (backend expects time with seconds)
+        opening_time: formData.opening_time ? (formData.opening_time.length === 5 ? `${formData.opening_time}:00` : formData.opening_time) : null,
+        closing_time: formData.closing_time ? (formData.closing_time.length === 5 ? `${formData.closing_time}:00` : formData.closing_time) : null,
+        // Convert string coordinates to numbers if present
+        latitude: formData.latitude ? parseFloat(formData.latitude) : null,
+        longitude: formData.longitude ? parseFloat(formData.longitude) : null,
+      };
+      
+      console.log('Saving profile with data:', dataToSend);
+      await updateSalonProfile(dataToSend).unwrap();
       showSuccessToast('Salon profile updated successfully!');
       setIsEditing(false);
     } catch (error) {
-      showErrorToast(error?.message || 'Failed to update profile');
+      console.error('Save error:', error);
+      showErrorToast(error?.data?.detail || error?.message || 'Failed to update profile');
     }
   };
 
@@ -240,23 +283,229 @@ const SalonProfile = () => {
         state: salonProfile.state || '',
         pincode: salonProfile.pincode || '',
         description: salonProfile.description || '',
+        latitude: salonProfile.latitude || '',
+        longitude: salonProfile.longitude || '',
         logo_url: salonProfile.logo_url || '',
         cover_images: salonProfile.cover_images || [],
-        business_hours: salonProfile.business_hours || {},
+        agreement_document_url: salonProfile.agreement_document_url || '',
+        opening_time: salonProfile.opening_time || '',
+        closing_time: salonProfile.closing_time || '',
+        working_days: salonProfile.working_days || [],
+        business_hours: convertDbToBusinessHours(salonProfile),
       });
     }
     setIsEditing(false);
   };
 
-  // Loading state - show spinner while fetching profile data
+  /**
+   * handleFetchLocation - Gets current location using browser Geolocation API
+   */
+  const handleFetchLocation = () => {
+    if (!navigator.geolocation) {
+      showErrorToast('Geolocation is not supported by your browser');
+      return;
+    }
+
+    setFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lat = position.coords.latitude.toFixed(8);
+        const lng = position.coords.longitude.toFixed(8);
+        setFormData({
+          ...formData,
+          latitude: lat,
+          longitude: lng,
+        });
+        showSuccessToast(`Location fetched: ${lat}, ${lng}`);
+        setFetchingLocation(false);
+      },
+      (error) => {
+        console.error('Error fetching location:', error);
+        showErrorToast('Failed to fetch location. Please enable location permissions.');
+        setFetchingLocation(false);
+      }
+    );
+  };
+
+  /**
+   * handleLogoUpload - Uploads new logo image
+   */
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showErrorToast('Please select a valid image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showErrorToast('Image size should be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingLogo(true);
+      const url = await uploadSalonImage(file, 'logos');
+      setFormData({ ...formData, logo_url: url });
+      showSuccessToast('Logo uploaded successfully!');
+    } catch (error) {
+      console.error('Logo upload error:', error);
+      showErrorToast('Failed to upload logo');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
+  /**
+   * handleCoverUpload - Uploads new cover image
+   */
+  const handleCoverUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showErrorToast('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showErrorToast('Image size should be less than 5MB');
+      return;
+    }
+
+    try {
+      setUploadingCover(true);
+      const url = await uploadSalonImage(file, 'covers');
+      // Cover image is the first in the array
+      const newCoverImages = [url, ...(formData.cover_images || []).slice(1)];
+      setFormData({ ...formData, cover_images: newCoverImages });
+      showSuccessToast('Cover image uploaded successfully!');
+    } catch (error) {
+      console.error('Cover upload error:', error);
+      showErrorToast('Failed to upload cover image');
+    } finally {
+      setUploadingCover(false);
+    }
+  };
+
+  /**
+   * handleGalleryUpload - Uploads new gallery images
+   */
+  const handleGalleryUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    // Validate each file
+    for (const file of files) {
+      if (!file.type.startsWith('image/')) {
+        showErrorToast('All files must be images');
+        return;
+      }
+      if (file.size > 5 * 1024 * 1024) {
+        showErrorToast('Each image should be less than 5MB');
+        return;
+      }
+    }
+
+    try {
+      setUploadingGallery(true);
+      const uploadPromises = files.map(file => uploadSalonImage(file, 'gallery'));
+      const urls = await Promise.all(uploadPromises);
+      
+      // Keep cover image (first item), add new gallery images
+      const currentCover = formData.cover_images?.[0] || '';
+      const existingGallery = formData.cover_images?.slice(1) || [];
+      const newCoverImages = [currentCover, ...existingGallery, ...urls].filter(Boolean);
+      
+      setFormData({ ...formData, cover_images: newCoverImages });
+      showSuccessToast(`${files.length} image(s) uploaded successfully!`);
+    } catch (error) {
+      console.error('Gallery upload error:', error);
+      showErrorToast('Failed to upload gallery images');
+    } finally {
+      setUploadingGallery(false);
+    }
+  };
+
+  /**
+   * handleDeleteGalleryImage - Removes a gallery image
+   */
+  const handleDeleteGalleryImage = (index) => {
+    const actualIndex = index + 1; // Account for cover image at index 0
+    const newCoverImages = formData.cover_images.filter((_, i) => i !== actualIndex);
+    setFormData({ ...formData, cover_images: newCoverImages });
+    showInfoToast('Image removed. Click Save to apply changes.');
+  };
+
+  /**
+   * handleAgreementUpload - Uploads agreement document
+   */
+  const handleAgreementUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type (PDF or images)
+    const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+    if (!validTypes.includes(file.type)) {
+      showErrorToast('Please select a PDF or image file');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      showErrorToast('File size should be less than 10MB');
+      return;
+    }
+
+    try {
+      setUploadingAgreement(true);
+      const path = await uploadAgreementDocument(file);
+      setFormData({ ...formData, agreement_document_url: path });
+      showSuccessToast('Agreement document uploaded successfully!');
+    } catch (error) {
+      console.error('Agreement upload error:', error);
+      showErrorToast('Failed to upload agreement document');
+    } finally {
+      setUploadingAgreement(false);
+    }
+  };
+
+  /**
+   * handleViewAgreement - Opens agreement document in new tab
+   */
+  const handleViewAgreement = async () => {
+    if (!formData.agreement_document_url) {
+      showWarningToast('No agreement document available');
+      return;
+    }
+
+    try {
+      const signedUrl = await getAgreementDocumentSignedUrl(formData.agreement_document_url);
+      window.open(signedUrl, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error('Failed to get signed URL:', error);
+      showErrorToast('Failed to open agreement document');
+    }
+  };
+
+  // Loading state - show skeleton form while fetching profile data
   if (profileLoading && !salonProfile) {
     return (
       <DashboardLayout role="vendor">
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="text-center">
-            <div className="animate-spin h-16 w-16 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-600 font-body">Loading salon profile...</p>
+        <div className="p-4 md:p-6 space-y-6">
+          <div className="animate-pulse">
+            <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 w-64 bg-gray-200 rounded"></div>
           </div>
+          <Card>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <SkeletonFormField key={i} />
+              ))}
+            </div>
+          </Card>
         </div>
       </DashboardLayout>
     );
@@ -376,14 +625,15 @@ const SalonProfile = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField
-                    label="Email"
+                    label="Email (Linked to Account)"
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
                     icon={<FiMail />}
-                    disabled={!isEditing}
+                    disabled={true}
                     placeholder="contact@salon.com"
+                    className="opacity-60 cursor-not-allowed"
                   />
 
                   <InputField
@@ -397,16 +647,6 @@ const SalonProfile = () => {
                     placeholder="+91 XXXXXXXXXX"
                   />
                 </div>
-
-                <InputField
-                  label="Website (Optional)"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleChange}
-                  icon={<FiMapPin />}
-                  disabled={!isEditing}
-                  placeholder="https://www.yoursalon.com"
-                />
 
                 <InputField
                   label="Address"
@@ -428,14 +668,25 @@ const SalonProfile = () => {
                     placeholder="Mumbai"
                   />
 
-                  <InputField
-                    label="State"
-                    name="state"
-                    value={formData.state}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    placeholder="Maharashtra"
-                  />
+                  <div>
+                    <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
+                      State
+                    </label>
+                    <select
+                      name="state"
+                      value={formData.state}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
+                    >
+                      <option value="">Select State</option>
+                      {INDIAN_STATES.map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
                   <InputField
                     label="Pincode"
@@ -445,6 +696,82 @@ const SalonProfile = () => {
                     disabled={!isEditing}
                     placeholder="400001"
                   />
+                </div>
+
+                {/* Location Coordinates */}
+                <div>
+                  <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
+                    Location Coordinates
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <InputField
+                      label="Latitude"
+                      name="latitude"
+                      type="number"
+                      step="any"
+                      value={formData.latitude}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      placeholder="e.g., 28.4926"
+                    />
+                    <InputField
+                      label="Longitude"
+                      name="longitude"
+                      type="number"
+                      step="any"
+                      value={formData.longitude}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      placeholder="e.g., 77.0920"
+                    />
+                  </div>
+                  {isEditing && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleFetchLocation}
+                      disabled={fetchingLocation}
+                      className="mt-2"
+                    >
+                      <FiNavigation className="mr-2" />
+                      {fetchingLocation ? 'Fetching...' : 'Fetch My Location'}
+                    </Button>
+                  )}
+                </div>
+
+                {/* Opening and Closing Times */}
+                <div>
+                  <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
+                    Business Hours
+                  </label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-xs font-body text-gray-600 mb-1 block">
+                        Opening Time
+                      </label>
+                      <input
+                        type="time"
+                        name="opening_time"
+                        value={formData.opening_time}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-body text-gray-600 mb-1 block">
+                        Closing Time
+                      </label>
+                      <input
+                        type="time"
+                        name="closing_time"
+                        value={formData.closing_time}
+                        onChange={handleChange}
+                        disabled={!isEditing}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <div>
@@ -568,31 +895,53 @@ const SalonProfile = () => {
                 <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
                   Cover Image
                 </label>
-                {salonProfile?.cover_images && salonProfile.cover_images.length > 0 ? (
+                {formData.cover_images && formData.cover_images.length > 0 ? (
                   <div className="relative">
                     <img
-                      src={salonProfile.cover_images[0]}
+                      src={formData.cover_images[0]}
                       alt="Cover"
                       className="w-full h-32 object-cover rounded-lg"
                     />
-                    {/* TODO: Implement image upload functionality */}
                     {isEditing && (
-                      <button 
-                        className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
-                        aria-label="Edit cover image"
-                        type="button"
-                      >
-                        <FiEdit2 size={16} />
-                      </button>
+                      <>
+                        <input
+                          type="file"
+                          ref={coverInputRef}
+                          onChange={handleCoverUpload}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        <button 
+                          className="absolute top-2 right-2 p-2 bg-white rounded-full shadow-lg hover:bg-gray-100 disabled:opacity-50"
+                          aria-label="Edit cover image"
+                          type="button"
+                          onClick={() => coverInputRef.current?.click()}
+                          disabled={uploadingCover}
+                        >
+                          {uploadingCover ? '...' : <FiEdit2 size={16} />}
+                        </button>
+                      </>
                     )}
                   </div>
                 ) : (
-                  <div className="w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <div 
+                    className={`w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center ${isEditing ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+                    onClick={() => isEditing && coverInputRef.current?.click()}
+                  >
                     <div className="text-center">
                       <FiImage className="text-gray-400 text-3xl mx-auto mb-2" />
                       <p className="text-sm text-gray-600 font-body">No cover image</p>
                       {isEditing && <p className="text-xs text-gray-500 font-body mt-1">Click to upload</p>}
                     </div>
+                    {isEditing && (
+                      <input
+                        type="file"
+                        ref={coverInputRef}
+                        onChange={handleCoverUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -602,30 +951,52 @@ const SalonProfile = () => {
                 <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
                   Logo
                 </label>
-                {salonProfile?.logo_url ? (
+                {formData.logo_url ? (
                   <div className="relative inline-block">
                     <img
-                      src={salonProfile.logo_url}
+                      src={formData.logo_url}
                       alt="Logo"
                       className="w-24 h-24 object-cover rounded-lg"
                     />
-                    {/* TODO: Implement image upload functionality */}
                     {isEditing && (
-                      <button 
-                        className="absolute top-1 right-1 p-1 bg-white rounded-full shadow-lg hover:bg-gray-100"
-                        aria-label="Edit logo"
-                        type="button"
-                      >
-                        <FiEdit2 size={14} />
-                      </button>
+                      <>
+                        <input
+                          type="file"
+                          ref={logoInputRef}
+                          onChange={handleLogoUpload}
+                          accept="image/*"
+                          className="hidden"
+                        />
+                        <button 
+                          className="absolute top-1 right-1 p-1 bg-white rounded-full shadow-lg hover:bg-gray-100 disabled:opacity-50"
+                          aria-label="Edit logo"
+                          type="button"
+                          onClick={() => logoInputRef.current?.click()}
+                          disabled={uploadingLogo}
+                        >
+                          {uploadingLogo ? '...' : <FiEdit2 size={14} />}
+                        </button>
+                      </>
                     )}
                   </div>
                 ) : (
-                  <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <div 
+                    className={`w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center ${isEditing ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+                    onClick={() => isEditing && logoInputRef.current?.click()}
+                  >
                     <div className="text-center">
                       <FiImage className="text-gray-400 text-2xl" />
                       {isEditing && <p className="text-xs text-gray-500 font-body mt-1">Upload</p>}
                     </div>
+                    {isEditing && (
+                      <input
+                        type="file"
+                        ref={logoInputRef}
+                        onChange={handleLogoUpload}
+                        accept="image/*"
+                        className="hidden"
+                      />
+                    )}
                   </div>
                 )}
               </div>
@@ -633,26 +1004,26 @@ const SalonProfile = () => {
               {/* Gallery Images */}
               <div>
                 <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                  Salon Gallery ({salonProfile?.cover_images?.length > 1 ? salonProfile.cover_images.length - 1 : 0} images)
+                  Salon Gallery ({formData.cover_images?.length > 1 ? formData.cover_images.length - 1 : 0} images)
                 </label>
-                {salonProfile?.cover_images && salonProfile.cover_images.length > 1 ? (
+                {formData.cover_images && formData.cover_images.length > 1 ? (
                   <div className="grid grid-cols-2 gap-2">
-                    {salonProfile.cover_images.slice(1).map((image, index) => (
+                    {formData.cover_images.slice(1).map((image, index) => (
                       <div key={index} className="relative group">
                         <img
                           src={image}
                           alt={`Gallery ${index + 1}`}
                           className="w-full h-24 object-cover rounded-lg"
                         />
-                        {/* TODO: Implement image deletion functionality */}
                         {isEditing && (
                           <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                             <button 
                               className="p-2 bg-white rounded-full hover:bg-red-50 text-red-600"
                               aria-label={`Delete gallery image ${index + 1}`}
                               type="button"
+                              onClick={() => handleDeleteGalleryImage(index)}
                             >
-                              <FiX size={16} />
+                              <FiTrash2 size={16} />
                             </button>
                           </div>
                         )}
@@ -669,11 +1040,102 @@ const SalonProfile = () => {
                 )}
               </div>
 
-              {/* TODO: Implement image upload functionality */}
               {isEditing && (
-                <Button variant="outline" size="sm" className="w-full mt-4">
-                  Upload Images
-                </Button>
+                <>
+                  <input
+                    type="file"
+                    ref={galleryInputRef}
+                    onChange={handleGalleryUpload}
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                  />
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full mt-4"
+                    onClick={() => galleryInputRef.current?.click()}
+                    disabled={uploadingGallery}
+                  >
+                    <FiUpload className="mr-2" />
+                    {uploadingGallery ? 'Uploading...' : 'Add Gallery Images'}
+                  </Button>
+                </>
+              )}
+            </Card>
+
+            {/* Agreement Document Card */}
+            <Card>
+              <h3 className="text-lg font-display font-bold text-gray-900 mb-4 flex items-center">
+                <FiFileText className="mr-2 text-accent-orange" />
+                Agreement Document
+              </h3>
+              
+              {formData.agreement_document_url ? (
+                <div className="space-y-2">
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800 font-body">✓ Document uploaded</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleViewAgreement}
+                      className="flex-1"
+                    >
+                      <FiFileText className="mr-2" />
+                      View Document
+                    </Button>
+                    {isEditing && (
+                      <>
+                        <input
+                          type="file"
+                          ref={agreementInputRef}
+                          onChange={handleAgreementUpload}
+                          accept=".pdf,image/*"
+                          className="hidden"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => agreementInputRef.current?.click()}
+                          disabled={uploadingAgreement}
+                          className="flex-1"
+                        >
+                          <FiUpload className="mr-2" />
+                          {uploadingAgreement ? 'Uploading...' : 'Replace'}
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-2">
+                    <p className="text-sm text-gray-600 font-body">No agreement document uploaded</p>
+                  </div>
+                  {isEditing && (
+                    <>
+                      <input
+                        type="file"
+                        ref={agreementInputRef}
+                        onChange={handleAgreementUpload}
+                        accept=".pdf,image/*"
+                        className="hidden"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => agreementInputRef.current?.click()}
+                        disabled={uploadingAgreement}
+                        className="w-full"
+                      >
+                        <FiUpload className="mr-2" />
+                        {uploadingAgreement ? 'Uploading...' : 'Upload Document'}
+                      </Button>
+                    </>
+                  )}
+                </div>
               )}
             </Card>
 

@@ -35,6 +35,7 @@ import {
   useUpdateReviewMutation,
 } from "../../services/api/reviewApi";
 import { FiStar, FiEdit2, FiMessageSquare } from "react-icons/fi";
+import { SkeletonReviewCard } from "../../components/shared/Skeleton";
 
 /**
  * StarRatingInput - Interactive star rating selector
@@ -318,13 +319,16 @@ export default function MyReviews() {
     return (
       <div className="min-h-screen bg-bg-secondary">
         <PublicNavbar />
-        <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full" />
+        <div className="max-w-7xl mx-auto px-4 py-8">
+          <div className="animate-pulse mb-8">
+            <div className="h-10 w-64 bg-gray-200 rounded mb-2"></div>
+            <div className="h-5 w-80 bg-gray-200 rounded"></div>
           </div>
-          <h2 className="font-display text-3xl font-bold text-neutral-black mb-4">
-            Loading your reviews...
-          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <SkeletonReviewCard key={i} />
+            ))}
+          </div>
         </div>
       </div>
     );

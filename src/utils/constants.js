@@ -1,3 +1,6 @@
+// Environment detection
+export const IS_PRODUCTION = import.meta.env.MODE === 'production' || import.meta.env.VITE_APP_ENV === 'production';
+export const IS_DEVELOPMENT = import.meta.env.MODE === 'development';
 
 // App configuration
 export const APP_NAME = 'Lubist';

@@ -1,4 +1,21 @@
+import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+import { useGetPopularCitiesQuery } from "../../services/api/salonApi";
 import svgPaths from "../../utils/svgPaths";
+
+// City images - moved outside component to prevent recreation on every render
+const CITY_IMAGES = {
+  'mumbai': 'https://images.unsplash.com/photo-1649510550074-16195a0c6473?w=400&q=80',
+  'delhi': 'https://images.unsplash.com/photo-1702818797775-d9656b65e8e8?w=400&q=80',
+  'bangalore': 'https://images.unsplash.com/photo-1687158266948-bf538937c74a?w=400&q=80',
+  'hyderabad': 'https://images.unsplash.com/photo-1750834115223-f3a3c2e50c79?w=400&q=80',
+  'chennai': 'https://images.unsplash.com/photo-1707047023890-570fbf2989af?w=400&q=80',
+  'kolkata': 'https://images.unsplash.com/photo-1591914227599-30b05407ed7b?w=400&q=80',
+  'pune': 'https://images.unsplash.com/photo-1614716194506-ef3694ae131a?w=400&q=80',
+  'jaipur': 'https://images.unsplash.com/photo-1642993317556-801ffed6ad01?w=400&q=80',
+  'ahmedabad': 'https://images.unsplash.com/photo-1585555441163-501c9e0df906?w=400&q=80',
+  'surat': 'https://images.unsplash.com/photo-1596422846543-75c6fc197f07?w=400&q=80'
+};
 
 // Scissors Icon for Header
 function ScissorsIcon() {
@@ -75,93 +92,65 @@ function Header() {
 }
 
 // Location Card Component
-function LocationCard({ cityName, saloonCount, imageUrl }) {
+function LocationCard({ cityName, salonCount, imageUrl, onClick }) {
   return (
-    <div className="bg-primary-white rounded-[10px] shadow-lg overflow-hidden w-full max-w-[306px] flex flex-col">
+    <div 
+      className="bg-primary-white rounded-[10px] shadow-lg overflow-hidden w-full max-w-[306px] flex flex-col cursor-pointer hover:shadow-xl transition-all duration-300 group"
+      onClick={onClick}
+    >
       {/* Image */}
-      <div className="h-[197px] w-full">
+      <div className="h-[197px] w-full overflow-hidden">
         <img
           src={imageUrl}
           alt={cityName}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          onError={(e) => {
+            // Fallback to gradient if image fails
+            e.target.style.display = 'none';
+            e.target.parentElement.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600"></div>';
+          }}
         />
       </div>
 
       {/* Info Container */}
       <div className="flex flex-col items-center justify-center p-5 text-center">
-        <h3 className="font-body font-semibold text-[20px] leading-[32px] text-neutral-black">
+        <h3 className="font-body font-semibold text-[20px] leading-[32px] text-neutral-black group-hover:text-accent-orange transition-colors">
           {cityName}
         </h3>
         <p className="font-body font-normal text-[14px] leading-[24px] text-neutral-gray-500">
-          {saloonCount}
+          {salonCount} {salonCount === 1 ? 'Salon' : 'Salons'}
         </p>
       </div>
     </div>
   );
 }
 
-export default function PopularLocations({ locations }) {
-  // Default locations data if none provided
-  const defaultLocations = [
-    {
-      id: 1,
-      cityName: "Mumbai",
-      saloonCount: "52 Saloons",
-      imageUrl:
-        "https://images.unsplash.com/photo-1649510550074-16195a0c6473?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxNdW1iYWklMjBJbmRpYSUyMGNpdHlzY2FwZXxlbnwxfHx8fDE3NjEzMzczNzB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      id: 2,
-      cityName: "Delhi",
-      saloonCount: "48 Saloons",
-      imageUrl:
-        "https://images.unsplash.com/photo-1702818797775-d9656b65e8e8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxEZWxoaSUyMEluZGlhJTIwbGFuZG1hcmtzfGVufDF8fHx8MTc2MTMzNzM3MXww&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      id: 3,
-      cityName: "Bangalore",
-      saloonCount: "45 Saloons",
-      imageUrl:
-        "https://images.unsplash.com/photo-1687158266948-bf538937c74a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxCYW5nYWxvcmUlMjBJbmRpYSUyMGNpdHl8ZW58MXx8fHwxNzYxMzM3MzcxfDA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      id: 4,
-      cityName: "Hyderabad",
-      saloonCount: "42 Saloons",
-      imageUrl:
-        "https://images.unsplash.com/photo-1750834115223-f3a3c2e50c79?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxIeWRlcmFiYWQlMjBJbmRpYXxlbnwxfHx8fDE3NjEzMzczNzF8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      id: 5,
-      cityName: "Chennai",
-      saloonCount: "38 Saloons",
-      imageUrl:
-        "https://images.unsplash.com/photo-1707047023890-570fbf2989af?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxDaGVubmFpJTIwSW5kaWF8ZW58MXx8fHwxNzYxMzM3MzcyfDA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      id: 6,
-      cityName: "Kolkata",
-      saloonCount: "35 Saloons",
-      imageUrl:
-        "https://images.unsplash.com/photo-1591914227599-30b05407ed7b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxLb2xrYXRhJTIwSW5kaWF8ZW58MXx8fHwxNzYxMzM3MzcyfDA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      id: 7,
-      cityName: "Jaipur",
-      saloonCount: "31 Saloons",
-      imageUrl:
-        "https://images.unsplash.com/photo-1642993317556-801ffed6ad01?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxKYWlwdXIlMjBJbmRpYXxlbnwxfHx8fDE3NjEzMzczNzJ8MA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-    {
-      id: 8,
-      cityName: "Pune",
-      saloonCount: "28 Saloons",
-      imageUrl:
-        "https://images.unsplash.com/photo-1614716194506-ef3694ae131a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHxQdW5lJTIwSW5kaWF8ZW58MXx8fHwxNzYxMzM3MzczfDA&ixlib=rb-4.1.0&q=80&w=1080",
-    },
-  ];
+export default function PopularLocations() {
+  const navigate = useNavigate();
+  
+  // Fetch aggregated city data from backend (efficient, scalable)
+  const { data, isLoading, error } = useGetPopularCitiesQuery({ limit: 8 });
 
-  const displayLocations = locations || defaultLocations;
+  const cities = data?.cities || [];
+
+  // Enhance cities with display images (memoized)
+  const cityStats = useMemo(() => {
+    return cities.map(city => ({
+      cityName: city.city.charAt(0).toUpperCase() + city.city.slice(1), // Capitalize first letter for display
+      salonCount: city.salon_count,
+      imageUrl: CITY_IMAGES[city.city] || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&q=80'
+    }));
+  }, [cities]);
+
+  // Calculate total salons (sum of all city counts)
+  const totalSalons = useMemo(() => {
+    return cities.reduce((sum, city) => sum + city.salon_count, 0);
+  }, [cities]);
+
+  // Navigate to salons page with city filter - uses React Router (no page reload)
+  const handleCityClick = (cityName) => {
+    navigate(`/salons?city=${encodeURIComponent(cityName)}`);
+  };
 
   return (
     <section className="w-full py-20 bg-neutral-gray-600">
@@ -169,24 +158,66 @@ export default function PopularLocations({ locations }) {
         <div className="flex flex-col gap-12 items-center">
           <Header />
 
-          {/* Locations Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full place-items-center">
-            {displayLocations.map((location) => (
-              <LocationCard
-                key={location.id}
-                cityName={location.cityName}
-                saloonCount={location.saloonCount}
-                imageUrl={location.imageUrl}
-              />
-            ))}
-          </div>
+          {/* Loading State */}
+          {isLoading && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full place-items-center">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                <div key={i} className="bg-white rounded-[10px] shadow-lg w-full max-w-[306px] h-[280px] animate-pulse">
+                  <div className="h-[197px] bg-gray-300"></div>
+                  <div className="p-5 space-y-2">
+                    <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto"></div>
+                    <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
-          {/* View All Button */}
-          <button className="bg-accent-orange hover:bg-accent-orange/90 transition-colors px-6 py-3 rounded-[5px] mt-8">
-            <span className="font-body font-medium text-[14px] leading-[24px] text-primary-white">
-              VIEW ALL 320 LOCATIONS
-            </span>
-          </button>
+          {/* Error State */}
+          {error && (
+            <div className="text-center py-12">
+              <p className="text-xl text-red-500">
+                Failed to load popular locations. Please try again later.
+              </p>
+            </div>
+          )}
+
+          {/* Locations Grid */}
+          {!isLoading && !error && cityStats.length > 0 && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full place-items-center">
+                {cityStats.map((location) => (
+                  <LocationCard
+                    key={location.cityName}
+                    cityName={location.cityName}
+                    salonCount={location.salonCount}
+                    imageUrl={location.imageUrl}
+                    onClick={() => handleCityClick(location.cityName)}
+                  />
+                ))}
+              </div>
+
+              {/* View All Button - Shows actual total */}
+              {totalSalons > 0 && (
+                <a href="/salons">
+                  <button className="bg-accent-orange hover:bg-accent-orange/90 transition-colors px-6 py-3 rounded-[5px] mt-8">
+                    <span className="font-body font-medium text-[14px] leading-[24px] text-primary-white">
+                      VIEW ALL {totalSalons} SALONS
+                    </span>
+                  </button>
+                </a>
+              )}
+            </>
+          )}
+
+          {/* No Data State */}
+          {!isLoading && !error && cityStats.length === 0 && (
+            <div className="text-center py-12">
+              <p className="text-xl text-neutral-gray-500">
+                No locations available at the moment.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>

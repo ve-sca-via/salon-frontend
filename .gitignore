@@ -37,6 +37,6 @@ lerna-debug.log*
 *.sw?
 
 # Package manager
-package-lock.json
+# package-lock.json - Keep this for CI caching
 yarn.lock
 pnpm-lock.yaml

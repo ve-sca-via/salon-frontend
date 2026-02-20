@@ -43,7 +43,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { FaUser, FaEnvelope, FaLock, FaPhone } from "react-icons/fa";
+import { FaUser, FaEnvelope, FaLock, FaPhone, FaEye, FaEyeSlash } from "react-icons/fa";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import InputField from "../../components/shared/InputField";
 import Button from "../../components/shared/Button";
@@ -63,12 +63,16 @@ const Signup = () => {
     name: "",
     email: "",
     phone: "",
+    age: "",
+    gender: "",
     password: "",
     confirmPassword: "",
   });
 
   // Field-level errors for inline validation feedback
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   /**
    * handleChange - Updates form field values and clears field-specific errors
@@ -111,6 +115,26 @@ const Signup = () => {
       newErrors.phone = "Phone number must be 10 digits";
     }
 
+    // Age validation: Required, must be between 13-120
+    if (!formData.age || !formData.age.trim()) {
+      newErrors.age = "Age is required";
+    } else {
+      const ageNum = parseInt(formData.age, 10);
+      if (isNaN(ageNum) || ageNum < 13 || ageNum > 120) {
+        newErrors.age = "Age must be between 13 and 120";
+      }
+    }
+
+    // Gender validation: Required
+    if (!formData.gender || !formData.gender.trim()) {
+      newErrors.gender = "Gender is required";
+    } else {
+      const validGenders = ['male', 'female', 'other'];
+      if (!validGenders.includes(formData.gender.toLowerCase())) {
+        newErrors.gender = "Please select a valid gender";
+      }
+    }
+
     // Password validation: Required, minimum 6 characters
     // TODO: Add password strength indicator (weak/medium/strong)
     if (!formData.password) {
@@ -146,13 +170,15 @@ const Signup = () => {
 
     try {
       // Call RTK Query signup mutation (loading state managed automatically)
-      // Expects: { email, password, full_name, phone, role }
+      // Expects: { email, password, full_name, phone, age, gender, role }
       // Returns: { access_token, refresh_token, user: { id, email, role, ... } }
       const response = await signup({
         email: formData.email,
         password: formData.password,
         full_name: formData.name,
         phone: formData.phone,
+        age: parseInt(formData.age, 10),
+        gender: formData.gender.toLowerCase(),
         role: 'customer', // Always register as customer
       }).unwrap();
 
@@ -164,6 +190,9 @@ const Signup = () => {
       
       // Store user in Redux auth slice
       dispatch(setUser(response.user));
+
+      // Mark that user just signed up (for email verification banner)
+      sessionStorage.setItem('just_signed_up', 'true');
 
       showSuccessToast("Account created successfully! Welcome to Lubist! 🎉");
 
@@ -340,33 +369,97 @@ const Signup = () => {
                   aria-label="Phone number"
                 />
 
-                {/* Password Input */}
+                {/* Age Input */}
                 <InputField
-                  label="Password"
-                  type="password"
-                  name="password"
-                  placeholder="Create a password"
-                  value={formData.password}
+                  label="Age"
+                  type="number"
+                  name="age"
+                  placeholder="Enter your age (13-120)"
+                  value={formData.age}
                   onChange={handleChange}
-                  icon={<FaLock />}
-                  error={errors.password}
+                  icon={<FaUser />}
+                  error={errors.age}
                   disabled={isLoading}
-                  aria-label="Password"
+                  aria-label="Age"
+                  min="13"
+                  max="120"
+                  required
                 />
 
+                {/* Gender Select */}
+                <div className="space-y-2">
+                  <label className="block font-body text-[14px] font-medium text-neutral-black">
+                    Gender <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    name="gender"
+                    value={formData.gender}
+                    onChange={handleChange}
+                    disabled={isLoading}
+                    className={`w-full px-4 py-3 rounded-[10px] border ${
+                      errors.gender ? 'border-red-500' : 'border-neutral-gray-300'
+                    } font-body text-[16px] text-neutral-black placeholder-neutral-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                    aria-label="Gender"
+                  >
+                    <option value="">Select gender</option>
+                    <option value="male">Male</option>
+                    <option value="female">Female</option>
+                    <option value="other">Other</option>
+                  </select>
+                  {errors.gender && (
+                    <p className="text-red-500 text-sm mt-1">{errors.gender}</p>
+                  )}
+                </div>
+
+                {/* Password Input */}
+                <div className="relative">
+                  <InputField
+                    label="Password"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    placeholder="Create a password"
+                    value={formData.password}
+                    onChange={handleChange}
+                    icon={<FaLock />}
+                    error={errors.password}
+                    disabled={isLoading}
+                    aria-label="Password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    disabled={isLoading}
+                  >
+                    {showPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                  </button>
+                </div>
+
                 {/* Confirm Password Input */}
-                <InputField
-                  label="Confirm Password"
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Confirm your password"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  icon={<FaLock />}
-                  error={errors.confirmPassword}
-                  disabled={isLoading}
-                  aria-label="Confirm password"
-                />
+                <div className="relative">
+                  <InputField
+                    label="Confirm Password"
+                    type={showConfirmPassword ? "text" : "password"}
+                    name="confirmPassword"
+                    placeholder="Confirm your password"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    icon={<FaLock />}
+                    error={errors.confirmPassword}
+                    disabled={isLoading}
+                    aria-label="Confirm password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    disabled={isLoading}
+                  >
+                    {showConfirmPassword ? <FaEyeSlash size={18} /> : <FaEye size={18} />}
+                  </button>
+                </div>
 
                 {/* Submit Button */}
                 <Button

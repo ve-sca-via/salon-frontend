@@ -34,7 +34,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
-import { FiLock, FiCheckCircle, FiAlertCircle, FiShield, FiCheck, FiUser } from 'react-icons/fi';
+import { FiLock, FiCheckCircle, FiAlertCircle, FiShield, FiCheck, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useCompleteVendorRegistrationMutation } from '../../services/api/vendorApi';
 import { setUser } from '../../store/slices/authSlice';
 import Button from '../../components/shared/Button';
@@ -55,6 +55,8 @@ const CompleteRegistration = () => {
     fullName: '',
     password: '',
     confirmPassword: '',
+    age: '',
+    gender: '',
     acceptTerms: false,
   });
 
@@ -69,6 +71,10 @@ const CompleteRegistration = () => {
     hasNumber: false,
     hasSpecialChar: false,
   });
+
+  // Password visibility state
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   /**
    * Validate and decode JWT token on mount
@@ -134,13 +140,24 @@ const CompleteRegistration = () => {
     e.preventDefault();
 
     // Validation checks
-    if (!formData.fullName || !formData.password || !formData.confirmPassword) {
+    if (!formData.fullName || !formData.password || !formData.confirmPassword || !formData.age || !formData.gender) {
       showErrorToast('Please fill in all fields');
       return;
     }
 
     if (formData.fullName.trim().length < 2) {
       showErrorToast('Please enter your full name');
+      return;
+    }
+
+    const ageNum = parseInt(formData.age, 10);
+    if (isNaN(ageNum) || ageNum < 18 || ageNum > 120) {
+      showErrorToast('Age must be between 18 and 120');
+      return;
+    }
+
+    if (!['male', 'female', 'other'].includes(formData.gender.toLowerCase())) {
+      showErrorToast('Please select a valid gender');
       return;
     }
 
@@ -166,6 +183,8 @@ const CompleteRegistration = () => {
         full_name: formData.fullName.trim(),  // Backend expects snake_case
         password: formData.password,
         confirm_password: formData.confirmPassword,  // Backend expects snake_case
+        age: parseInt(formData.age, 10),
+        gender: formData.gender.toLowerCase(),
       }).unwrap();
 
       if (result.data) {
@@ -260,11 +279,49 @@ const CompleteRegistration = () => {
               />
             </div>
 
+            {/* Age and Gender Row */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Age Input */}
+              <div>
+                <InputField
+                  label="Age"
+                  type="number"
+                  name="age"
+                  value={formData.age}
+                  onChange={handleChange}
+                  placeholder="Enter your age"
+                  icon={<FiUser />}
+                  required
+                  min="18"
+                  max="120"
+                />
+              </div>
+
+              {/* Gender Select */}
+              <div>
+                <label className="block text-sm font-body font-semibold text-gray-700 mb-2">
+                  Gender <span className="text-red-500">*</span>
+                </label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#F89C02] focus:border-transparent font-body text-gray-900"
+                >
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+
             {/* Password Input */}
-            <div>
+            <div className="relative">
               <InputField
                 label="Create Password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
                 onChange={handleChange}
@@ -273,6 +330,14 @@ const CompleteRegistration = () => {
                 required
                 autoComplete="new-password"
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
             </div>
 
             {/* Password Strength Indicator */}
@@ -305,10 +370,10 @@ const CompleteRegistration = () => {
             )}
 
             {/* Confirm Password Input */}
-            <div>
+            <div className="relative">
               <InputField
                 label="Confirm Password"
-                type="password"
+                type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 value={formData.confirmPassword}
                 onChange={handleChange}
@@ -317,6 +382,14 @@ const CompleteRegistration = () => {
                 required
                 autoComplete="new-password"
               />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-9 text-gray-500 hover:text-gray-700 focus:outline-none"
+                aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+              >
+                {showConfirmPassword ? <FiEyeOff size={20} /> : <FiEye size={20} />}
+              </button>
             </div>
 
             {/* Password Match Indicator */}
