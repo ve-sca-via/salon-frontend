@@ -1,9 +1,4 @@
 import { useState, useEffect } from "react";
-import service1 from "../../assets/images/optimized/Service_Image_1.webp";
-import service2 from "../../assets/images/optimized/Service_Image_2.webp";
-import service3 from "../../assets/images/optimized/service Image_3.webp";
-import service4 from "../../assets/images/optimized/service_image_4.webp";
-import service5 from "../../assets/images/optimized/service_image_5.webp";
 import svgPaths from "../../utils/svgPaths";
 
 // Scissors Icon for Header
@@ -83,33 +78,37 @@ function Header() {
 // Service Card Component
 function ServiceCard({ service }) {
   return (
-    <div className="relative w-full max-w-[280px] h-[380px] rounded-[10px] overflow-hidden group cursor-pointer">
-      {/* Service Image */}
-      <img
-        src={service.image}
-        alt={service.name}
-        className="absolute inset-0 w-full h-full object-cover"
-      />
+    <div className="w-full">
+      <div className="relative w-full aspect-square lg:aspect-auto lg:h-[380px] lg:max-w-[280px] rounded-[10px] overflow-hidden group cursor-pointer">
+        {/* Service Image */}
+        <img
+          src={service.image}
+          alt={service.name}
+          className="absolute inset-0 w-full h-full object-cover"
+        />
 
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+        {/* Service Info - Hidden on mobile, shown on desktop */}
+        <div className="hidden lg:flex absolute bottom-0 left-0 right-0 flex-col items-center gap-2 p-6">
+          {/* Icon */}
+          <div className="mb-2">{service.icon}</div>
 
-      {/* Service Info */}
-      <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-2 p-6">
-        {/* Icon */}
-        <div className="mb-2">{service.icon}</div>
+          {/* Service Name */}
+          <h3 className="font-body font-semibold text-[20px] leading-[32px] text-white">
+            {service.name}
+          </h3>
 
-        {/* Service Name */}
-        <h3 className="font-body font-semibold text-[20px] leading-[32px] text-white">
-          {service.name}
-        </h3>
-
-        {/* COMMENTED OUT - Salon count not yet implemented
-        <p className="font-body font-normal text-[16px] leading-[24px] text-white">
-          {service.count}
-        </p>
-        */}
+          {/* COMMENTED OUT - Salon count not yet implemented
+          <p className="font-body font-normal text-[16px] leading-[24px] text-white">
+            {service.count}
+          </p>
+          */}
+        </div>
       </div>
+      
+      {/* Service Name Below Card - Mobile Only */}
+      <h3 className="lg:hidden font-body font-medium text-[16px] leading-[24px] text-neutral-black text-center mt-2">
+        {service.name}
+      </h3>
     </div>
   );
 }
@@ -166,9 +165,74 @@ export default function ServicesSection() {
 
   const services = [
     {
-      name: "SPA",
+      name: "Bridal",
       count: "25 Saloons",
-      image: service5,
+      image: "/home/our_services/Bridal.png",
+      icon: (
+        <div className="flex items-center justify-center relative w-[45px] h-[45px]">
+          <svg
+            className="block size-full"
+            fill="none"
+            viewBox="0 0 45 45"
+          >
+            <g>
+              {/* Bridal/Crown icon */}
+              <path d="M22.5 8L25 15L30 13L27 20L33 22L27 24L30 31L25 29L22.5 36L20 29L15 31L18 24L12 22L18 20L15 13L20 15L22.5 8Z" fill="white" />
+              <circle cx="22.5" cy="22.5" r="2" fill="white" />
+            </g>
+          </svg>
+        </div>
+      ),
+    },
+    {
+      name: "Parlour",
+      count: "25 Saloons",
+      image: "/home/our_services/Girls_Parlour.png",
+      icon: (
+        <div className="flex items-center justify-center relative w-[32px] h-[49px]">
+          <svg
+            className="block size-full"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 32 49"
+          >
+            <g>
+              {/* Hair/Beauty icon */}
+              <path d={svgPaths.p1eae4c80} fill="white" />
+              <path d={svgPaths.p8ed75c0} fill="white" />
+              <path d={svgPaths.p34fbc400} fill="white" />
+            </g>
+          </svg>
+        </div>
+      ),
+    },
+    {
+      name: "Mens",
+      count: "25 Saloons",
+      image: "/home/our_services/Mens.png",
+      icon: (
+        <div className="flex items-center justify-center relative size-[45px]">
+          <svg
+            className="block size-full"
+            fill="none"
+            preserveAspectRatio="none"
+            viewBox="0 0 45 45"
+          >
+            <g>
+              {/* Razor/Shaving icon */}
+              <path d={svgPaths.p30bcd800} fill="white" />
+              <path d={svgPaths.p3b24f500} fill="white" />
+              <path d={svgPaths.p2f100240} fill="white" />
+              <path d={svgPaths.p76e1c00} fill="white" />
+            </g>
+          </svg>
+        </div>
+      ),
+    },
+    {
+      name: "Spa",
+      count: "25 Saloons",
+      image: "/home/our_services/Spa.png",
       icon: (
         <div className="flex items-center justify-center relative w-[45px] h-[45px]">
           <svg
@@ -192,84 +256,19 @@ export default function ServicesSection() {
         </div>
       ),
     },
-    {
-      name: "Shaving",
-      count: "25 Saloons",
-      image: service2,
-      icon: (
-        <div className="flex items-center justify-center relative size-[45px]">
-          <svg
-            className="block size-full"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 45 45"
-          >
-            <g>
-              <path d={svgPaths.p30bcd800} fill="white" />
-              <path d={svgPaths.p3b24f500} fill="white" />
-              <path d={svgPaths.p2f100240} fill="white" />
-              <path d={svgPaths.p76e1c00} fill="white" />
-            </g>
-          </svg>
-        </div>
-      ),
-    },
-    {
-      name: "Trimming",
-      count: "25 Saloons",
-      image: service3,
-      icon: (
-        <div className="flex items-center justify-center relative size-[45px]">
-          <svg
-            className="block size-full"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 45 45"
-          >
-            <g>
-              <path d={svgPaths.p3e6ee400} fill="white" />
-              <path d={svgPaths.p2a441dc0} fill="white" />
-              <path d={svgPaths.p3d4d2700} fill="white" />
-              <path d={svgPaths.p3f547900} fill="white" />
-            </g>
-          </svg>
-        </div>
-      ),
-    },
-    {
-      name: "Hair Style",
-      count: "25 Saloons",
-      image: service4,
-      icon: (
-        <div className="flex items-center justify-center relative w-[32px] h-[49px]">
-          <svg
-            className="block size-full"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 32 49"
-          >
-            <g>
-              <path d={svgPaths.p1eae4c80} fill="white" />
-              <path d={svgPaths.p8ed75c0} fill="white" />
-              <path d={svgPaths.p34fbc400} fill="white" />
-            </g>
-          </svg>
-        </div>
-      ),
-    },
   ];
 
   // Responsive items per page
-  const [itemsPerPage, setItemsPerPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(4);
 
   useEffect(() => {
     const updateItemsPerPage = () => {
       if (window.innerWidth >= 1024) {
         setItemsPerPage(4); // Desktop: show all 4
       } else if (window.innerWidth >= 640) {
-        setItemsPerPage(2); // Tablet: show 2
+        setItemsPerPage(4); // Tablet: show all 4
       } else {
-        setItemsPerPage(1); // Mobile: show 1
+        setItemsPerPage(4); // Mobile: show all 4 in 2x2 grid
       }
     };
 
@@ -333,7 +332,7 @@ export default function ServicesSection() {
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full px-4 sm:px-0 place-items-center justify-center">
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 w-full px-4 sm:px-0 place-items-center justify-center">
               {visibleServices.map((service, index) => (
                 <ServiceCard key={index} service={service} />
               ))}
