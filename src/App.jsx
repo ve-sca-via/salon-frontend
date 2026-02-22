@@ -127,65 +127,91 @@ function App() {
         <div className="App">
           {/* Email verification banner - shows when user needs to confirm email */}
           <EmailVerificationBanner />
-          
+
           {/* Suspense provides fallback UI while lazy-loaded components are being fetched */}
-          <Suspense fallback={
-            <div className="flex items-center justify-center min-h-screen bg-bg-secondary">
-              <div className="text-center space-y-4">
-                <div className="animate-pulse">
-                  <div className="h-16 w-16 bg-gradient-to-r from-accent-orange to-orange-400 rounded-full mx-auto mb-4"></div>
-                  <div className="h-4 w-48 bg-gray-200 rounded mx-auto mb-2"></div>
-                  <div className="h-3 w-32 bg-gray-200 rounded mx-auto"></div>
+          <Suspense
+            fallback={
+              <div className="flex items-center justify-center min-h-screen bg-bg-secondary">
+                <div className="space-y-4 text-center">
+                  <div className="animate-pulse">
+                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-r from-accent-orange to-orange-400"></div>
+                    <div className="w-48 h-4 mx-auto mb-2 bg-gray-200 rounded"></div>
+                    <div className="w-32 h-3 mx-auto bg-gray-200 rounded"></div>
+                  </div>
                 </div>
               </div>
-            </div>
-          }>
+            }
+          >
             <Routes>
               {/* ============================================
                   PUBLIC ROUTES (No authentication required)
                   ============================================ */}
-              <Route path="/" element={
-                <ErrorBoundary fallback="page">
-                  <Home />
-                </ErrorBoundary>
-              } />
+              <Route
+                path="/"
+                element={
+                  <ErrorBoundary fallback="page">
+                    <Home />
+                  </ErrorBoundary>
+                }
+              />
               <Route path="/about" element={<About />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/faq" element={<FAQ />} />
-              <Route path="/salons" element={
-                <ErrorBoundary fallback="page">
-                  <PublicSalonListing />
-                </ErrorBoundary>
-              } />
-              <Route path="/salons/:id" element={
-                <ErrorBoundary fallback="page">
-                  <SalonDetail />
-                </ErrorBoundary>
-              } />
-              <Route path="/salons/:id/book" element={
-                <ErrorBoundary fallback="page">
-                  <ServiceBooking />
-                </ErrorBoundary>
-              } />
-              <Route path="/cart" element={
-                <ErrorBoundary fallback="page">
-                  <Cart />
-                </ErrorBoundary>
-              } />
-              <Route path="/checkout" element={
-                <ErrorBoundary fallback="page">
-                  <Checkout />
-                </ErrorBoundary>
-              } />
-              <Route path="/payment" element={
-                <ErrorBoundary fallback="page">
-                  <Payment />
-                </ErrorBoundary>
-              } />
-              <Route path="/booking-confirmation" element={<BookingConfirmation />} />
+              <Route
+                path="/salons"
+                element={
+                  <ErrorBoundary fallback="page">
+                    <PublicSalonListing />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/salons/:id"
+                element={
+                  <ErrorBoundary fallback="page">
+                    <SalonDetail />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/salons/:id/book"
+                element={
+                  <ErrorBoundary fallback="page">
+                    <ServiceBooking />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/cart"
+                element={
+                  <ErrorBoundary fallback="page">
+                    <Cart />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/checkout"
+                element={
+                  <ErrorBoundary fallback="page">
+                    <Checkout />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/payment"
+                element={
+                  <ErrorBoundary fallback="page">
+                    <Payment />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/booking-confirmation"
+                element={<BookingConfirmation />}
+              />
               <Route path="/careers" element={<Careers />} />
               <Route path="/partner-with-us" element={<PartnerWithUs />} />
-              
+
               {/* Authentication pages */}
               <Route path="/login" element={<Login />} />
               <Route path="/rm-login" element={<RMLogin />} />
@@ -193,155 +219,209 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              
+
               {/* Vendor Registration - Publicly accessible via email token */}
-              <Route path="/vendor/complete-registration" element={<CompleteRegistration />} />
+              <Route
+                path="/vendor/complete-registration"
+                element={<CompleteRegistration />}
+              />
 
               {/* ============================================
                   CUSTOMER PROTECTED ROUTES
                   ============================================ */}
-              <Route path="/my-bookings" element={
-                <ProtectedRoute allowedRoles={['customer']}>
-                  <ErrorBoundary fallback="page">
-                    <MyBookings />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
-              <Route path="/favorites" element={
-                <ProtectedRoute allowedRoles={['customer']}>
-                  <ErrorBoundary fallback="page">
-                    <Favorites />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
-              <Route path="/my-reviews" element={
-                <ProtectedRoute allowedRoles={['customer']}>
-                  <ErrorBoundary fallback="page">
-                    <MyReviews />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
-              <Route path="/customer/profile" element={
-                <ProtectedRoute allowedRoles={['customer']}>
-                  <ErrorBoundary fallback="page">
-                    <CustomerProfile />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
+              <Route
+                path="/my-bookings"
+                element={
+                  <ProtectedRoute allowedRoles={["customer"]}>
+                    <ErrorBoundary fallback="page">
+                      <MyBookings />
+                    </ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/favorites"
+                element={
+                  <ProtectedRoute allowedRoles={["customer"]}>
+                    <ErrorBoundary fallback="page">
+                      <Favorites />
+                    </ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/my-reviews"
+                element={
+                  <ProtectedRoute allowedRoles={["customer"]}>
+                    <ErrorBoundary fallback="page">
+                      <MyReviews />
+                    </ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/customer/profile"
+                element={
+                  <ProtectedRoute allowedRoles={["customer"]}>
+                    <ErrorBoundary fallback="page">
+                      <CustomerProfile />
+                    </ErrorBoundary>
+                  </ProtectedRoute>
+                }
+              />
 
               {/* ============================================
                   RM (RELATIONSHIP MANAGER) PROTECTED ROUTES
                   ============================================ */}
-              <Route path="/hmr/dashboard" element={
-                <RMProtectedRoute>
-                  <ErrorBoundary fallback="page">
-                    <HMRDashboard />
-                  </ErrorBoundary>
-                </RMProtectedRoute>
-              } />
-              <Route path="/hmr/add-salon" element={
-                <RMProtectedRoute>
-                  <ErrorBoundary fallback="page">
-                    <AddSalonForm />
-                  </ErrorBoundary>
-                </RMProtectedRoute>
-              } />
-              <Route path="/hmr/edit-salon/:draftId" element={
-                <RMProtectedRoute>
-                  <ErrorBoundary fallback="page">
-                    <AddSalonForm />
-                  </ErrorBoundary>
-                </RMProtectedRoute>
-              } />
-              <Route path="/hmr/drafts" element={
-                <RMProtectedRoute>
-                  <ErrorBoundary fallback="page">
-                    <Drafts />
-                  </ErrorBoundary>
-                </RMProtectedRoute>
-              } />
-              <Route path="/hmr/submissions" element={
-                <RMProtectedRoute>
-                  <ErrorBoundary fallback="page">
-                    <SubmissionHistory />
-                  </ErrorBoundary>
-                </RMProtectedRoute>
-              } />
-              <Route path="/hmr/profile" element={
-                <RMProtectedRoute>
-                  <ErrorBoundary fallback="page">
-                    <RMProfile />
-                  </ErrorBoundary>
-                </RMProtectedRoute>
-              } />
-              <Route path="/hmr/leaderboard" element={
-                <RMProtectedRoute>
-                  <ErrorBoundary fallback="page">
-                    <RMLeaderboard />
-                  </ErrorBoundary>
-                </RMProtectedRoute>
-              } />
-
+              <Route
+                path="/hmr/dashboard"
+                element={
+                  <RMProtectedRoute>
+                    <ErrorBoundary fallback="page">
+                      <HMRDashboard />
+                    </ErrorBoundary>
+                  </RMProtectedRoute>
+                }
+              />
+              <Route
+                path="/hmr/add-salon"
+                element={
+                  <RMProtectedRoute>
+                    <ErrorBoundary fallback="page">
+                      <AddSalonForm />
+                    </ErrorBoundary>
+                  </RMProtectedRoute>
+                }
+              />
+              <Route
+                path="/hmr/edit-salon/:draftId"
+                element={
+                  <RMProtectedRoute>
+                    <ErrorBoundary fallback="page">
+                      <AddSalonForm />
+                    </ErrorBoundary>
+                  </RMProtectedRoute>
+                }
+              />
+              <Route
+                path="/hmr/drafts"
+                element={
+                  <RMProtectedRoute>
+                    <ErrorBoundary fallback="page">
+                      <Drafts />
+                    </ErrorBoundary>
+                  </RMProtectedRoute>
+                }
+              />
+              <Route
+                path="/hmr/submissions"
+                element={
+                  <RMProtectedRoute>
+                    <ErrorBoundary fallback="page">
+                      <SubmissionHistory />
+                    </ErrorBoundary>
+                  </RMProtectedRoute>
+                }
+              />
+              <Route
+                path="/hmr/profile"
+                element={
+                  <RMProtectedRoute>
+                    <ErrorBoundary fallback="page">
+                      <RMProfile />
+                    </ErrorBoundary>
+                  </RMProtectedRoute>
+                }
+              />
+              <Route
+                path="/hmr/leaderboard"
+                element={
+                  <RMProtectedRoute>
+                    <ErrorBoundary fallback="page">
+                      <RMLeaderboard />
+                    </ErrorBoundary>
+                  </RMProtectedRoute>
+                }
+              />
+              {/* {hello} */}
               {/* ============================================
                   VENDOR PROTECTED ROUTES
                   ============================================ */}
               {/* Dashboard & Payment - Always accessible */}
-              <Route path="/vendor/dashboard" element={
-                <VendorProtectedRoute>
-                  <ErrorBoundary fallback="page">
-                    <VendorDashboard />
-                  </ErrorBoundary>
-                </VendorProtectedRoute>
-              } />
-              <Route path="/vendor/payment" element={
-                <VendorProtectedRoute>
-                  <ErrorBoundary fallback="page">
-                    <VendorPayment />
-                  </ErrorBoundary>
-                </VendorProtectedRoute>
-              } />
-              
+              <Route
+                path="/vendor/dashboard"
+                element={
+                  <VendorProtectedRoute>
+                    <ErrorBoundary fallback="page">
+                      <VendorDashboard />
+                    </ErrorBoundary>
+                  </VendorProtectedRoute>
+                }
+              />
+              <Route
+                path="/vendor/payment"
+                element={
+                  <VendorProtectedRoute>
+                    <ErrorBoundary fallback="page">
+                      <VendorPayment />
+                    </ErrorBoundary>
+                  </VendorProtectedRoute>
+                }
+              />
+
               {/* Payment-Protected Routes - Require registration fee paid */}
-              <Route path="/vendor/profile" element={
-                <VendorProtectedRoute>
-                  <PaymentProtectionWrapper>
-                    <ErrorBoundary fallback="page">
-                      <SalonProfile />
-                    </ErrorBoundary>
-                  </PaymentProtectionWrapper>
-                </VendorProtectedRoute>
-              } />
-              <Route path="/vendor/services" element={
-                <VendorProtectedRoute>
-                  <PaymentProtectionWrapper>
-                    <ErrorBoundary fallback="page">
-                      <ServicesManagement />
-                    </ErrorBoundary>
-                  </PaymentProtectionWrapper>
-                </VendorProtectedRoute>
-              } />
-              <Route path="/vendor/bookings" element={
-                <VendorProtectedRoute>
-                  <PaymentProtectionWrapper>
-                    <ErrorBoundary fallback="page">
-                      <BookingsManagement />
-                    </ErrorBoundary>
-                  </PaymentProtectionWrapper>
-                </VendorProtectedRoute>
-              } />
+              <Route
+                path="/vendor/profile"
+                element={
+                  <VendorProtectedRoute>
+                    <PaymentProtectionWrapper>
+                      <ErrorBoundary fallback="page">
+                        <SalonProfile />
+                      </ErrorBoundary>
+                    </PaymentProtectionWrapper>
+                  </VendorProtectedRoute>
+                }
+              />
+              <Route
+                path="/vendor/services"
+                element={
+                  <VendorProtectedRoute>
+                    <PaymentProtectionWrapper>
+                      <ErrorBoundary fallback="page">
+                        <ServicesManagement />
+                      </ErrorBoundary>
+                    </PaymentProtectionWrapper>
+                  </VendorProtectedRoute>
+                }
+              />
+              <Route
+                path="/vendor/bookings"
+                element={
+                  <VendorProtectedRoute>
+                    <PaymentProtectionWrapper>
+                      <ErrorBoundary fallback="page">
+                        <BookingsManagement />
+                      </ErrorBoundary>
+                    </PaymentProtectionWrapper>
+                  </VendorProtectedRoute>
+                }
+              />
 
               {/* Test Error Boundary - for development */}
               {/* <Route path="/test-error" element={<ErrorBoundaryTest />} /> */}
 
               {/* Catch-all route: Show 404 for unknown paths */}
-              <Route path="*" element={
-                <ErrorBoundary fallback="page">
-                  <NotFoundPage />
-                </ErrorBoundary>
-              } />
+              <Route
+                path="*"
+                element={
+                  <ErrorBoundary fallback="page">
+                    <NotFoundPage />
+                  </ErrorBoundary>
+                }
+              />
             </Routes>
           </Suspense>
-          
+
           {/* Global toast notifications container */}
           <ToastContainer position="top-right" autoClose={3000} />
         </div>
