@@ -3,7 +3,6 @@ import { Link, useSearchParams } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
-import bgImage from "../../assets/images/bg_7.jpg";
 import { useGetSalonsQuery, useSearchSalonsQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiClock, FiCalendar, FiNavigation, FiX } from "react-icons/fi";
 import { getUserLocation, clearLocation as clearLocationAction } from "../../store/slices/locationSlice";
@@ -31,14 +30,22 @@ function ArrowCircleRight() {
 // Hero Section Component
 function HeroSection() {
   return (
-    <section
-      className="relative w-full h-[600px] bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: `url(${bgImage})` }}
-    >
+    <section className="relative w-full h-[600px] overflow-hidden">
+      {/* Background Video */}
+      <video
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="absolute inset-0 w-full h-full object-cover"
+      >
+        <source src="/browse_salon/browse_salon.mp4" type="video/mp4" />
+      </video>
+
       {/* Overlay for better text readability */}
       <div className="absolute inset-0 bg-black/40"></div>
 
-      Content
+      {/* Content */}
       <div className="relative h-full max-w-7xl mx-auto px-4 flex items-center">
         <div className="max-w-2xl flex flex-col gap-6">
        
