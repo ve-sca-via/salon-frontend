@@ -268,10 +268,10 @@ const ServicesManagement = () => {
     <DashboardLayout role="vendor">
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div>
-            <h1 className="text-3xl font-display font-bold text-gray-900">Services Management</h1>
-            <p className="text-gray-600 font-body mt-1">
+            <h1 className="text-3xl font-bold text-gray-900 font-display">Services Management</h1>
+            <p className="mt-1 text-gray-600 font-body">
               Manage your salon services and pricing
             </p>
           </div>
@@ -287,17 +287,17 @@ const ServicesManagement = () => {
 
         {/* Filters */}
         <Card>
-          <div className="flex flex-col sm:flex-row gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row">
             {/* Search */}
             <div className="flex-1">
               <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <FiSearch className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
                 <input
                   type="text"
                   placeholder="Search services..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
+                  className="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
                   aria-label="Search services"
                 />
               </div>
@@ -334,18 +334,18 @@ const ServicesManagement = () => {
         {servicesLoading ? (
           <div className="flex items-center justify-center min-h-[40vh]">
             <div className="text-center">
-              <div className="animate-spin h-12 w-12 border-4 border-accent-orange border-t-transparent rounded-full mx-auto mb-4"></div>
+              <div className="w-12 h-12 mx-auto mb-4 border-4 rounded-full animate-spin border-accent-orange border-t-transparent"></div>
               <p className="text-gray-600 font-body">Loading services...</p>
             </div>
           </div>
         ) : filteredServices.length === 0 ? (
           <Card>
-            <div className="text-center py-12">
-              <FiShoppingBag className="text-6xl text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-display font-bold text-gray-900 mb-2">
+            <div className="py-12 text-center">
+              <FiShoppingBag className="mx-auto mb-4 text-6xl text-gray-400" />
+              <h3 className="mb-2 text-xl font-bold text-gray-900 font-display">
                 {searchTerm ? 'No services found' : 'No services yet'}
               </h3>
-              <p className="text-gray-600 font-body mb-6">
+              <p className="mb-6 text-gray-600 font-body">
                 {searchTerm
                   ? 'Try adjusting your search terms'
                   : 'Get started by adding your first service'}
@@ -361,18 +361,18 @@ const ServicesManagement = () => {
             </div>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {filteredServices.map((service) => (
-              <Card key={service.id} className="hover:shadow-lg transition-shadow">
+              <Card key={service.id} className="transition-shadow hover:shadow-lg">
                 <div className="space-y-4">
                   {/* Header */}
-                  <div className="flex justify-between items-start">
+                  <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h3 className="text-lg font-display font-bold text-gray-900">
+                      <h3 className="text-lg font-bold text-gray-900 font-display">
                         {service.name}
                       </h3>
                       {service.category && (
-                        <span className="inline-block px-2 py-1 bg-orange-100 text-orange-700 text-xs font-body rounded-full mt-1">
+                        <span className="inline-block px-2 py-1 mt-1 text-xs text-orange-700 bg-orange-100 rounded-full font-body">
                           {service.category}
                         </span>
                       )}
@@ -400,8 +400,7 @@ const ServicesManagement = () => {
                   {/* Details */}
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center text-accent-orange">
-                      <FiDollarSign className="mr-1" />
-                      <span className="font-body font-semibold">
+                      <span className="font-semibold font-body">
                         {!service.price || service.price === 0 ? 'FREE' : `₹${service.price}`}
                       </span>
                     </div>
@@ -439,7 +438,7 @@ const ServicesManagement = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(service.id)}
-                      className="text-red-600 hover:bg-red-50 border-red-200"
+                      className="text-red-600 border-red-200 hover:bg-red-50"
                       disabled={isDeleting}
                       aria-label="Delete service"
                     >
@@ -471,7 +470,7 @@ const ServicesManagement = () => {
           />
 
           <div>
-            <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
+            <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
               Category
             </label>
             <select
@@ -496,7 +495,7 @@ const ServicesManagement = () => {
           </div>
 
           <div>
-            <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
+            <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
               Description
             </label>
             <textarea
@@ -545,10 +544,10 @@ const ServicesManagement = () => {
               name="is_active"
               checked={formData.is_active}
               onChange={handleChange}
-              className="w-4 h-4 text-accent-orange border-gray-300 rounded focus:ring-accent-orange"
+              className="w-4 h-4 border-gray-300 rounded text-accent-orange focus:ring-accent-orange"
               disabled={isCreating || isUpdating}
             />
-            <label htmlFor="is_active" className="text-sm font-body text-gray-700">
+            <label htmlFor="is_active" className="text-sm text-gray-700 font-body">
               Service is active and available for booking
             </label>
           </div>
