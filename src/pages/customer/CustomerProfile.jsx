@@ -1,46 +1,38 @@
-/**
- * CustomerProfile Component
- * 
- * Purpose:
- * Customer dashboard displaying profile information, booking statistics, recent activity,
- * and quick access to key features. Serves as the central hub for customer accounts.
- * 
- * Data Management:
- * - Auth state from Redux (user, isAuthenticated)
- * - Booking data from RTK Query (useGetMyBookingsQuery)
- * - Calculates statistics from booking data
- * 
- * Key Features:
- * - Profile card with user information
- * - Booking statistics (total, completed, upcoming, cancelled)
- * - Recent bookings list (shows last 5)
- * - Quick navigation to My Bookings, Favorites, and Reviews
- * - Account settings placeholder buttons
- * 
- * User Flow:
- * 1. User lands on profile page
- * 2. View profile info and statistics
- * 3. Access recent bookings or navigate to other sections
- * 4. Use quick action buttons to access key features
- */
-
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetMyBookingsQuery } from "../../services/api/bookingApi";
-import { FiUser, FiMail, FiPhone, FiCalendar, FiHeart, FiMessageSquare, FiShoppingBag } from "react-icons/fi";
+import { useUpdateProfileMutation } from "../../services/api/authApi";
+import { setUser } from "../../store/slices/authSlice";
+import { toast } from "react-toastify";
+import { FiUser, FiMail, FiPhone, FiCalendar, FiHeart, FiMessageSquare, FiShoppingBag, FiEdit2, FiCheck, FiX } from "react-icons/fi";
 
 export default function CustomerProfile() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
 
   // Redux state
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   
   // RTK Query for bookings
-  const { data: myBookings = [], isLoading: bookingsLoading } = useGetMyBookingsQuery(undefined, {
+  const { data: bookingsResponse, isLoading: bookingsLoading } = useGetMyBookingsQuery(undefined, {
     skip: !isAuthenticated
   });
+  
+  const myBookings = bookingsResponse?.data || [];
+
+  // Local state for editing profile
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    full_name: "",
+    phone: "",
+    age: "",
+    gender: ""
+  });
+
+  // API mutation
+  const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
 
   /**
    * Redirect to login if not authenticated
@@ -51,6 +43,47 @@ export default function CustomerProfile() {
       return;
     }
   }, [isAuthenticated, navigate]);
+
+  // Load user data into form when user details are available/change
+  useEffect(() => {
+    if (user) {
+      setFormData({
+        full_name: user?.full_name || "",
+        phone: user?.phone || "",
+        age: user?.age || "",
+        gender: user?.gender || ""
+      });
+    }
+  }, [user]);
+
+  /**
+   * Handle Edit Submit
+   */
+  const handleSaveProfile = async () => {
+    if (!formData.full_name || !formData.gender || !formData.age) {
+      toast.error("Name, age, and gender are required.");
+      return;
+    }
+
+    try {
+      const payload = {
+        full_name: formData.full_name,
+        phone: formData.phone,
+        age: formData.age ? parseInt(formData.age, 10) : null,
+        gender: formData.gender
+      };
+      
+      const res = await updateProfile(payload).unwrap();
+      
+      // Update Redux state with new user details
+      dispatch(setUser({ ...user, ...res.user }));
+      
+      toast.success("Profile updated successfully!");
+      setIsEditing(false);
+    } catch (error) {
+      toast.error(error?.data?.detail || "Failed to update profile.");
+    }
+  };
 
   /**
    * Calculate booking statistics from booking data
@@ -66,18 +99,9 @@ export default function CustomerProfile() {
 
   /**
    * Placeholder handlers for account settings
-   * TODO: Implement edit profile, change password, and notification preferences
    */
-  const handleEditProfile = () => {
-    // Not yet implemented
-  };
-
   const handleChangePassword = () => {
-    // Not yet implemented
-  };
-
-  const handleNotificationPreferences = () => {
-    // Not yet implemented
+    navigate("/forgot-password");
   };
 
   return (
@@ -100,71 +124,151 @@ export default function CustomerProfile() {
           <div className="lg:col-span-1">
             <div className="bg-primary-white rounded-lg shadow-lg overflow-hidden sticky top-24">
               {/* Profile Header */}
-              <div className="bg-gradient-to-r from-accent-orange to-yellow-500 h-24"></div>
+              <div className="bg-gradient-to-r from-accent-orange to-yellow-500 h-24 relative">
+                {!isEditing && (
+                  <button 
+                    onClick={() => setIsEditing(true)}
+                    className="absolute top-4 right-4 bg-white/20 hover:bg-white/40 border border-white/50 text-white rounded-md p-2 transition-colors z-10"
+                    title="Edit Profile"
+                  >
+                    <FiEdit2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
               
               {/* Profile Info */}
               <div className="px-6 pb-6 -mt-12">
                 <div className="relative">
-                  <div className="w-24 h-24 bg-primary-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg border-4 border-primary-white">
+                  <div className="w-24 h-24 bg-primary-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg border-4 border-primary-white overflow-hidden bg-gray-100">
                     <FiUser className="w-12 h-12 text-accent-orange" />
                   </div>
                 </div>
 
-                <h2 className="font-display font-bold text-[24px] text-neutral-black text-center mb-1">
-                  {user?.email?.split("@")[0] || "Customer"}
-                </h2>
-                <p className="font-body text-[14px] text-neutral-gray-500 text-center mb-6">
-                  Customer Account
-                </p>
+                {isEditing ? (
+                  <div className="space-y-4 mb-6">
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-gray-500 uppercase tracking-wider mb-1">Full Name</label>
+                      <input 
+                        type="text" 
+                        value={formData.full_name} 
+                        onChange={(e) => setFormData({...formData, full_name: e.target.value})}
+                        className="w-full border border-neutral-gray-300 rounded px-3 py-2 text-sm focus:ring-accent-orange focus:border-accent-orange"
+                        placeholder="Your full name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-neutral-gray-500 uppercase tracking-wider mb-1">Phone Number</label>
+                      <input 
+                        type="text" 
+                        value={formData.phone} 
+                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        className="w-full border border-neutral-gray-300 rounded px-3 py-2 text-sm focus:ring-accent-orange focus:border-accent-orange"
+                        placeholder="Your phone number"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-gray-500 uppercase tracking-wider mb-1">Age</label>
+                        <input 
+                          type="number" 
+                          min="13" max="120"
+                          value={formData.age} 
+                          onChange={(e) => setFormData({...formData, age: e.target.value})}
+                          className="w-full border border-neutral-gray-300 rounded px-3 py-2 text-sm focus:ring-accent-orange focus:border-accent-orange"
+                          placeholder="Age"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-neutral-gray-500 uppercase tracking-wider mb-1">Gender</label>
+                        <select 
+                          value={formData.gender} 
+                          onChange={(e) => setFormData({...formData, gender: e.target.value})}
+                          className="w-full border border-neutral-gray-300 rounded px-3 py-2 text-sm focus:ring-accent-orange focus:border-accent-orange"
+                        >
+                          <option value="">Select</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                      </div>
+                    </div>
+                    
+                    <div className="flex gap-2 pt-2 border-t border-neutral-gray-200 mt-4">
+                      <button 
+                        onClick={() => {
+                          setIsEditing(false);
+                          setFormData({
+                            full_name: user?.full_name || "",
+                            phone: user?.phone || "",
+                            age: user?.age || "",
+                            gender: user?.gender || ""
+                          });
+                        }}
+                        className="flex-1 flex justify-center items-center gap-1 bg-neutral-gray-100 hover:bg-neutral-gray-200 text-neutral-black py-2 rounded transition-colors text-sm font-medium"
+                      >
+                        <FiX /> Cancel
+                      </button>
+                      <button 
+                        onClick={handleSaveProfile}
+                        disabled={isUpdating}
+                        className="flex-1 flex justify-center items-center gap-1 bg-accent-orange hover:bg-orange-600 text-white py-2 rounded transition-colors text-sm font-medium disabled:opacity-50"
+                      >
+                        {isUpdating ? "Saving..." : <><FiCheck /> Save</>}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h2 className="font-display font-bold text-[24px] text-neutral-black text-center mb-1">
+                      {user?.full_name || user?.email?.split("@")[0] || "Customer"}
+                    </h2>
+                    <p className="font-body text-[14px] text-neutral-gray-500 text-center mb-2">
+                      Customer Account
+                    </p>
+                    {(user?.age || user?.gender) && (
+                      <p className="font-body text-[14px] text-neutral-gray-800 text-center mb-6 capitalize font-medium bg-neutral-gray-100 rounded-full py-1 px-4 inline-block mx-auto w-max flex items-center justify-center">
+                        {user?.gender || "Unknown"} {user?.age ? `• ${user.age} yrs` : ""}
+                      </p>
+                    )}
 
-                {/* Contact Info */}
-                <div className="space-y-3 mb-6">
-                  <div className="flex items-center gap-3 text-neutral-gray-500">
-                    <FiMail className="w-5 h-5" />
-                    <span className="font-body text-[14px]">{user?.email || "Not provided"}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-neutral-gray-500">
-                    <FiPhone className="w-5 h-5" />
-                    <span className="font-body text-[14px]">{user?.phone || "Not provided"}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-neutral-gray-500">
-                    <FiCalendar className="w-5 h-5" />
-                    <span className="font-body text-[14px]">
-                      Member since{" "}
-                      {user?.created_at
-                        ? new Date(user.created_at).toLocaleDateString("en-US", {
-                            month: "short",
-                            year: "numeric",
-                          })
-                        : "Recently"}
-                    </span>
-                  </div>
-                </div>
+                    {/* Contact Info */}
+                    <div className="space-y-3 mb-6">
+                      <div className="flex items-center gap-3 text-neutral-gray-500">
+                        <FiMail className="w-5 h-5 flex-shrink-0" />
+                        <span className="font-body text-[14px]">{user?.email || "Not provided"}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-neutral-gray-500">
+                        <FiPhone className="w-5 h-5 flex-shrink-0" />
+                        <span className="font-body text-[14px]">{user?.phone || "Not provided"}</span>
+                      </div>
+                      <div className="flex items-center gap-3 text-neutral-gray-500">
+                        <FiCalendar className="w-5 h-5 flex-shrink-0" />
+                        <span className="font-body text-[14px]">
+                          Member since{" "}
+                          {user?.created_at
+                            ? new Date(user.created_at).toLocaleDateString("en-US", {
+                                month: "short",
+                                year: "numeric",
+                              })
+                            : "Recently"}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 {/* Quick Actions */}
-                <div className="space-y-2">
-                  <button
-                    onClick={() => navigate("/my-bookings")}
-                    className="w-full flex items-center justify-center gap-2 bg-accent-orange hover:opacity-90 text-primary-white font-body font-medium text-[14px] py-2.5 rounded-lg transition-opacity"
-                  >
-                    <FiShoppingBag className="w-4 h-4" />
-                    My Bookings
-                  </button>
-                  <button
-                    onClick={() => navigate("/favorites")}
-                    className="w-full flex items-center justify-center gap-2 border border-accent-orange text-accent-orange hover:bg-accent-orange hover:text-primary-white font-body font-medium text-[14px] py-2.5 rounded-lg transition-colors"
-                  >
-                    <FiHeart className="w-4 h-4" />
-                    My Favorites
-                  </button>
-                  <button
-                    onClick={() => navigate("/my-reviews")}
-                    className="w-full flex items-center justify-center gap-2 border border-neutral-gray-300 text-neutral-gray-700 hover:bg-neutral-gray-100 font-body font-medium text-[14px] py-2.5 rounded-lg transition-colors"
-                  >
-                    <FiMessageSquare className="w-4 h-4" />
-                    My Reviews
-                  </button>
-                </div>
+                {!isEditing && (
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => navigate("/my-bookings")}
+                      className="w-full flex items-center justify-center gap-2 bg-accent-orange hover:opacity-90 text-primary-white font-body font-medium text-[14px] py-2.5 rounded-lg transition-opacity"
+                    >
+                      <FiShoppingBag className="w-4 h-4" />
+                      My Bookings
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -311,7 +415,7 @@ export default function CustomerProfile() {
               
               <div className="space-y-4">
                 <button 
-                  onClick={handleEditProfile}
+                  onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' }) || setIsEditing(true)}
                   className="w-full flex items-center justify-between p-4 bg-bg-secondary rounded-lg hover:shadow-md transition-shadow"
                 >
                   <span className="font-body font-medium text-[16px] text-neutral-black">
@@ -338,28 +442,6 @@ export default function CustomerProfile() {
                 >
                   <span className="font-body font-medium text-[16px] text-neutral-black">
                     Change Password
-                  </span>
-                  <svg
-                    className="w-5 h-5 text-neutral-gray-500"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </button>
-
-                <button 
-                  onClick={handleNotificationPreferences}
-                  className="w-full flex items-center justify-between p-4 bg-bg-secondary rounded-lg hover:shadow-md transition-shadow"
-                >
-                  <span className="font-body font-medium text-[16px] text-neutral-black">
-                    Notification Preferences
                   </span>
                   <svg
                     className="w-5 h-5 text-neutral-gray-500"

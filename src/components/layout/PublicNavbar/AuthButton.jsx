@@ -102,6 +102,10 @@ export function AuthButton() {
       case 'customer':
         return [
           {
+            label: 'My Profile',
+            onClick: () => navigate("/customer/profile")
+          },
+          {
             label: 'My Bookings',
             onClick: () => navigate("/my-bookings")
           },

@@ -44,6 +44,16 @@ export const authApi = createApi({
       keepUnusedDataFor: 300,
     }),
 
+    // Update user profile
+    updateProfile: builder.mutation({
+      query: (profileData) => ({
+        url: '/api/v1/auth/me',
+        method: 'PUT',
+        data: profileData,
+      }),
+      invalidatesTags: ['User'],
+    }),
+
     // Logout mutation
     logout: builder.mutation({
       query: () => ({
@@ -115,6 +125,7 @@ export const {
   useLoginMutation,
   useSignupMutation,
   useGetCurrentUserQuery,
+  useUpdateProfileMutation,
   useLogoutMutation,
   useLogoutAllMutation,
   useRefreshTokenMutation,
