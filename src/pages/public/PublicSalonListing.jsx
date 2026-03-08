@@ -61,17 +61,7 @@ function HeroSection() {
             use for the promotion of your business.
           </p>
 
-          {/* CTA Button */}
-          <div className="mt-4">
-            <button className="bg-white hover:bg-gray-100 transition-colors box-border flex gap-2 items-center justify-center px-6 py-3 rounded-md group">
-              <span className="font-body font-medium text-[16px] leading-[24px] text-neutral-black">
-                Get Started
-              </span>
-             <div className="size-4 group-hover:translate-x-1 transition-transform">
-                  <ArrowCircleRight />
-                </div>
-            </button>
-          </div>
+
         </div>
       </div>
     </section>
