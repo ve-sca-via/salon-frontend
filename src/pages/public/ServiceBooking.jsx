@@ -29,7 +29,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
@@ -122,6 +122,7 @@ function ServiceCategoryCard({ category, isSelected, onClick }) {
 export default function ServiceBooking() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useSelector((state) => state.auth);
   
   // RTK Query hooks
@@ -137,7 +138,7 @@ export default function ServiceBooking() {
   const error = salonError;
   
   // Local UI state
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedCategory, setSelectedCategory] = useState(location.state?.selectedCategory || null);
   const [expandedPlan, setExpandedPlan] = useState(null);
 
   /**
