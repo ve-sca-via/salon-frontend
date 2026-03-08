@@ -44,6 +44,25 @@ export const authApi = createApi({
       keepUnusedDataFor: 300,
     }),
 
+    // Update current user profile (full_name, phone, age, gender)
+    updateProfile: builder.mutation({
+      query: (profileData) => ({
+        url: '/api/v1/auth/me',
+        method: 'PUT',
+        data: profileData,
+      }),
+      invalidatesTags: ['User'],
+    }),
+
+    // Change password (requires current password verification)
+    changePassword: builder.mutation({
+      query: (passwordData) => ({
+        url: '/api/v1/auth/change-password',
+        method: 'POST',
+        data: passwordData,
+      }),
+    }),
+
     // Logout mutation
     logout: builder.mutation({
       query: () => ({
@@ -115,6 +134,8 @@ export const {
   useLoginMutation,
   useSignupMutation,
   useGetCurrentUserQuery,
+  useUpdateProfileMutation,
+  useChangePasswordMutation,
   useLogoutMutation,
   useLogoutAllMutation,
   useRefreshTokenMutation,

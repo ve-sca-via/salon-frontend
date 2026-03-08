@@ -15,7 +15,7 @@ export function MobileMenu({ isOpen, onClose }) {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
-  
+
   // RTK Query mutations
   const [logoutApi] = useLogoutMutation();
   const [clearCart] = useClearCartMutation();
@@ -37,7 +37,7 @@ export function MobileMenu({ isOpen, onClose }) {
 
       // Clear user from Redux
       dispatch(clearUser());
-      
+
       // Clear cart from database (only if authenticated)
       if (isAuthenticated) {
         await clearCart().unwrap().catch(err => {
@@ -154,10 +154,22 @@ export function MobileMenu({ isOpen, onClose }) {
                 {truncateName(user.full_name)}
               </p>
             </div>
-            
+
             {/* Customer Menu Items */}
             {user.role === 'customer' && (
               <>
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3 text-neutral-black hover:bg-gray-50 transition-colors border-b border-neutral-gray-600"
+                  onClick={() => {
+                    navigate("/customer/profile");
+                    onClose();
+                  }}
+                >
+                  <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  <span className="font-body font-semibold text-[15px]">My Profile</span>
+                </button>
                 <button
                   className="w-full flex items-center gap-3 px-4 py-3 text-neutral-black hover:bg-gray-50 transition-colors border-b border-neutral-gray-600"
                   onClick={() => {
@@ -184,7 +196,7 @@ export function MobileMenu({ isOpen, onClose }) {
                 </button>
               </>
             )}
-            
+
             {/* Non-customer: Dashboard Link */}
             {user.role !== 'customer' && (
               <button
@@ -200,7 +212,7 @@ export function MobileMenu({ isOpen, onClose }) {
                 <span className="font-body font-medium text-[15px]">Dashboard</span>
               </button>
             )}
-            
+
             {/* Logout */}
             <button
               className="w-full flex items-center gap-3 px-4 py-3 text-red-600 hover:bg-red-50 transition-colors"

@@ -12,7 +12,7 @@ export function AuthButton() {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [showDropdown, setShowDropdown] = useState(false);
-  
+
   // RTK Query mutations
   const [logoutApi] = useLogoutMutation();
   const [clearCart] = useClearCartMutation();
@@ -34,7 +34,7 @@ export function AuthButton() {
 
       // Clear user from Redux
       dispatch(clearUser());
-      
+
       // Clear cart from database (only if authenticated)
       if (isAuthenticated) {
         await clearCart().unwrap().catch(err => {
@@ -90,7 +90,7 @@ export function AuthButton() {
 
   const getMenuItems = () => {
     const role = user?.role;
-    
+
     // Common logout item for all roles
     const logoutItem = {
       label: 'Logout',
@@ -101,6 +101,11 @@ export function AuthButton() {
     switch (role) {
       case 'customer':
         return [
+          {
+            label: 'My Profile',
+            onClick: () => navigate("/customer/profile"),
+            isBold: true
+          },
           {
             label: 'My Bookings',
             onClick: () => navigate("/my-bookings")
@@ -171,9 +176,8 @@ export function AuthButton() {
                     item.onClick();
                     setShowDropdown(false);
                   }}
-                  className={`block w-full text-left px-4 py-2 text-sm text-neutral-black hover:bg-neutral-gray-600 font-body ${
-                    item.isBold ? 'font-semibold' : ''
-                  } ${item.hasBorder ? 'border-t border-neutral-gray-600' : ''}`}
+                  className={`block w-full text-left px-4 py-2 text-sm text-neutral-black hover:bg-neutral-gray-600 font-body ${item.isBold ? 'font-semibold' : ''
+                    } ${item.hasBorder ? 'border-t border-neutral-gray-600' : ''}`}
                 >
                   {item.label}
                 </button>
