@@ -437,7 +437,7 @@ export default function Checkout() {
                   <span className="text-neutral-black font-semibold">₹{servicesTotalAmount}</span>
                 </div>
                 <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
-                  <span className="text-neutral-gray-500">Booking Fee ({bookingFeePercentage}%)</span>
+                  <span className="text-neutral-gray-500">Booking Fee</span>
                   <span className="text-neutral-black font-semibold">₹{bookingFee}</span>
                 </div>
                 <div className="pt-2.5 sm:pt-3 border-t border-neutral-gray-600">

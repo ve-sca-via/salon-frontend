@@ -8,24 +8,6 @@ import { FiStar, FiMapPin, FiClock, FiCalendar, FiNavigation, FiX } from "react-
 import { getUserLocation, clearLocation as clearLocationAction } from "../../store/slices/locationSlice";
 import { SkeletonSalonCard } from "../../components/shared/Skeleton";
 
-// Arrow Icon Component
-function ArrowCircleRight() {
-  return (
-    <svg
-      className="block size-full"
-      fill="none"
-      preserveAspectRatio="none"
-      viewBox="0 0 16 16"
-    >
-      <g>
-        <path
-          d="M8 0C3.58 0 0 3.58 0 8s3.58 8 8 8 8-3.58 8-8-3.58-8-8-8zm2.5 8.5h-3v2l-3-2.5 3-2.5v2h3v1z"
-          fill="#242B3A"
-        />
-      </g>
-    </svg>
-  );
-}
 
 // Hero Section Component
 function HeroSection() {
@@ -61,17 +43,7 @@ function HeroSection() {
             use for the promotion of your business.
           </p>
 
-          {/* CTA Button */}
-          <div className="mt-4">
-            <button className="bg-white hover:bg-gray-100 transition-colors box-border flex gap-2 items-center justify-center px-6 py-3 rounded-md group">
-              <span className="font-body font-medium text-[16px] leading-[24px] text-neutral-black">
-                Get Started
-              </span>
-             <div className="size-4 group-hover:translate-x-1 transition-transform">
-                  <ArrowCircleRight />
-                </div>
-            </button>
-          </div>
+
         </div>
       </div>
     </section>

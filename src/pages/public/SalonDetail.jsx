@@ -714,6 +714,7 @@ export default function SalonDetail() {
                           <CategoryCard 
                             key={category.id} 
                             category={category}
+                            onClick={() => navigate(`/salons/${id}/book`, { state: { selectedCategory: category.name } })}
                           />
                         ))}
                       </div>
