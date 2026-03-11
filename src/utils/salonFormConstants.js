@@ -12,7 +12,9 @@ export const BUSINESS_TYPES = [
   { value: 'clinic', label: 'Clinic' },
   { value: 'unisex_salon', label: 'Unisex Salon' },
   { value: 'barber_shop', label: 'Barber Shop' },
-  { value: 'beauty_parlor', label: 'Beauty Parlor' }
+  { value: 'beauty_parlor', label: 'Beauty Parlor' },
+  { value: 'company_owned', label: 'Company Owned' },
+  { value: 'franchise', label: 'Franchise' }
 ];
 
 // Indian states for address forms
