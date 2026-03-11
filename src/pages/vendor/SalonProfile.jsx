@@ -528,7 +528,17 @@ const SalonProfile = () => {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">Salon Profile</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">Salon Profile</h1>
+              {salonProfile && (
+                <div className="flex items-center gap-1 bg-yellow-100 px-3 py-1 rounded-full border border-yellow-200">
+                  <FiStar className="text-yellow-500 fill-current" size={16} />
+                  <span className="font-bold text-yellow-800 text-sm">
+                    {salonProfile.average_rating ? salonProfile.average_rating.toFixed(1) : 'New'}
+                  </span>
+                </div>
+              )}
+            </div>
             <p className="text-gray-600 font-body mt-1">Manage your salon information and settings</p>
           </div>
         </div>

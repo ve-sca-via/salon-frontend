@@ -375,14 +375,12 @@ const PublicSalonListing = () => {
                       {/* Subtle Gradient Overlay for better text visibility */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
                       
-                      {/* COMMENTED OUT - Rating badge not yet implemented
                       <div className="absolute top-4 right-4 bg-white shadow-lg px-4 py-2 rounded-full flex items-center gap-2">
                         <FiStar className="text-yellow-500" fill="#FFC107" size={18} />
                         <span className="font-bold text-neutral-black text-lg">
-                          {salon.average_rating || '4.5'}
+                          {salon.average_rating ? salon.average_rating.toFixed(1) : 'New'}
                         </span>
                       </div>
-                      */}
                     </div>
 
                     {/* Content Section */}
