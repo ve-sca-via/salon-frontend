@@ -595,20 +595,20 @@ export default function SalonDetail() {
                   <h1 className="font-display font-bold text-[24px] sm:text-[32px] text-neutral-black mb-2 break-words">
                     {salon.business_name || salon.name}
                   </h1>
-                  {/* COMMENTED OUT - Star rating and reviews not yet implemented
                   <div className="flex items-center gap-2 mb-2">
                     <StarRating
-                      rating={Math.floor(salon.average_rating || 4.5)}
+                      rating={Math.floor(salon.average_rating || 0)}
                       size="large"
                     />
                     <span className="font-body font-semibold text-[16px] text-neutral-black">
-                      {salon.average_rating || '4.5'}
+                      {salon.average_rating && salon.average_rating > 0 ? salon.average_rating : 'New'}
                     </span>
-                    <span className="font-body text-[14px] text-neutral-gray-600">
-                      ({salon.review_count || '45'} reviews)
-                    </span>
+                    {salon.total_reviews > 0 && (
+                      <span className="font-body text-[14px] text-neutral-gray-600">
+                        ({salon.total_reviews} {salon.total_reviews === 1 ? 'review' : 'reviews'})
+                      </span>
+                    )}
                   </div>
-                  */}
                   <div className="flex items-start gap-2 text-neutral-gray-700 mt-2">
                     <FiMapPin className="w-5 h-5 text-accent-orange flex-shrink-0 mt-0.5" />
                     <span className="font-body text-[15px] break-words">
