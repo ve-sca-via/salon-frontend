@@ -165,9 +165,9 @@ export default function ServicesSection() {
 
   const services = [
     {
-      name: "Bridal",
+      name: "Spa and wellness",
       count: "25 Saloons",
-      image: "/home/our_services/Bridal.png",
+      image: "/home/our_services/Spa_and_Wellness.jpeg",
       icon: (
         <div className="flex items-center justify-center relative w-[45px] h-[45px]">
           <svg
@@ -185,9 +185,9 @@ export default function ServicesSection() {
       ),
     },
     {
-      name: "Parlour",
+      name: "Saloon",
       count: "25 Saloons",
-      image: "/home/our_services/Girls_Parlour.png",
+      image: "/home/our_services/Saloon.jpeg",
       icon: (
         <div className="flex items-center justify-center relative w-[32px] h-[49px]">
           <svg
@@ -207,9 +207,9 @@ export default function ServicesSection() {
       ),
     },
     {
-      name: "Mens",
+      name: "Men's grooming",
       count: "25 Saloons",
-      image: "/home/our_services/Mens.png",
+      image: "/home/our_services/Men's_Grooming.png",
       icon: (
         <div className="flex items-center justify-center relative size-[45px]">
           <svg
@@ -230,9 +230,9 @@ export default function ServicesSection() {
       ),
     },
     {
-      name: "Spa",
+      name: "Skin care",
       count: "25 Saloons",
-      image: "/home/our_services/Spa.png",
+      image: "/home/our_services/Skin_Care.png",
       icon: (
         <div className="flex items-center justify-center relative w-[45px] h-[45px]">
           <svg
