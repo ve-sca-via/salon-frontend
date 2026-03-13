@@ -401,7 +401,9 @@ const PublicSalonListing = () => {
                           </p>
                           {salon.distance_km && (
                             <p className="font-body text-[14px] leading-[20px] text-accent-orange font-semibold mt-1">
-                              {salon.distance_km.toFixed(1)} km away
+                              {salon.distance_km < 1 
+                                ? `${Math.round(salon.distance_km * 1000)} m away`
+                                : `${salon.distance_km.toFixed(1)} km away`}
                             </p>
                           )}
                         </div>
