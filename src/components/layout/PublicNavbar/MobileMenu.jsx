@@ -142,8 +142,8 @@ export function MobileMenu({ isOpen, onClose }) {
           </button>
         </div>
 
-        {/* User Menu Section */}
-        {isAuthenticated && user ? (
+        {/* User Menu Section - Only show for authenticated users */}
+        {isAuthenticated && user && (
           <div className="border-t border-neutral-gray-600 mt-4">
             {/* User Welcome Header */}
             <div className="px-4 py-3 bg-gray-50">
@@ -222,20 +222,6 @@ export function MobileMenu({ isOpen, onClose }) {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
               </svg>
               <span className="font-body font-medium text-[15px]">Logout</span>
-            </button>
-          </div>
-        ) : (
-          <div className="border-t border-neutral-gray-600 mt-4 px-4 py-4">
-            <button
-              className="w-full bg-neutral-black flex gap-2 items-center justify-center px-4 py-3 rounded-md hover:opacity-90 transition-opacity"
-              onClick={() => {
-                navigate("/login");
-                onClose();
-              }}
-            >
-              <span className="font-body font-medium text-[14px] text-white">
-                Login / Sign Up
-              </span>
             </button>
           </div>
         )}
