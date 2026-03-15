@@ -29,7 +29,7 @@
  * 4. Click "Book Services" → navigate to /salons/:id/book
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
@@ -246,12 +246,71 @@ export default function SalonDetail() {
   // Extract data from responses
   const salon = salonData?.salon || salonData;
   const services = servicesData?.services || [];
-  
+
+  // Parse salon images from database - use cover_images array
+  const salonImages = React.useMemo(() => {
+    if (!salon) return ["https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=600&fit=crop"];
+
+    let images = [];
+
+    // Add logo first if available
+    if (salon.logo_url) {
+      images.push(salon.logo_url);
+    }
+
+    // Add cover images from database
+    if (salon.cover_images && Array.isArray(salon.cover_images)) {
+      images = [...images, ...salon.cover_images];
+    }
+
+    // Fallback image if no images available
+    if (images.length === 0) {
+      images = ["https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=600&fit=crop"];
+    }
+
+    return images;
+  }, [salon]);
+
   // Local UI state
   const [activeTab, setActiveTab] = useState("services");
   const [selectedImage, setSelectedImage] = useState(0);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [serviceCategories, setServiceCategories] = useState([]);
+  const intervalRef = useRef(null);
+
+  // Auto-rotate carousel images every 5 seconds
+  useEffect(() => {
+    // Only set up auto-rotation if there are multiple images
+    if (salonImages && salonImages.length > 1) {
+      intervalRef.current = setInterval(() => {
+        setSelectedImage((prevIndex) =>
+          (prevIndex + 1) % salonImages.length
+        );
+      }, 5000); // 5 seconds
+
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current);
+        }
+      };
+    }
+  }, [salonImages.length]); // Re-run when number of images changes
+
+  // Function to handle manual image change (resets auto-rotation)
+  const handleImageChange = (newIndex) => {
+    setSelectedImage(newIndex);
+    // Reset interval when user manually changes image
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      if (salonImages && salonImages.length > 1) {
+        intervalRef.current = setInterval(() => {
+          setSelectedImage((prevIndex) =>
+            (prevIndex + 1) % salonImages.length
+          );
+        }, 5000);
+      }
+    }
+  };
 
   // Extract categories from services when they load
   useEffect(() => {
@@ -394,24 +453,6 @@ export default function SalonDetail() {
     );
   }
 
-  // Parse salon images from database - use cover_images array
-  let salonImages = [];
-  
-  // Add logo first if available
-  if (salon.logo_url) {
-    salonImages.push(salon.logo_url);
-  }
-  
-  // Add cover images from database
-  if (salon.cover_images && Array.isArray(salon.cover_images)) {
-    salonImages = [...salonImages, ...salon.cover_images];
-  }
-  
-  // Fallback image if no images available
-  if (salonImages.length === 0) {
-    salonImages = ["https://images.unsplash.com/photo-1560066984-138dadb4c035?w=800&h=600&fit=crop"];
-  }
-
   // Parse business hours - handle both formats
   const getBusinessHours = () => {
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -477,7 +518,7 @@ export default function SalonDetail() {
           <div className="lg:col-span-2 space-y-4 sm:space-y-6 min-w-0">
             {/* Image Gallery */}
             <div className="bg-white rounded-xl overflow-hidden shadow-lg">
-              <div 
+              <div
                 className="relative h-[300px] sm:h-[400px] lg:h-[500px] bg-gray-100 cursor-pointer group"
                 onClick={() => setIsImagePreviewOpen(true)}
               >
@@ -503,13 +544,42 @@ export default function SalonDetail() {
                     {selectedImage + 1} / {salonImages.length}
                   </div>
                 )}
+                {/* Navigation arrows */}
+                {salonImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleImageChange(selectedImage > 0 ? selectedImage - 1 : salonImages.length - 1);
+                      }}
+                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3 opacity-0 group-hover:opacity-100"
+                      aria-label="Previous image"
+                    >
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleImageChange(selectedImage < salonImages.length - 1 ? selectedImage + 1 : 0);
+                      }}
+                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3 opacity-0 group-hover:opacity-100"
+                      aria-label="Next image"
+                    >
+                      <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </>
+                )}
               </div>
               {salonImages.length > 1 && (
                 <div className="flex gap-2 p-4 overflow-x-auto bg-gray-50">
                   {salonImages.map((image, index) => (
                     <button
                       key={index}
-                      onClick={() => setSelectedImage(index)}
+                      onClick={() => handleImageChange(index)}
                       className={`flex-shrink-0 w-24 h-24 rounded-lg overflow-hidden border-2 transition-all hover:scale-105 ${
                         selectedImage === index
                           ? "border-accent-orange shadow-md"
@@ -549,7 +619,7 @@ export default function SalonDetail() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedImage((prev) => (prev > 0 ? prev - 1 : salonImages.length - 1));
+                        handleImageChange(selectedImage > 0 ? selectedImage - 1 : salonImages.length - 1);
                       }}
                       className="absolute left-2 sm:left-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3"
                       aria-label="Previous image"
@@ -561,7 +631,7 @@ export default function SalonDetail() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedImage((prev) => (prev < salonImages.length - 1 ? prev + 1 : 0));
+                        handleImageChange(selectedImage < salonImages.length - 1 ? selectedImage + 1 : 0);
                       }}
                       className="absolute right-2 sm:right-4 text-white hover:text-gray-300 transition-colors bg-black/50 hover:bg-black/70 rounded-full p-2 sm:p-3"
                       aria-label="Next image"

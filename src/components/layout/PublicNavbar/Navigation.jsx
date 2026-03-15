@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { FiMapPin } from "react-icons/fi";
 import { Menu } from "./Menu";
@@ -8,7 +8,9 @@ import { getUserLocation } from "../../../store/slices/locationSlice";
 
 export function Navigation({ onMenuToggle, isMenuOpen }) {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { locationName, userLocation } = useSelector((state) => state.location);
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
   return (
     <div className="content-stretch flex gap-[20px] md:gap-[60px] lg:gap-[120px] xl:gap-[237px] items-start justify-between relative w-full max-w-[1296px]">
@@ -47,14 +49,27 @@ export function Navigation({ onMenuToggle, isMenuOpen }) {
         <Actions />
       </div>
 
-      {/* Mobile Hamburger Menu */}
-      <button
-        className="lg:hidden p-2 hover:bg-neutral-gray-600 rounded-md transition-colors self-start"
-        onClick={onMenuToggle}
-        aria-label="Toggle menu"
-      >
-        <HamburgerIcon isOpen={isMenuOpen} />
-      </button>
+      {/* Mobile: Login/Signup Button and Hamburger Menu */}
+      <div className="lg:hidden flex items-center gap-2 self-start">
+        {!isAuthenticated && (
+          <button
+            className="bg-neutral-black flex items-center justify-center px-3 py-2 rounded-md hover:opacity-90 transition-opacity"
+            onClick={() => navigate("/login")}
+            aria-label="Login or Sign up"
+          >
+            <span className="font-body font-medium text-[13px] text-white whitespace-nowrap">
+              Login / Sign Up
+            </span>
+          </button>
+        )}
+        <button
+          className="p-2 hover:bg-neutral-gray-600 rounded-md transition-colors"
+          onClick={onMenuToggle}
+          aria-label="Toggle menu"
+        >
+          <HamburgerIcon isOpen={isMenuOpen} />
+        </button>
+      </div>
     </div>
   );
 }

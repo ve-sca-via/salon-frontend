@@ -49,6 +49,7 @@ import {
   FiCheckCircle,
   FiXCircle,
   FiAlertCircle,
+  FiPhone,
 } from 'react-icons/fi';
 
 const BookingsManagement = () => {
@@ -356,7 +357,7 @@ const BookingsManagement = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
           <Card className="hover:shadow-md transition-shadow">
             <div className="text-center">
               <p className="text-sm text-gray-600 font-body mb-1">Total</p>
@@ -379,18 +380,6 @@ const BookingsManagement = () => {
             <div className="text-center">
               <p className="text-sm text-gray-600 font-body mb-1">Completed</p>
               <p className="text-2xl font-display font-bold text-green-600">{stats.completed}</p>
-            </div>
-          </Card>
-          <Card className="hover:shadow-md transition-shadow">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 font-body mb-1">No Show</p>
-              <p className="text-2xl font-display font-bold text-orange-600">{stats.no_show}</p>
-            </div>
-          </Card>
-          <Card className="hover:shadow-md transition-shadow">
-            <div className="text-center">
-              <p className="text-sm text-gray-600 font-body mb-1">Cancelled</p>
-              <p className="text-2xl font-display font-bold text-red-600">{stats.cancelled}</p>
             </div>
           </Card>
           <Card className="hover:shadow-md transition-shadow">
@@ -455,20 +444,6 @@ const BookingsManagement = () => {
                     onClick={() => setStatusFilter('completed')}
                   >
                     Completed
-                  </Button>
-                  <Button
-                    variant={statusFilter === 'no_show' ? 'primary' : 'outline'}
-                    size="sm"
-                    onClick={() => setStatusFilter('no_show')}
-                  >
-                    No Show
-                  </Button>
-                  <Button
-                    variant={statusFilter === 'cancelled' ? 'primary' : 'outline'}
-                    size="sm"
-                    onClick={() => setStatusFilter('cancelled')}
-                  >
-                    Cancelled
                   </Button>
                 </div>
               </div>
@@ -735,12 +710,13 @@ const BookingsManagement = () => {
                   </span>
                 </div>
                 {selectedBooking.customer_phone && (
-                  <div className="flex items-center">
-                    <FiUser className="mr-3 text-gray-400" />
-                    <span className="text-sm font-body text-gray-900">
-                      {selectedBooking.customer_phone}
-                    </span>
-                  </div>
+                  <a
+                    href={`tel:${selectedBooking.customer_phone}`}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+                  >
+                    <FiPhone className="text-lg" />
+                    <span className="text-sm font-body font-semibold">Call Customer</span>
+                  </a>
                 )}
               </div>
             </div>
@@ -838,61 +814,30 @@ const BookingsManagement = () => {
             {selectedBooking.status === 'pending' && (
               <div className="pt-4 border-t">
                 <p className="text-xs text-gray-600 font-body mb-3">Update booking status:</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    variant="primary"
-                    className="w-full bg-blue-600 hover:bg-blue-700"
-                    onClick={() => handleStatusUpdate(selectedBooking.id, 'confirmed')}
-                    disabled={isUpdating}
-                  >
-                    <FiCheckCircle className="mr-2" />
-                    {isUpdating ? 'Processing...' : 'Confirm'}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full text-red-600 hover:bg-red-50 border-red-200"
-                    onClick={() => handleStatusUpdate(selectedBooking.id, 'cancelled')}
-                    disabled={isUpdating}
-                  >
-                    <FiXCircle className="mr-2" />
-                    Cancel
-                  </Button>
-                </div>
+                <Button
+                  variant="primary"
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                  onClick={() => handleStatusUpdate(selectedBooking.id, 'confirmed')}
+                  disabled={isUpdating}
+                >
+                  <FiCheckCircle className="mr-2" />
+                  {isUpdating ? 'Processing...' : 'Confirm Booking'}
+                </Button>
               </div>
             )}
 
             {selectedBooking.status === 'confirmed' && (
               <div className="pt-4 border-t">
                 <p className="text-xs text-gray-600 font-body mb-3">Update booking status:</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant="primary"
-                    className="w-full bg-green-600 hover:bg-green-700 text-xs"
-                    onClick={() => handleStatusUpdate(selectedBooking.id, 'completed')}
-                    disabled={isUpdating}
-                  >
-                    <FiCheckCircle className="mr-1" />
-                    Completed
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full text-orange-600 hover:bg-orange-50 border-orange-200 text-xs"
-                    onClick={() => handleStatusUpdate(selectedBooking.id, 'no_show')}
-                    disabled={isUpdating}
-                  >
-                    <FiAlertCircle className="mr-1" />
-                    No Show
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full text-red-600 hover:bg-red-50 border-red-200 text-xs"
-                    onClick={() => handleStatusUpdate(selectedBooking.id, 'cancelled')}
-                    disabled={isUpdating}
-                  >
-                    <FiXCircle className="mr-1" />
-                    Cancel
-                  </Button>
-                </div>
+                <Button
+                  variant="primary"
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={() => handleStatusUpdate(selectedBooking.id, 'completed')}
+                  disabled={isUpdating}
+                >
+                  <FiCheckCircle className="mr-2" />
+                  Mark as Completed
+                </Button>
               </div>
             )}
 
