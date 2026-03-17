@@ -1827,6 +1827,20 @@ const AddSalonForm = () => {
                         </p>
                       </div>
                       <div>
+                        <p className="text-gray-600 text-xs mb-1">Outlet Type</p>
+                        <p className="font-semibold text-gray-900">
+                          {watch('outlet') === 'company' ? 'Company Owned' :
+                           watch('outlet') === 'franchisee' ? 'Franchisee' : 
+                           watch('outlet') || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-xs mb-1">GST Registered</p>
+                        <p className="font-semibold text-gray-900">
+                          {watch('is_gst') ? 'Yes' : 'No'}
+                        </p>
+                      </div>
+                      <div>
                         <p className="text-gray-600 text-xs mb-1">Owner Name</p>
                         <p className="font-semibold text-gray-900">{watch('owner_name') || '-'}</p>
                       </div>
