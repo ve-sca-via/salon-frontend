@@ -25,6 +25,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import SearchBox from "../../components/shared/SearchBox";
@@ -33,6 +34,7 @@ import FeaturedSaloons from "../../components/shared/FeaturedSaloons";
 import PopularLocations from "../../components/shared/PopularLocations";
 import WhyChooseUs from "../../components/shared/WhyChooseUs";
 import ClientTestimonials from "../../components/shared/ClientTestimonials";
+import UserQuickDashboard from "../../components/shared/UserQuickDashboard";
 // Preload first 2 carousel images for immediate display
 import bg1Mobile from "../../assets/images/optimized/bg_1_mobile.webp";
 import bg1Tablet from "../../assets/images/optimized/bg_1_tablet.webp";
@@ -296,7 +298,7 @@ function HeroSection() {
       </button>
 
       {/* Carousel Dot Indicators */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 flex gap-2">
         {backgroundImages.map((_, index) => (
           <button
             key={index}
@@ -357,6 +359,8 @@ function HeroSection() {
  * Composes multiple sections into a cohesive landing experience
  */
 const Home = () => {
+  const { isAuthenticated } = useSelector((state) => state.auth);
+
   return (
     <div className="min-h-screen bg-white font-body">
       <PublicNavbar />
@@ -364,8 +368,8 @@ const Home = () => {
       {/* Hero carousel with CTA */}
       <HeroSection />
 
-      {/* Location-based search */}
-      <SearchBox />
+      {/* Dynamic Section: Search Box (Unauthenticated) or Dashboard (Authenticated) */}
+      {isAuthenticated ? <UserQuickDashboard /> : <SearchBox />}
 
       {/* Service categories */}
       <ServicesSection />
