@@ -122,6 +122,8 @@ const AddSalonForm = () => {
       reset({
         name: draft.business_name || '',
         business_type: draft.business_type || 'salon',
+        outlet: draft.outlet || documents.outlet || '',
+        is_gst: draft.is_gst !== undefined ? draft.is_gst : (documents.is_gst || false),
         owner_name: draft.owner_name || '',
         owner_email: draft.owner_email || '',
         owner_phone: draft.owner_phone || '',
@@ -509,6 +511,8 @@ const AddSalonForm = () => {
         // Required fields
         business_name: data.name,
         business_type: data.business_type || 'salon',
+        outlet: data.outlet || null,
+        is_gst: data.is_gst || false,
         owner_name: data.owner_name || user?.name || user?.full_name || 'Owner',
         owner_email: data.owner_email || data.email,
         owner_phone: data.owner_phone || data.phone,
@@ -545,6 +549,8 @@ const AddSalonForm = () => {
           email: data.email,
           phone: data.phone,
           logo: logo || null,
+          outlet: data.outlet || null,
+          is_gst: data.is_gst || false,
           services: prepareServicesArray(),
           business_hours: {
             monday: data.monday || 'Closed',
@@ -676,6 +682,7 @@ const AddSalonForm = () => {
       const requiredFields = {
         'Business Name': allValues.name,
         'Business Type': allValues.business_type,
+        'Outlet Type': allValues.outlet,
         'Owner Name': allValues.owner_name,
         'Owner Email': allValues.owner_email,
         'Owner Phone': allValues.owner_phone,
@@ -899,6 +906,71 @@ const AddSalonForm = () => {
                   {errors.business_type && (
                     <p className="mt-1 text-sm text-red-600 font-body">{errors.business_type.message}</p>
                   )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
+                    Outlet Type <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setValue('outlet', 'Company owned', { shouldValidate: true })}
+                      className={`px-4 py-2 rounded-lg font-body text-sm transition-colors ${
+                        watch('outlet') === 'Company owned' 
+                          ? 'bg-[#8ba0af] text-white border border-[#8ba0af]' 
+                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      Company Owned
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValue('outlet', 'franchisee', { shouldValidate: true })}
+                      className={`px-4 py-2 rounded-lg font-body text-sm transition-colors flex-1 ${
+                        watch('outlet') === 'franchisee' 
+                          ? 'bg-[#8ba0af] text-white border border-[#8ba0af]' 
+                          : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      Franchisee
+                    </button>
+                  </div>
+                  <input type="hidden" {...register('outlet', { required: 'Outlet type is required' })} />
+                  {errors.outlet && (
+                    <p className="mt-1 text-sm text-red-600 font-body">{errors.outlet.message}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-sm font-body font-medium text-gray-700 mb-2">
+                    Are you GST registered?
+                  </label>
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setValue('is_gst', true, { shouldValidate: true })}
+                      className={`px-6 py-2 rounded-lg font-body text-sm transition-colors ${
+                        watch('is_gst') === true 
+                          ? 'bg-white text-gray-900 border border-gray-300 shadow-sm' 
+                          : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      yes
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setValue('is_gst', false, { shouldValidate: true })}
+                      className={`px-6 py-2 rounded-lg font-body text-sm transition-colors ${
+                        watch('is_gst') === false 
+                          ? 'bg-white text-gray-900 border border-gray-300 shadow-sm' 
+                          : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      no
+                    </button>
+                  </div>
+                  <input type="hidden" {...register('is_gst')} />
                 </div>
 
                 <InputField
@@ -1752,6 +1824,20 @@ const AddSalonForm = () => {
                         <p className="text-gray-600 text-xs mb-1">Business Type</p>
                         <p className="font-semibold text-gray-900">
                           {BUSINESS_TYPES.find(t => t.value === watch('business_type'))?.label || watch('business_type') || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-xs mb-1">Outlet Type</p>
+                        <p className="font-semibold text-gray-900">
+                          {watch('outlet') === 'company' ? 'Company Owned' :
+                           watch('outlet') === 'franchisee' ? 'Franchisee' : 
+                           watch('outlet') || '-'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-gray-600 text-xs mb-1">GST Registered</p>
+                        <p className="font-semibold text-gray-900">
+                          {watch('is_gst') ? 'Yes' : 'No'}
                         </p>
                       </div>
                       <div>

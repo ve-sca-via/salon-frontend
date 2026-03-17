@@ -289,6 +289,14 @@ const SubmissionHistory = () => {
                     <p className="font-medium capitalize">{selectedSubmission.business_type?.replace(/_/g, ' ')}</p>
                   </div>
                   <div>
+                    <p className="text-gray-600">Outlet Type</p>
+                    <p className="font-medium capitalize">{selectedSubmission.outlet || 'Not Specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-gray-600">GST Registered?</p>
+                    <p className="font-medium">{selectedSubmission.is_gst ? 'Yes' : 'No'}</p>
+                  </div>
+                  <div>
                     <p className="text-gray-600">Owner Name</p>
                     <p className="font-medium">{selectedSubmission.owner_name}</p>
                   </div>
