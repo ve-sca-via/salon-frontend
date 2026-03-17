@@ -81,6 +81,8 @@ const SalonProfile = () => {
     state: '',
     pincode: '',
     description: '',
+    outlet: '',
+    is_gst: false,
     latitude: '',
     longitude: '',
     logo_url: '',
@@ -160,6 +162,8 @@ const SalonProfile = () => {
         state: salonProfile.state || '',
         pincode: salonProfile.pincode || '',
         description: salonProfile.description || '',
+        outlet: salonProfile.outlet || '',
+        is_gst: salonProfile.is_gst || false,
         latitude: salonProfile.latitude || '',
         longitude: salonProfile.longitude || '',
         logo_url: salonProfile.logo_url || '',
@@ -283,6 +287,8 @@ const SalonProfile = () => {
         state: salonProfile.state || '',
         pincode: salonProfile.pincode || '',
         description: salonProfile.description || '',
+        outlet: salonProfile.outlet || '',
+        is_gst: salonProfile.is_gst || false,
         latitude: salonProfile.latitude || '',
         longitude: salonProfile.longitude || '',
         logo_url: salonProfile.logo_url || '',
@@ -646,6 +652,40 @@ const SalonProfile = () => {
                     disabled={!isEditing}
                     placeholder="+91 XXXXXXXXXX"
                   />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
+                      Outlet Type
+                    </label>
+                    <select
+                      name="outlet"
+                      value={formData.outlet || ''}
+                      onChange={handleChange}
+                      disabled={!isEditing}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
+                    >
+                      <option value="">Select Outlet Type</option>
+                      <option value="Company owned">Company Owned</option>
+                      <option value="franchisee">Franchisee</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
+                      Are you GST registered?
+                    </label>
+                    <select
+                      name="is_gst"
+                      value={formData.is_gst ? 'true' : 'false'}
+                      onChange={(e) => setFormData({...formData, is_gst: e.target.value === 'true'})}
+                      disabled={!isEditing}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
+                    >
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  </div>
                 </div>
 
                 <InputField
