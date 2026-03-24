@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import svgPaths from "../../utils/svgPaths";
 
 // Scissors Icon for Header
@@ -53,20 +54,25 @@ function Header() {
   return (
     <div className="flex flex-col gap-4 items-center w-full">
       <div className="flex flex-col gap-2 items-center">
-        {/* Title */}
-        <h2 className="font-display font-bold text-[32px] leading-[48px] text-neutral-black">
+        {/* Desktop title */}
+        <h2 className="hidden md:block font-display font-bold text-[32px] leading-[48px] text-neutral-black">
           Our Services
         </h2>
 
-        {/* Icon with Lines */}
-        <div className="flex items-center gap-4">
+        {/* Mobile title — LUZO style */}
+        <h2 className="md:hidden font-display font-bold text-[20px] leading-[28px] text-neutral-black tracking-widest text-center">
+          SERVICES FOR YOU
+        </h2>
+
+        {/* Icon with Lines — desktop only */}
+        <div className="hidden md:flex items-center gap-4">
           <div className="h-[1px] w-[50px] bg-neutral-black"></div>
           <ScissorsIcon />
           <div className="h-[1px] w-[50px] bg-neutral-black"></div>
         </div>
 
-        {/* Description */}
-        <p className="font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
+        {/* Description — desktop only */}
+        <p className="hidden md:block font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
           A featured services marketplace typically offers a platform where
           various service providers
         </p>
@@ -75,7 +81,7 @@ function Header() {
   );
 }
 
-// Service Card Component
+// ─── DESKTOP service card (unchanged) ─────────────────────────────────────────
 function ServiceCard({ service }) {
   return (
     <div className="w-full">
@@ -96,19 +102,41 @@ function ServiceCard({ service }) {
           <h3 className="font-body font-semibold text-[20px] leading-[32px] text-white">
             {service.name}
           </h3>
-
-          {/* COMMENTED OUT - Salon count not yet implemented
-          <p className="font-body font-normal text-[16px] leading-[24px] text-white">
-            {service.count}
-          </p>
-          */}
         </div>
       </div>
-      
-      {/* Service Name Below Card - Mobile Only */}
-      <h3 className="lg:hidden font-body font-medium text-[16px] leading-[24px] text-neutral-black text-center mt-2">
+
+      {/* Service Name Below Card - tablet only (between sm and lg) */}
+      <h3 className="hidden sm:block lg:hidden font-body font-medium text-[16px] leading-[24px] text-neutral-black text-center mt-2">
         {service.name}
       </h3>
+    </div>
+  );
+}
+
+// ─── MOBILE service tile (LUZO-style flat card) ────────────────────────────────
+function MobileServiceTile({ service, onClick }) {
+  return (
+    <div
+      className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform duration-150"
+      onClick={onClick}
+    >
+      {/* Text side */}
+      <div className="flex flex-col gap-0.5">
+        <span className="font-bold text-[13px] leading-[17px] text-neutral-black">
+          {service.name}
+        </span>
+        <span className="text-[11px] text-gray-500 font-normal">
+          {service.subtitle}
+        </span>
+      </div>
+      {/* Illustration side */}
+      <div className="w-[68px] h-[52px] flex-shrink-0 overflow-hidden rounded-lg ml-2">
+        <img
+          src={service.image}
+          alt={service.name}
+          className="w-full h-full object-cover"
+        />
+      </div>
     </div>
   );
 }
@@ -159,6 +187,7 @@ function NavigationButton({ direction, onClick, isActive }) {
 }
 
 export default function ServicesSection() {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
@@ -166,17 +195,15 @@ export default function ServicesSection() {
   const services = [
     {
       name: "Spa and wellness",
+      categoryTitle: "WELLNESS & SPA",
+      subtitle: "Relaxing",
       count: "25 Saloons",
       image: "/home/our_services/Spa_and_Wellness.jpeg",
+      filterKey: "spa",
       icon: (
         <div className="flex items-center justify-center relative w-[45px] h-[45px]">
-          <svg
-            className="block size-full"
-            fill="none"
-            viewBox="0 0 45 45"
-          >
+          <svg className="block size-full" fill="none" viewBox="0 0 45 45">
             <g>
-              {/* Bridal/Crown icon */}
               <path d="M22.5 8L25 15L30 13L27 20L33 22L27 24L30 31L25 29L22.5 36L20 29L15 31L18 24L12 22L18 20L15 13L20 15L22.5 8Z" fill="white" />
               <circle cx="22.5" cy="22.5" r="2" fill="white" />
             </g>
@@ -186,18 +213,15 @@ export default function ServicesSection() {
     },
     {
       name: "Saloon",
+      categoryTitle: "SALONS",
+      subtitle: "Grooming",
       count: "25 Saloons",
       image: "/home/our_services/Saloon.jpeg",
+      filterKey: "salon",
       icon: (
         <div className="flex items-center justify-center relative w-[32px] h-[49px]">
-          <svg
-            className="block size-full"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 32 49"
-          >
+          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 32 49">
             <g>
-              {/* Hair/Beauty icon */}
               <path d={svgPaths.p1eae4c80} fill="white" />
               <path d={svgPaths.p8ed75c0} fill="white" />
               <path d={svgPaths.p34fbc400} fill="white" />
@@ -208,18 +232,15 @@ export default function ServicesSection() {
     },
     {
       name: "Men's grooming",
+      categoryTitle: "DERMATOLOGISTS",
+      subtitle: "Enhancing",
       count: "25 Saloons",
       image: "/home/our_services/Men's_Grooming.png",
+      filterKey: "grooming",
       icon: (
         <div className="flex items-center justify-center relative size-[45px]">
-          <svg
-            className="block size-full"
-            fill="none"
-            preserveAspectRatio="none"
-            viewBox="0 0 45 45"
-          >
+          <svg className="block size-full" fill="none" preserveAspectRatio="none" viewBox="0 0 45 45">
             <g>
-              {/* Razor/Shaving icon */}
               <path d={svgPaths.p30bcd800} fill="white" />
               <path d={svgPaths.p3b24f500} fill="white" />
               <path d={svgPaths.p2f100240} fill="white" />
@@ -231,17 +252,15 @@ export default function ServicesSection() {
     },
     {
       name: "Skin care",
+      categoryTitle: "NAIL & LASHES",
+      subtitle: "Pampering",
       count: "25 Saloons",
       image: "/home/our_services/Skin_Care.png",
+      filterKey: "skincare",
       icon: (
         <div className="flex items-center justify-center relative w-[45px] h-[45px]">
-          <svg
-            className="block size-full"
-            fill="none"
-            viewBox="0 0 45 45"
-          >
+          <svg className="block size-full" fill="none" viewBox="0 0 45 45">
             <g>
-              {/* Spa lotus/flower icon */}
               <circle cx="22.5" cy="22.5" r="4" fill="white" />
               <ellipse cx="22.5" cy="15" rx="5" ry="7" fill="white" opacity="0.8" />
               <ellipse cx="22.5" cy="30" rx="5" ry="7" fill="white" opacity="0.8" />
@@ -264,11 +283,11 @@ export default function ServicesSection() {
   useEffect(() => {
     const updateItemsPerPage = () => {
       if (window.innerWidth >= 1024) {
-        setItemsPerPage(4); // Desktop: show all 4
+        setItemsPerPage(4);
       } else if (window.innerWidth >= 640) {
-        setItemsPerPage(4); // Tablet: show all 4
+        setItemsPerPage(4);
       } else {
-        setItemsPerPage(4); // Mobile: show all 4 in 2x2 grid
+        setItemsPerPage(4); // Mobile: 2×2 grid of tiles
       }
     };
 
@@ -298,18 +317,9 @@ export default function ServicesSection() {
 
   const handleTouchEnd = () => {
     if (!touchStart || !touchEnd) return;
-    
     const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > 50;
-    const isRightSwipe = distance < -50;
-
-    if (isLeftSwipe) {
-      handleNext();
-    }
-    if (isRightSwipe) {
-      handlePrevious();
-    }
-
+    if (distance > 50) handleNext();
+    if (distance < -50) handlePrevious();
     setTouchStart(0);
     setTouchEnd(0);
   };
@@ -319,15 +329,30 @@ export default function ServicesSection() {
     (currentIndex + 1) * itemsPerPage
   );
 
+  const handleMobileTileClick = (service) => {
+    navigate(`/salons?category=${encodeURIComponent(service.filterKey)}`);
+  };
+
   return (
     <section className="w-full py-8 md:py-16 bg-bg-secondary">
       <div className="max-w-[1320px] mx-auto px-4">
         <div className="flex flex-col gap-6 md:gap-10 items-center">
           <Header />
 
-          {/* Services Carousel/Grid */}
-          <div 
-            className="w-full overflow-hidden"
+          {/* ── MOBILE: LUZO-style 2×2 flat tiles ── */}
+          <div className="grid grid-cols-2 gap-3 w-full md:hidden">
+            {services.map((service, index) => (
+              <MobileServiceTile
+                key={index}
+                service={service}
+                onClick={() => handleMobileTileClick(service)}
+              />
+            ))}
+          </div>
+
+          {/* ── DESKTOP / TABLET: original carousel grid ── */}
+          <div
+            className="hidden md:block w-full overflow-hidden"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -339,9 +364,9 @@ export default function ServicesSection() {
             </div>
           </div>
 
-          {/* Navigation Controls - Show only when carousel is active */}
+          {/* Navigation Controls — desktop only */}
           {totalPages > 1 && (
-            <div className="flex gap-4 items-center">
+            <div className="hidden md:flex gap-4 items-center">
               <NavigationButton
                 direction="left"
                 onClick={handlePrevious}
