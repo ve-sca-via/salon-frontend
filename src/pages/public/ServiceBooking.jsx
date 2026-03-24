@@ -28,7 +28,7 @@
  * 5. Navigate to /cart for checkout
  */
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
@@ -93,7 +93,7 @@ function ServiceCategoryCard({ category, isSelected, onClick }) {
       }`}
     >
       <div
-        className={`relative w-[100px] h-[100px] rounded-full overflow-hidden mb-3 border-4 transition-all ${
+        className={`relative w-[72px] h-[72px] sm:w-[100px] sm:h-[100px] rounded-full overflow-hidden mb-2 sm:mb-3 border-2 sm:border-4 transition-all ${
           isSelected
             ? "border-accent-orange shadow-lg scale-105"
             : "border-transparent"
@@ -109,7 +109,7 @@ function ServiceCategoryCard({ category, isSelected, onClick }) {
         )}
       </div>
       <h4
-        className={`font-body font-medium text-[14px] leading-tight max-w-[100px] ${
+        className={`font-body font-medium text-[12px] sm:text-[14px] leading-tight max-w-[72px] sm:max-w-[100px] ${
           isSelected ? "text-neutral-black" : "text-neutral-gray-500"
         }`}
       >
@@ -140,6 +140,7 @@ export default function ServiceBooking() {
   // Local UI state
   const [selectedCategory, setSelectedCategory] = useState(location.state?.selectedCategory || null);
   const [expandedPlan, setExpandedPlan] = useState(null);
+  const categoryScrollRef = useRef(null);
 
   /**
    * ✅ OPTIMIZED: groupServicesByCategory - Memoized with useCallback
@@ -290,6 +291,13 @@ export default function ServiceBooking() {
     return cart?.items?.some((item) => item.service_id === service.id) || false;
   };
 
+  // Horizontal scroll controls for category strip
+  const handleCategoryScroll = (direction) => {
+    if (!categoryScrollRef.current) return;
+    const scrollAmount = direction === "left" ? -220 : 220;
+    categoryScrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  };
+
   // Loading state - shows spinner while fetching data
   if (loading || servicesLoading) {
     return (
@@ -377,9 +385,9 @@ export default function ServiceBooking() {
     <div className="min-h-screen bg-bg-secondary">
       <PublicNavbar />
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
-        <div className="mb-6">
+        <div className="mb-4 sm:mb-6">
           <button
             onClick={() => navigate(`/salons/${id}`)}
             className="flex items-center gap-2 text-neutral-gray-500 hover:text-accent-orange transition-colors mb-4"
@@ -399,21 +407,26 @@ export default function ServiceBooking() {
             </svg>
             <span className="font-body font-medium">Back to Salon</span>
           </button>
-          <h1 className="font-display font-bold text-[32px] text-neutral-black mb-2">
+          <h1 className="font-display font-bold text-[26px] sm:text-[32px] text-neutral-black mb-2">
             Select Services
           </h1>
-          <p className="font-body text-[16px] text-neutral-gray-500">
+          <p className="font-body text-[14px] sm:text-[16px] text-neutral-gray-500">
             Choose from our wide range of services at {salon.name}
           </p>
         </div>
 
         {/* Service Categories with Navigation Arrows */}
-        <div className="bg-primary-white rounded-[10px] p-6 shadow-lg mb-6">
+        <div className="py-3 sm:p-6 mb-4 sm:mb-6">
           <div className="relative">
-            <div className="flex items-center justify-between gap-4">
-              <button className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-bg-secondary rounded-full hover:bg-neutral-gray-600 transition-colors">
+            <div className="flex items-center justify-between gap-2 sm:gap-4">
+              <button
+                type="button"
+                onClick={() => handleCategoryScroll("left")}
+                className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-white sm:bg-bg-secondary border border-neutral-gray-600 sm:border-0 rounded-full hover:bg-neutral-gray-600 transition-colors"
+                aria-label="Scroll categories left"
+              >
                 <svg
-                  className="w-5 h-5 text-neutral-black"
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-black"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -427,7 +440,11 @@ export default function ServiceBooking() {
                 </svg>
               </button>
 
-              <div className="flex gap-6 overflow-x-auto scrollbar-hide py-2 px-1">
+              <div
+                ref={categoryScrollRef}
+                className="flex gap-3 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
+              >
                 {serviceCategories.map((category) => (
                   <ServiceCategoryCard
                     key={category.id}
@@ -438,9 +455,14 @@ export default function ServiceBooking() {
                 ))}
               </div>
 
-              <button className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-bg-secondary rounded-full hover:bg-neutral-gray-600 transition-colors">
+              <button
+                type="button"
+                onClick={() => handleCategoryScroll("right")}
+                className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-white sm:bg-bg-secondary border border-neutral-gray-600 sm:border-0 rounded-full hover:bg-neutral-gray-600 transition-colors"
+                aria-label="Scroll categories right"
+              >
                 <svg
-                  className="w-5 h-5 text-neutral-black"
+                  className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-black"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -458,12 +480,12 @@ export default function ServiceBooking() {
         </div>
 
         {/* Selected Category Services */}
-        <div className="bg-primary-white rounded-[10px] p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display font-bold text-[24px] text-neutral-black">
+        <div className="py-3 sm:p-6">
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="font-display font-bold text-[20px] sm:text-[24px] text-neutral-black">
               {selectedCategory}
             </h2>
-            <span className="font-body text-[14px] text-neutral-gray-500">
+            <span className="font-body text-[12px] sm:text-[14px] text-neutral-gray-500">
               {currentServices.length} services available
             </span>
           </div>
@@ -480,20 +502,20 @@ export default function ServiceBooking() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {currentServices.map((service) => (
                 <div
                   key={service.id}
-                  className="border border-neutral-gray-600 rounded-lg p-4 hover:shadow-lg hover:border-accent-orange transition-all"
+                  className="border border-neutral-gray-600 rounded-lg p-3 sm:p-4 hover:shadow-lg hover:border-accent-orange transition-all"
                 >
                   {/* Service Info */}
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h3 className="font-display font-semibold text-[18px] text-neutral-black mb-1">
+                      <h3 className="font-display font-semibold text-[16px] sm:text-[18px] text-neutral-black mb-1">
                         {service.name}
                       </h3>
                       {service.description && (
-                        <p className="font-body text-[14px] text-neutral-gray-500 mb-2 line-clamp-2">
+                        <p className="font-body text-[13px] sm:text-[14px] text-neutral-gray-500 mb-2 line-clamp-2">
                           {service.description}
                         </p>
                       )}
@@ -512,11 +534,11 @@ export default function ServiceBooking() {
                               d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                             />
                           </svg>
-                          <span className="font-body text-[14px] text-neutral-black">
+                          <span className="font-body text-[13px] sm:text-[14px] text-neutral-black">
                             {service.duration_minutes} min
                           </span>
                         </div>
-                        <div className="font-display font-bold text-[18px] text-accent-orange">
+                        <div className="font-display font-bold text-[16px] sm:text-[18px] text-accent-orange">
                           ₹{service.price}
                         </div>
                       </div>
@@ -527,14 +549,14 @@ export default function ServiceBooking() {
                   {isServiceInCart(service) ? (
                     <button
                       disabled
-                      className="w-full py-2.5 bg-neutral-gray-600 text-neutral-black rounded-lg font-body font-semibold text-[14px] cursor-not-allowed"
+                      className="w-full py-2.5 bg-neutral-gray-600 text-neutral-black rounded-lg font-body font-semibold text-[13px] sm:text-[14px] cursor-not-allowed"
                     >
                       Added to Cart
                     </button>
                   ) : (
                     <button
                       onClick={() => handleAddToCart(service)}
-                      className="w-full py-2.5 bg-accent-orange text-primary-white rounded-lg font-body font-semibold text-[14px] hover:bg-orange-600 transition-colors"
+                      className="w-full py-2.5 bg-accent-orange text-primary-white rounded-lg font-body font-semibold text-[13px] sm:text-[14px] hover:bg-orange-600 transition-colors"
                     >
                       Add to Cart
                     </button>

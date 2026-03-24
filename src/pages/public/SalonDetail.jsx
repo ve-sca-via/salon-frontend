@@ -170,11 +170,11 @@ function ServiceCard({ service, onBook }) {
  */
 function CategoryCard({ category, onClick }) {
   return (
-    <div 
-      className="flex flex-col items-center text-center group cursor-pointer"
+    <div
+      className="flex flex-col items-center text-center group cursor-pointer w-full"
       onClick={onClick}
     >
-      <div className="relative w-[160px] h-[160px] rounded-2xl overflow-hidden mb-3 shadow-md border-2 border-transparent group-hover:border-accent-orange group-hover:shadow-xl transition-all">
+      <div className="relative w-full aspect-square rounded-xl overflow-hidden mb-2 shadow-md border-2 border-transparent group-hover:border-accent-orange group-hover:shadow-xl transition-all">
         <img
           src={category.icon_url || getCategoryImage(category.name)}
           alt={category.name}
@@ -183,19 +183,10 @@ function CategoryCard({ category, onClick }) {
             e.target.src = getCategoryImage(category.name);
           }}
         />
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-black/80 via-neutral-black/30 to-transparent"></div>
-        
-        {/* Category Info */}
-        <div className="absolute bottom-3 left-3 right-3">
-          <h4 className="font-display font-bold text-[18px] text-primary-white mb-1 leading-tight">
-            {category.name}
-          </h4>
-          <p className="font-body text-[13px] text-primary-white/90">
-            {category.serviceCount} {category.serviceCount === 1 ? 'service' : 'services'}
-          </p>
-        </div>
       </div>
+      <h4 className="font-body font-semibold text-[13px] sm:text-[14px] text-neutral-black leading-tight px-1">
+        {category.name}
+      </h4>
     </div>
   );
 }
@@ -507,19 +498,22 @@ export default function SalonDetail() {
     <div className="min-h-screen bg-bg-secondary overflow-x-hidden">
       <PublicNavbar />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
-        <Breadcrumb
-          city={salon.city || "City"}
-          salonName={salon.business_name || salon.name}
-        />
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 py-2 sm:py-8 pb-20 lg:pb-8">
+        {/* Breadcrumb - Hidden on mobile, visible on md+ */}
+        <div className="hidden md:block">
+          <Breadcrumb
+            city={salon.city || "City"}
+            salonName={salon.business_name || salon.name}
+          />
+        </div>
 
-        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid lg:grid-cols-3 gap-3 sm:gap-6 lg:gap-8">
           {/* Left Column - Main Content */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6 min-w-0">
+          <div className="lg:col-span-2 space-y-3 sm:space-y-6 min-w-0">
             {/* Image Gallery */}
-            <div className="bg-white rounded-xl overflow-hidden shadow-lg">
+            <div className="sm:bg-white sm:rounded-xl overflow-hidden sm:shadow-lg">
               <div
-                className="relative h-[300px] sm:h-[400px] lg:h-[500px] bg-gray-100 cursor-pointer group"
+                className="relative h-[250px] sm:h-[400px] lg:h-[500px] bg-gray-100 cursor-pointer group"
                 onClick={() => setIsImagePreviewOpen(true)}
               >
                 <img
@@ -659,12 +653,33 @@ export default function SalonDetail() {
 
 
             {/* Salon Info */}
-            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg">
-              <div className="flex flex-col sm:flex-row items-start justify-between mb-4 gap-4">
-                <div className="flex-1 min-w-0">
-                  <h1 className="font-display font-bold text-[24px] sm:text-[32px] text-neutral-black mb-2 break-words">
-                    {salon.business_name || salon.name}
-                  </h1>
+            <div className="sm:bg-white sm:rounded-xl p-3 sm:p-6 sm:shadow-lg">
+              <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
+                <div className="flex-1 min-w-0 w-full">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black break-words flex-1">
+                      {salon.business_name || salon.name}
+                    </h1>
+                    {/* Share icon - Mobile only, far right */}
+                    <button
+                      className="lg:hidden p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors flex-shrink-0"
+                      aria-label="Share salon"
+                    >
+                      <svg
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                        />
+                      </svg>
+                    </button>
+                  </div>
                   {/* COMMENTED OUT - Star rating and reviews not yet implemented
                   <div className="flex items-center gap-2 mb-2">
                     <StarRating
@@ -679,25 +694,41 @@ export default function SalonDetail() {
                     </span>
                   </div>
                   */}
-                  <div className="flex items-start gap-2 text-neutral-gray-700 mt-2">
-                    <FiMapPin className="w-5 h-5 text-accent-orange flex-shrink-0 mt-0.5" />
-                    <span className="font-body text-[15px] break-words">
-                      {salon.address || `${salon.city}, ${salon.state}`}
-                    </span>
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-neutral-gray-700">
+                    <div className="flex items-center gap-2">
+                      <FiMapPin className="w-5 h-5 text-accent-orange flex-shrink-0" />
+                      <span className="font-body text-[15px] break-words">
+                        {salon.address || `${salon.city}, ${salon.state}`}
+                      </span>
+                    </div>
+
+                    {/* Call button - Mobile only, side by side */}
+                    {salon.phone && (
+                      <div className="lg:hidden flex items-center gap-2">
+                        <FiPhone className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                        <a
+                          href={`tel:${salon.phone}`}
+                          className="font-body text-[15px] text-gray-600 hover:text-accent-orange transition-colors underline"
+                        >
+                          {salon.phone}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                {/* Call and Share buttons - Desktop only */}
+                <div className="hidden lg:flex items-center gap-2 sm:gap-3">
                   {salon.phone && (
                     <a
                       href={`tel:${salon.phone}`}
-                      className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors flex-1 sm:flex-initial"
+                      className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
                       aria-label={`Call ${salon.business_name || salon.name}`}
                     >
                       <FiPhone className="w-5 h-5" />
                       <span className="font-body font-medium text-sm sm:text-base">Call</span>
                     </a>
                   )}
-                  <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border-2 border-accent-orange text-accent-orange rounded-lg hover:bg-accent-orange hover:text-white transition-colors flex-1 sm:flex-initial">
+                  <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -715,18 +746,10 @@ export default function SalonDetail() {
                   </button>
                 </div>
               </div>
-
-              {salon.description && (
-                <div className="border-t border-neutral-gray-300 pt-4">
-                  <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed break-words overflow-wrap-anywhere">
-                    {salon.description}
-                  </p>
-                </div>
-              )}
             </div>
 
             {/* Tabs */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+            <div className="sm:bg-white sm:rounded-xl sm:shadow-lg overflow-hidden">
               <div className="flex border-b border-neutral-gray-300 overflow-x-auto scrollbar-hide">
                 <button
                   onClick={() => setActiveTab("services")}
@@ -762,27 +785,23 @@ export default function SalonDetail() {
                 </button>
               </div>
 
-              <div className="p-4 sm:p-6">
+              <div className="p-3 sm:p-6">
                 {activeTab === "services" && (
                   <div>
-                    <h3 className="font-display font-bold text-[24px] text-neutral-black mb-6">
-                      Service Categories
-                    </h3>
-                    
                     {servicesLoading ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-                        {[1, 2, 3, 4, 5].map((i) => (
+                      <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
                           <div key={i} className="animate-pulse">
-                            <div className="h-32 bg-gray-200 rounded-xl mb-3"></div>
-                            <div className="h-4 bg-gray-200 rounded w-3/4 mx-auto"></div>
+                            <div className="aspect-square bg-gray-200 rounded-xl mb-2"></div>
+                            <div className="h-3 bg-gray-200 rounded w-3/4 mx-auto"></div>
                           </div>
                         ))}
                       </div>
                     ) : serviceCategories.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                      <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
                         {serviceCategories.map((category) => (
-                          <CategoryCard 
-                            key={category.id} 
+                          <CategoryCard
+                            key={category.id}
                             category={category}
                             onClick={() => navigate(`/salons/${id}/book`, { state: { selectedCategory: category.name } })}
                           />
@@ -847,9 +866,9 @@ export default function SalonDetail() {
 
           {/* Right Column - Booking Card */}
           <div className="lg:col-span-1">
-            <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg lg:sticky lg:top-24">
+            <div className="bg-transparent lg:bg-white rounded-xl p-3 sm:p-6 shadow-lg lg:sticky lg:top-20">
               {/* Salon Name */}
-              <h3 className="font-display font-bold text-[20px] sm:text-[24px] text-neutral-black mb-4 break-words">
+              <h3 className="font-display font-bold text-[18px] sm:text-[22px] text-neutral-black mb-4 break-words">
                 {salon.business_name || salon.name}
               </h3>
 
@@ -922,22 +941,33 @@ export default function SalonDetail() {
                 </div>
               </div>
 
-              {/* Book Services Button */}
+              {/* Book Services Button - Desktop Only */}
               <button
                 onClick={() => navigate(`/salons/${salon.id}/book`)}
                 disabled={!salon.is_active || !salon.accepting_bookings}
-                className="w-full bg-accent-orange hover:opacity-90 text-white font-body font-semibold text-[16px] py-3 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+                className="hidden lg:block w-full bg-accent-orange hover:opacity-90 text-white font-body font-semibold text-[16px] py-3 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {!salon.is_active || !salon.accepting_bookings ? 'Bookings Not Available' : 'Book Services'}
               </button>
               {(!salon.is_active || !salon.accepting_bookings) && (
-                <p className="text-center text-[12px] text-neutral-gray-500 mt-2">
+                <p className="hidden lg:block text-center text-[12px] text-neutral-gray-500 mt-2">
                   This salon is not accepting bookings at the moment
                 </p>
               )}
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Fixed Bottom Button - Mobile Only */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0px_-2px_10px_rgba(0,0,0,0.1)] z-40">
+        <button
+          onClick={() => navigate(`/salons/${salon.id}/book`)}
+          disabled={!salon.is_active || !salon.accepting_bookings}
+          className="w-full bg-accent-orange hover:opacity-90 text-white font-body font-semibold text-[16px] py-3.5 rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+        >
+          {!salon.is_active || !salon.accepting_bookings ? 'Bookings Not Available' : 'Book Services'}
+        </button>
       </div>
     </div>
   );

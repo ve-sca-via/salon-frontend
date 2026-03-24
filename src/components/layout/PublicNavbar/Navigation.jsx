@@ -13,13 +13,13 @@ export function Navigation({ onMenuToggle, isMenuOpen }) {
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   return (
-    <div className="content-stretch flex gap-[20px] md:gap-[60px] lg:gap-[120px] xl:gap-[237px] items-start justify-between relative w-full max-w-[1296px]">
+    <div className="content-stretch flex gap-[12px] md:gap-[60px] lg:gap-[120px] xl:gap-[237px] items-start justify-between relative w-full max-w-[1296px]">
       <Link
         to="/"
         className="relative shrink-0 pt-1"
       >
         <div className="flex flex-col items-start">
-          <span className="font-display font-bold text-[20px] leading-[24px] text-black whitespace-nowrap">Lubist</span>
+          <span className="font-display font-bold text-[16px] sm:text-[18px] md:text-[20px] leading-[24px] text-black whitespace-nowrap">Lubist</span>
           {/* Location Display */}
           {locationName && (
             <button
