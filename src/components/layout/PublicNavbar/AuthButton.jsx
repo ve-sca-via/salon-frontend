@@ -110,7 +110,7 @@ export function AuthButton() {
             onClick: () => navigate("/my-bookings")
           },
           {
-            label: 'My Cart',
+            label: 'My Services',
             onClick: () => navigate("/cart")
           },
           logoutItem

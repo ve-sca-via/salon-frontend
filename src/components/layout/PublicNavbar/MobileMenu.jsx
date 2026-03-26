@@ -8,6 +8,7 @@ import { toast } from "react-toastify";
 import { MobileMenuItem } from "./MenuItem";
 import { MobileDropdown } from "./Dropdown";
 import { SERVICES_ITEMS, PAGES_ITEMS } from "./Menu";
+import { FiScissors } from "react-icons/fi";
 
 export function MobileMenu({ isOpen, onClose }) {
   const [servicesOpen, setServicesOpen] = useState(false);
@@ -189,10 +190,8 @@ export function MobileMenu({ isOpen, onClose }) {
                     onClose();
                   }}
                 >
-                  <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                  <span className="font-body font-medium text-[15px]">My Cart</span>
+                  <FiScissors className="w-5 h-5 text-accent-orange" />
+                  <span className="font-body font-medium text-[15px]">My Services</span>
                 </button>
               </>
             )}

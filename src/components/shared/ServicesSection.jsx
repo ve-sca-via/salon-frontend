@@ -5,7 +5,7 @@ import svgPaths from "../../utils/svgPaths";
 // Scissors Icon for Header
 function ScissorsIcon() {
   return (
-    <div className="relative shrink-0 size-[24px]">
+    <div className="relative shrink-0 size-[16px] md:size-[24px]">
       <svg
         className="block size-full"
         fill="none"
@@ -52,27 +52,30 @@ function ScissorsIcon() {
 // Header with Scissors Icon and Lines
 function Header() {
   return (
-    <div className="flex flex-col gap-4 items-center w-full">
-      <div className="flex flex-col gap-2 items-center">
-        {/* Desktop title */}
-        <h2 className="hidden md:block font-display font-bold text-[32px] leading-[48px] text-neutral-black">
-          Our Services
-        </h2>
+    <div className="flex flex-col gap-2 md:gap-4 items-center w-full px-2">
+      <div className="flex flex-col gap-1 md:gap-2 items-center text-center">
+        {/* Title Row */}
+        <div className="flex items-center justify-center gap-2 md:gap-4 w-full">
+          {/* Left */}
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="h-[1px] w-[20px] md:w-[40px] bg-neutral-black"></div>
+            <ScissorsIcon />
+          </div>
 
-        {/* Mobile title — LUZO style */}
-        <h2 className="md:hidden font-display font-bold text-[20px] leading-[28px] text-neutral-black tracking-widest text-center">
-          SERVICES FOR YOU
-        </h2>
+          {/* Title */}
+          <h2 className="font-display font-bold text-[18px] md:text-[32px] leading-tight md:leading-[48px] text-neutral-black whitespace-nowrap">
+            Our Services
+          </h2>
 
-        {/* Icon with Lines — desktop only */}
-        <div className="hidden md:flex items-center gap-4">
-          <div className="h-[1px] w-[50px] bg-neutral-black"></div>
-          <ScissorsIcon />
-          <div className="h-[1px] w-[50px] bg-neutral-black"></div>
+          {/* Right */}
+          <div className="flex items-center gap-2 md:gap-3">
+            <ScissorsIcon />
+            <div className="h-[1px] w-[20px] md:w-[40px] bg-neutral-black"></div>
+          </div>
         </div>
 
-        {/* Description — desktop only */}
-        <p className="hidden md:block font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
+        {/* Description */}
+        <p className="hidden md:block font-body font-medium text-[15px] md:text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px]">
           A featured services marketplace typically offers a platform where
           various service providers
         </p>
@@ -81,61 +84,58 @@ function Header() {
   );
 }
 
-// ─── DESKTOP service card (unchanged) ─────────────────────────────────────────
+// ─── DESKTOP service card ─────────────────────────────────────────
 function ServiceCard({ service }) {
   return (
-    <div className="w-full">
-      <div className="relative w-full aspect-square lg:aspect-auto lg:h-[380px] lg:max-w-[280px] rounded-[10px] overflow-hidden group cursor-pointer">
+    <div className="flex flex-col w-full lg:max-w-[280px] bg-white border-2 border-[#D1D5DB] shadow-[0px_2px_8px_0px_rgba(99,99,99,0.2)] rounded-[12px] overflow-hidden group cursor-pointer transition-shadow duration-300 hover:shadow-[0px_8px_24px_rgba(149,157,165,0.2)] h-full">
+      <div className="relative w-full aspect-square lg:aspect-auto lg:h-[380px] overflow-hidden">
         {/* Service Image */}
         <img
           src={service.image}
           alt={service.name}
-          className="absolute inset-0 w-full h-full object-cover"
+          className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
 
         {/* Service Info - Hidden on mobile, shown on desktop */}
-        <div className="hidden lg:flex absolute bottom-0 left-0 right-0 flex-col items-center gap-2 p-6">
+        <div className="hidden lg:flex absolute bottom-0 left-0 right-0 flex-col items-center gap-2 p-6 bg-gradient-to-t from-black/70 to-transparent">
           {/* Icon */}
-          <div className="mb-2">{service.icon}</div>
+          <div className="mb-2 drop-shadow-md">{service.icon}</div>
 
           {/* Service Name */}
-          <h3 className="font-body font-semibold text-[20px] leading-[32px] text-white">
+          <h3 className="font-body font-semibold text-[20px] leading-[32px] text-white drop-shadow-md text-center">
             {service.name}
           </h3>
         </div>
       </div>
 
       {/* Service Name Below Card - tablet only (between sm and lg) */}
-      <h3 className="hidden sm:block lg:hidden font-body font-medium text-[16px] leading-[24px] text-neutral-black text-center mt-2">
-        {service.name}
-      </h3>
+      <div className="hidden sm:flex lg:hidden p-4 flex-col justify-center items-center flex-grow bg-white">
+        <h3 className="font-body font-medium text-[16px] leading-[24px] text-neutral-black text-center">
+          {service.name}
+        </h3>
+      </div>
     </div>
   );
 }
 
-// ─── MOBILE service tile (LUZO-style flat card) ────────────────────────────────
+// ─── MOBILE service tile ────────────────────────────────
 function MobileServiceTile({ service, onClick }) {
   return (
     <div
-      className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4 flex items-center justify-between cursor-pointer active:scale-[0.98] transition-transform duration-150"
+      className="flex flex-col w-full cursor-pointer active:scale-[0.98] transition-all duration-150 bg-white border-2 border-[#D1D5DB] shadow-[0px_2px_8px_0px_rgba(99,99,99,0.2)] rounded-[12px] overflow-hidden hover:shadow-[0px_8px_24px_rgba(149,157,165,0.2)]"
       onClick={onClick}
     >
-      {/* Text side */}
-      <div className="flex flex-col gap-0.5">
-        <span className="font-bold text-[13px] leading-[17px] text-neutral-black">
-          {service.name}
-        </span>
-        <span className="text-[11px] text-gray-500 font-normal">
-          {service.subtitle}
-        </span>
-      </div>
-      {/* Illustration side */}
-      <div className="w-[68px] h-[52px] flex-shrink-0 overflow-hidden rounded-lg ml-2">
+      <div className="w-full aspect-square overflow-hidden bg-gray-50 border-b-2 border-[#E5E7EB]">
         <img
           src={service.image}
           alt={service.name}
           className="w-full h-full object-cover"
         />
+      </div>
+      <div className="p-3 bg-white flex items-center justify-center">
+        <span className="font-body font-medium text-[15px] leading-tight text-neutral-black text-center line-clamp-1">
+          {service.name}
+        </span>
       </div>
     </div>
   );
@@ -334,13 +334,13 @@ export default function ServicesSection() {
   };
 
   return (
-    <section className="w-full py-8 md:py-16 bg-bg-secondary">
+    <section className="w-full py-1 md:py-16 bg-bg-secondary">
       <div className="max-w-[1320px] mx-auto px-4">
-        <div className="flex flex-col gap-6 md:gap-10 items-center">
+        <div className="flex flex-col gap-2 md:gap-10 items-center">
           <Header />
 
-          {/* ── MOBILE: LUZO-style 2×2 flat tiles ── */}
-          <div className="grid grid-cols-2 gap-3 w-full md:hidden">
+          {/* ── MOBILE: 2×2 grid cards ── */}
+          <div className="grid grid-cols-2 gap-4 gap-y-6 w-full md:hidden">
             {services.map((service, index) => (
               <MobileServiceTile
                 key={index}

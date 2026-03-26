@@ -157,7 +157,7 @@ export default function PopularLocations() {
   };
 
   return (
-    <section className="w-full py-20 bg-neutral-gray-600">
+    <section className="w-full py-4 md:py-12 bg-neutral-gray-600">
       <div className="max-w-[1320px] mx-auto px-4">
 
         {/* ── MOBILE header: "Cities" + "View All" inline ── */}

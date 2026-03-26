@@ -1,14 +1,29 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 import { useGetSalonsQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiClock, FiCalendar } from "react-icons/fi";
 import { SkeletonSalonCard } from "./Skeleton";
 import svgPaths from "../../utils/svgPaths";
 
+// Helper formula to calculate distance
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  if (!lat1 || !lon1 || !lat2 || !lon2) return null;
+  const R = 6371; // Radius of the earth in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in km
+};
+
 // Scissors Icon for Header
 function ScissorsIcon() {
   return (
-    <div className="relative shrink-0 size-[24px]">
+    <div className="relative shrink-0 size-[16px] md:size-[24px]">
       <svg
         className="block size-full"
         fill="none"
@@ -55,22 +70,30 @@ function ScissorsIcon() {
 // Header Component
 function Header() {
   return (
-    <div className="flex flex-col gap-4 items-center w-full mb-6 md:mb-10">
-      <div className="flex flex-col gap-2 items-center">
-        {/* Title */}
-        <h2 className="font-display font-bold text-[32px] leading-[48px] text-neutral-black">
-          Featured Saloons
-        </h2>
+    <div className="flex flex-col gap-2 md:gap-4 items-center w-full mb-2 md:mb-10">
+      <div className="flex flex-col gap-1 md:gap-2 items-center">
+        {/* Title Row */}
+        <div className="flex items-center justify-center gap-2 md:gap-4 w-full">
+          {/* Left */}
+          <div className="flex items-center gap-2 md:gap-3">
+            <div className="h-[1px] w-[20px] md:w-[40px] bg-neutral-black"></div>
+            <ScissorsIcon />
+          </div>
 
-        {/* Icon with Lines */}
-        <div className="flex items-center gap-4">
-          <div className="h-[1px] w-[50px] bg-neutral-black"></div>
-          <ScissorsIcon />
-          <div className="h-[1px] w-[50px] bg-neutral-black"></div>
+          {/* Title */}
+          <h2 className="font-display font-bold text-[18px] md:text-[32px] leading-tight md:leading-[48px] text-neutral-black whitespace-nowrap">
+            Featured Saloons
+          </h2>
+
+          {/* Right */}
+          <div className="flex items-center gap-2 md:gap-3">
+            <ScissorsIcon />
+            <div className="h-[1px] w-[20px] md:w-[40px] bg-neutral-black"></div>
+          </div>
         </div>
 
         {/* Description */}
-        <p className="font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
+        <p className="hidden md:block font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
           Our Barbershop &amp; Tattoo Salon provides classic services combined with
           innovative techniques.
         </p>
@@ -80,7 +103,7 @@ function Header() {
 }
 
 // ─── DESKTOP CARD (unchanged, shown on md+) ────────────────────────────────────
-function SalonCard({ salon }) {
+function SalonCard({ salon, userLocation }) {
   const navigate = useNavigate();
 
   const handleViewSalon = () => {
@@ -97,8 +120,8 @@ function SalonCard({ salon }) {
     hoursDisplay = todayHours.closed
       ? 'Closed'
       : todayHours.open && todayHours.close
-      ? `${todayHours.open} - ${todayHours.close}`
-      : '9:00 AM - 9:00 PM';
+        ? `${todayHours.open} - ${todayHours.close}`
+        : '9:00 AM - 9:00 PM';
   } else if (salon.opening_time && salon.closing_time) {
     hoursDisplay = `${salon.opening_time} - ${salon.closing_time}`;
   }
@@ -139,11 +162,20 @@ function SalonCard({ salon }) {
             <p className="font-body text-[15px] leading-[22px] text-neutral-gray-700">
               {salon.address || `${salon.city}, ${salon.state}`}
             </p>
-            {salon.distance_km && (
-              <p className="font-body text-[14px] leading-[20px] text-accent-orange font-semibold mt-1">
-                {salon.distance_km.toFixed(1)} km away
-              </p>
-            )}
+            {(() => {
+              const distance = salon.distance_km ?? (userLocation ? calculateDistance(userLocation.lat, userLocation.lon, salon.latitude, salon.longitude) : null);
+              if (distance === null || distance === undefined) return null;
+
+              const formattedDistance = distance < 1
+                ? `${Math.round(distance * 1000)} m`
+                : `${distance.toFixed(1)} km`;
+
+              return (
+                <p className="font-body text-[14px] leading-[20px] text-accent-orange font-semibold mt-1">
+                  {formattedDistance} away
+                </p>
+              );
+            })()}
           </div>
         </div>
 
@@ -171,47 +203,50 @@ function SalonCard({ salon }) {
   );
 }
 
-// ─── MOBILE CARD (2-col grid, tap-to-reveal overlay + hover, type badge) ────────
-function MobileSalonCard({ salon }) {
+// ─── MOBILE CARD (Stack layout with 3 lines of details + Offer strip) ────────
+function MobileSalonCard({ salon, userLocation }) {
   const navigate = useNavigate();
-  const [revealed, setRevealed] = useState(false);
+  const [isClicked, setIsClicked] = useState(false);
 
-  const handleViewSalon = () => navigate(`/salons/${salon.id}`);
-
-  // First tap → reveal overlay; second tap on card (not Book Now) → navigate
-  const handleCardClick = () => {
-    if (revealed) {
-      handleViewSalon();
-    } else {
-      setRevealed(true);
+  const handleCardClick = (e) => {
+    e.preventDefault();
+    if (!isClicked) {
+      setIsClicked(true);
+      // Redirect after a short delay to let the dark effect play
+      setTimeout(() => {
+        navigate(`/salons/${salon.id}`);
+        // Reset state shortly after navigation so it's clean if user hits back button
+        setTimeout(() => setIsClicked(false), 100);
+      }, 350);
     }
   };
 
-  // Dismiss overlay when tapping outside (via blur / touch elsewhere)
-  const handleMouseLeave = () => setRevealed(false);
+  const handleBookNow = (e) => {
+    e.stopPropagation();
+    navigate(`/salons/${salon.id}`);
+  };
 
   const salonImage =
     salon.logo_url ||
     (salon.cover_images && salon.cover_images.length > 0 ? salon.cover_images[0] : null);
 
-  const salonType = salon.salon_type || salon.category || 'Unisex';
+  let salonType = salon.business_type || salon.salon_type || salon.category || 'Unisex';
+  if (typeof salonType === 'string') {
+    salonType = salonType.replace(/_/g, ' ');
+  }
 
   return (
     <div
-      className="relative rounded-2xl overflow-hidden cursor-pointer shadow-md border border-gray-100 group"
-      style={{ aspectRatio: '3/4' }}
+      className="relative flex flex-col bg-gray-50 overflow-hidden cursor-pointer border border-gray-200 rounded-xl shadow-md"
       onClick={handleCardClick}
-      onMouseLeave={handleMouseLeave}
     >
-      {/* Background image */}
-      <div className="absolute inset-0">
+      {/* Top Half: Image */}
+      <div className="relative h-[200px] w-full bg-gray-200 overflow-hidden">
         {salonImage ? (
           <img
             src={salonImage}
             alt={salon.business_name}
-            className={`w-full h-full object-cover transition-transform duration-500 ${
-              revealed ? 'scale-110' : 'group-hover:scale-110'
-            }`}
+            className={`w-full h-full object-cover transition-transform duration-500 ${isClicked ? 'scale-105' : ''}`}
             onError={(e) => {
               e.target.style.display = 'none';
               if (e.target.parentElement) {
@@ -223,69 +258,74 @@ function MobileSalonCard({ salon }) {
         ) : (
           <div className="w-full h-full bg-gradient-to-br from-orange-400 to-orange-700" />
         )}
-      </div>
 
-      {/* Always-visible gradient at bottom */}
-      <div className="absolute bottom-0 left-0 right-0 h-[55%] bg-gradient-to-t from-black/80 via-black/30 to-transparent z-10" />
-
-      {/* Salon type badge — top left */}
-      <div className="absolute top-2 left-2 z-20">
-        <span className="bg-white/90 backdrop-blur-sm text-neutral-black text-[9px] font-bold uppercase tracking-wide px-2 py-[3px] rounded-full shadow-sm">
-          {salonType}
-        </span>
-      </div>
-
-      {/* Featured badge — top right */}
-      <div className="absolute top-2 right-2 z-20">
-        <span className="bg-amber-400 text-black text-[8px] font-black uppercase tracking-wider px-2 py-[3px] rounded-full shadow-md">
-          ★ Featured
-        </span>
-      </div>
-
-      {/* Always-visible bottom strip: name + location */}
-      <div
-        className={`absolute bottom-0 left-0 right-0 z-20 px-2.5 pb-2.5 pt-1 transition-all duration-300 ${
-          revealed
-            ? 'translate-y-2 opacity-0'
-            : 'translate-y-0 opacity-100 group-hover:translate-y-2 group-hover:opacity-0'
-        }`}
-      >
-        <h3 className="text-white font-bold text-[12px] leading-[15px] line-clamp-1 drop-shadow-md">
-          {salon.business_name}
-        </h3>
-        <div className="flex items-center gap-1 mt-0.5">
-          <FiMapPin size={8} className="text-orange-300 flex-shrink-0" />
-          <p className="text-gray-300 text-[9px] leading-[12px] line-clamp-1">
-            {salon.city || salon.address || ''}
-          </p>
-        </div>
-      </div>
-
-      {/* Detail overlay — shown on hover (desktop) OR tap (mobile) */}
-      <div
-        className={`absolute inset-0 z-30 flex flex-col justify-end p-3 bg-black/70 transition-opacity duration-300 ${
-          revealed ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-        }`}
-      >
-        <h3 className="text-white font-bold text-[13px] leading-[17px] mb-1 line-clamp-2">
-          {salon.business_name}
-        </h3>
-        <p className="text-gray-300 text-[10px] leading-[13px] line-clamp-2 mb-2">
-          {salon.address || `${salon.city || ''}, ${salon.state || ''}`}
-        </p>
-        <div className="flex items-center justify-between gap-1">
-          <span className="text-[9px] text-orange-300 font-semibold uppercase tracking-wider">
+        {/* Top Badges */}
+        <div className="absolute top-2 left-2 right-2 flex justify-between items-start z-10 pointer-events-none">
+          {/* Business type badge on Left */}
+          <span className="bg-white/95 text-neutral-black text-[9px] font-bold uppercase px-2 py-0.5 rounded shadow-sm flex items-center h-[18px] pointer-events-auto">
             {salonType}
           </span>
+
+          {/* Featured golden tag on Right */}
+          <span className="bg-[#FFD700] text-neutral-black text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5 h-[18px] pointer-events-auto">
+            <FiStar size={8} className="fill-current" /> Featured
+          </span>
+        </div>
+
+        {/* Offer strip at bottom of the image */}
+        <div className="absolute bottom-0 left-0 bg-gradient-to-r from-orange-100 to-orange-50 text-accent-orange text-[10px] font-bold px-2.5 py-1 rounded-tr-lg z-10 shadow-sm border-t border-r border-orange-200/50">
+          UPTO 20% OFF
+        </div>
+
+        {/* Dark overlay for interaction */}
+        <div className={`absolute inset-0 bg-black/40 z-20 transition-opacity duration-300 ${isClicked ? 'opacity-100 pointer-events-none' : 'opacity-0 pointer-events-none'}`} />
+      </div>
+
+      {/* Bottom Half: Details */}
+      <div className="flex flex-col p-3 bg-white border-t border-gray-100">
+
+        {/* Line 1: Name & Rating */}
+        <div className="flex items-start justify-between mb-1">
+          <h3 className={`text-neutral-black font-bold text-[15px] leading-tight line-clamp-1 transition-colors ${isClicked ? 'text-accent-orange' : ''} pr-2`}>
+            {salon.business_name}
+          </h3>
+          <span className="bg-green-600 text-white text-[11px] font-bold px-1.5 py-0.5 rounded flex items-center gap-0.5 shrink-0 shadow-sm">
+            ★ {salon.average_rating || '4.5'}
+          </span>
+        </div>
+
+        {/* Line 2: Location & Book Now */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-1 text-neutral-gray-500">
+            <FiMapPin size={12} className="flex-shrink-0 text-accent-orange" />
+            <p className="text-[12px] font-medium leading-tight line-clamp-1">
+              {salon.address || `${salon.city || ''}, ${salon.state || ''}`}
+              {(() => {
+                const distance = salon.distance_km ?? (userLocation ? calculateDistance(userLocation.lat, userLocation.lon, salon.latitude, salon.longitude) : null);
+                if (distance === null || distance === undefined) return '';
+
+                const formattedDistance = distance < 1
+                  ? `${Math.round(distance * 1000)} m`
+                  : `${distance.toFixed(1)} km`;
+
+                return ` • ${formattedDistance}`;
+              })()}
+            </p>
+          </div>
           <button
-            className="bg-accent-orange text-white text-[9px] font-bold px-2.5 py-1 rounded-full active:opacity-80"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleViewSalon();
-            }}
+            className="bg-accent-orange text-white font-bold text-[11px] px-4 py-1.5 rounded-md shrink-0 shadow-md transition-transform active:scale-95 z-30 ml-2"
+            onClick={handleBookNow}
           >
-            Book Now
+            BOOK NOW
           </button>
+        </div>
+
+        {/* Line 3: Offer Strip (Luzo Style) */}
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex items-center gap-2">
+          <span className="text-[14px] leading-none">✨</span>
+          <span className="text-[11px] text-gray-600 font-medium line-clamp-1">
+            Extra 10% Off on Online Payments
+          </span>
         </div>
       </div>
     </div>
@@ -296,9 +336,11 @@ function MobileSalonCard({ salon }) {
 export default function FeaturedSaloons() {
   const { data, isLoading, error } = useGetSalonsQuery({ limit: 6 });
   const salons = data?.salons || [];
+  const locationState = useSelector((state) => state.location);
+  const userLocation = locationState?.userLocation || null;
 
   return (
-    <section className="w-full py-8 md:py-16 bg-white">
+    <section className="w-full py-1 md:py-16 bg-white">
       <div className="max-w-[1320px] mx-auto px-4">
         <Header />
 
@@ -339,14 +381,14 @@ export default function FeaturedSaloons() {
             {/* Desktop: original 3-col grid */}
             <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
               {salons.map((salon) => (
-                <SalonCard key={salon.id} salon={salon} />
+                <SalonCard key={salon.id} salon={salon} userLocation={userLocation} />
               ))}
             </div>
 
-            {/* Mobile: 2-column card grid */}
-            <div className="grid grid-cols-2 gap-3 md:hidden">
+            {/* Mobile: 1-column card grid */}
+            <div className="grid grid-cols-1 gap-4 md:hidden px-2">
               {salons.map((salon) => (
-                <MobileSalonCard key={salon.id} salon={salon} />
+                <MobileSalonCard key={salon.id} salon={salon} userLocation={userLocation} />
               ))}
             </div>
           </>

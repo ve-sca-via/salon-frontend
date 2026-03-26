@@ -1,16 +1,18 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { FiMapPin } from "react-icons/fi";
+import { FiMapPin, FiScissors } from "react-icons/fi";
 import { Menu } from "./Menu";
 import { Actions } from "./Actions";
 import { HamburgerIcon } from "./Icons";
 import { getUserLocation } from "../../../store/slices/locationSlice";
+import { useGetCartQuery } from "../../../services/api/cartApi";
 
 export function Navigation({ onMenuToggle, isMenuOpen }) {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { locationName, userLocation } = useSelector((state) => state.location);
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const { data: cart } = useGetCartQuery(undefined, { skip: !isAuthenticated });
 
   return (
     <div className="content-stretch flex gap-[12px] md:gap-[60px] lg:gap-[120px] xl:gap-[237px] items-start justify-between relative w-full max-w-[1296px]">
@@ -50,7 +52,21 @@ export function Navigation({ onMenuToggle, isMenuOpen }) {
       </div>
 
       {/* Mobile: Login/Signup Button and Hamburger Menu */}
-      <div className="lg:hidden flex items-center gap-2 self-start">
+      <div className="lg:hidden flex items-center gap-1 sm:gap-2 self-start">
+        {isAuthenticated && (
+           <button
+             onClick={() => navigate("/cart")}
+             className="relative p-2 hover:bg-neutral-gray-600 rounded-md transition-colors mt-0.5"
+             aria-label="View Cart"
+           >
+              <FiScissors className="w-5 h-5 text-neutral-black" />
+             {cart?.item_count > 0 && (
+               <span className="absolute -top-1 -right-1 bg-accent-orange text-primary-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                 {cart?.item_count}
+               </span>
+             )}
+           </button>
+        )}
         {!isAuthenticated && (
           <button
             className="bg-neutral-black flex items-center justify-center px-3 py-2 rounded-md hover:opacity-90 transition-opacity"
