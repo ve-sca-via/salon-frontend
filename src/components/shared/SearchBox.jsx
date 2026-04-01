@@ -185,7 +185,7 @@ export default function SearchBox() {
   };
 
   return (
-    <div className="w-full max-w-[1235px] mx-auto px-4 -mt-16 relative z-40">
+    <div className="w-full max-w-[1235px] mx-auto px-4 mt-2 mb-4 lg:-mt-16 lg:mb-0 relative z-40">
       <div className="bg-primary-white rounded-[5px] shadow-[0px_8px_44px_0px_rgba(65,65,65,0.19)] p-6">
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-stretch lg:items-center">
           {/* Service Type Dropdown */}

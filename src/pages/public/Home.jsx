@@ -241,7 +241,7 @@ function HeroSection() {
   };
 
   return (
-    <section className="relative w-full h-[600px] overflow-hidden">
+    <section className="relative w-full h-[320px] md:h-[600px] overflow-hidden">
       {/* Background Images with Crossfade Transition - Lazy loaded after first 2 */}
       {currentBgImage && (
         <div
@@ -255,10 +255,10 @@ function HeroSection() {
       {/* Dark overlay for better text readability */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent z-20"></div>
 
-      {/* Previous Slide Button */}
+      {/* Previous Slide Button — hidden on mobile */}
       <button
         onClick={goToPrevious}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-white/50"
+        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-white/50"
         aria-label="Previous image"
       >
         <svg
@@ -276,10 +276,10 @@ function HeroSection() {
         </svg>
       </button>
 
-      {/* Next Slide Button */}
+      {/* Next Slide Button — hidden on mobile */}
       <button
         onClick={goToNext}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-white/50"
+        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-white/50"
         aria-label="Next image"
       >
         <svg
@@ -297,8 +297,8 @@ function HeroSection() {
         </svg>
       </button>
 
-      {/* Carousel Dot Indicators */}
-      <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 flex gap-2">
+      {/* Carousel Dot Indicators — hidden on mobile */}
+      <div className="hidden md:flex absolute bottom-24 left-1/2 -translate-x-1/2 z-30 gap-2">
         {backgroundImages.map((_, index) => (
           <button
             key={index}
@@ -316,20 +316,20 @@ function HeroSection() {
 
       {/* Hero Content */}
       <div className="relative h-full max-w-7xl mx-auto px-4 flex items-center z-30">
-        <div className="max-w-2xl flex flex-col gap-6">
+        <div className="max-w-2xl flex flex-col gap-3 md:gap-6">
           {/* Main Heading */}
-          <h1 className="font-display font-bold text-[52px] leading-[64px] text-white">
+          <h1 className="font-display font-bold text-[28px] leading-[34px] md:text-[52px] md:leading-[64px] text-white">
             Beauty. Booking. Simplified.
           </h1>
 
-          {/* Description */}
-          <p className="font-body font-normal text-[16px] leading-[24px] text-white max-w-xl">
+          {/* Description — hidden on mobile to keep hero compact */}
+          <p className="hidden md:block font-body font-normal text-[16px] leading-[24px] text-white max-w-xl">
             Discover verified salons, check real-time availability, and book appointments 
             within seconds. No calls, no confusion — just a delightful booking experience.
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex gap-4 mt-4">
+          {/* CTA Buttons — hidden on mobile */}
+          <div className="hidden md:flex gap-4 mt-4">
             <Link to="/signup">
               <button className="bg-white hover:bg-gray-100 transition-colors box-border flex gap-2 items-center justify-center px-6 py-3 rounded-md group focus:outline-none focus:ring-2 focus:ring-white/50">
                 <span className="font-body font-medium text-[16px] leading-[24px] text-neutral-black">
@@ -345,6 +345,15 @@ function HeroSection() {
                 <span className="font-body font-medium text-[16px] leading-[24px] text-white">
                   Browse Salons
                 </span>
+              </button>
+            </Link>
+          </div>
+
+          {/* Mobile CTA — small Browse Salons link */}
+          <div className="md:hidden">
+            <Link to="/salons">
+              <button className="bg-white/20 backdrop-blur-sm border border-white/50 text-white text-[13px] font-semibold px-4 py-2 rounded-full">
+                Browse Salons →
               </button>
             </Link>
           </div>
