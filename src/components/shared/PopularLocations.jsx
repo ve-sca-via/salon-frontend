@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { FiMapPin } from "react-icons/fi";
 import { useGetPopularCitiesQuery } from "../../services/api/salonApi";
 import svgPaths from "../../utils/svgPaths";
 
@@ -28,60 +29,30 @@ function ScissorsIcon() {
         viewBox="0 0 24 24"
       >
         <g>
-          <path
-            clipRule="evenodd"
-            d={svgPaths.p25acb880}
-            fill="#242B3A"
-            fillRule="evenodd"
-          />
-          <path
-            clipRule="evenodd"
-            d={svgPaths.p278c7db0}
-            fill="#242B3A"
-            fillRule="evenodd"
-          />
-          <path
-            clipRule="evenodd"
-            d={svgPaths.pd7a6390}
-            fill="#242B3A"
-            fillRule="evenodd"
-          />
-          <path
-            clipRule="evenodd"
-            d={svgPaths.p33bb100}
-            fill="#242B3A"
-            fillRule="evenodd"
-          />
-          <path
-            clipRule="evenodd"
-            d={svgPaths.p153dbd00}
-            fill="#242B3A"
-            fillRule="evenodd"
-          />
+          <path clipRule="evenodd" d={svgPaths.p25acb880} fill="#242B3A" fillRule="evenodd" />
+          <path clipRule="evenodd" d={svgPaths.p278c7db0} fill="#242B3A" fillRule="evenodd" />
+          <path clipRule="evenodd" d={svgPaths.pd7a6390} fill="#242B3A" fillRule="evenodd" />
+          <path clipRule="evenodd" d={svgPaths.p33bb100} fill="#242B3A" fillRule="evenodd" />
+          <path clipRule="evenodd" d={svgPaths.p153dbd00} fill="#242B3A" fillRule="evenodd" />
         </g>
       </svg>
     </div>
   );
 }
 
-// Header Component
+// ─── DESKTOP Header ────────────────────────────────────────────────────────────
 function Header() {
   return (
     <div className="flex flex-col gap-4 items-center w-full mb-12">
       <div className="flex flex-col gap-2 items-center">
-        {/* Title */}
         <h2 className="font-display font-bold text-[32px] leading-[48px] text-neutral-black">
           Popular Locations
         </h2>
-
-        {/* Icon with Lines */}
         <div className="flex items-center gap-4">
           <div className="h-[1px] w-[50px] bg-neutral-black"></div>
           <ScissorsIcon />
           <div className="h-[1px] w-[50px] bg-neutral-black"></div>
         </div>
-
-        {/* Description */}
         <p className="font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
           Here's a list of popular locations across India, showcasing diverse
           cities that are sought after for various reasons.
@@ -91,10 +62,10 @@ function Header() {
   );
 }
 
-// Location Card Component
+// ─── DESKTOP Location Card (unchanged) ────────────────────────────────────────
 function LocationCard({ cityName, salonCount, imageUrl, onClick }) {
   return (
-    <div 
+    <div
       className="bg-primary-white rounded-[10px] shadow-lg overflow-hidden w-full max-w-[306px] flex flex-col cursor-pointer hover:shadow-xl transition-all duration-300 group"
       onClick={onClick}
     >
@@ -105,14 +76,14 @@ function LocationCard({ cityName, salonCount, imageUrl, onClick }) {
           alt={cityName}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           onError={(e) => {
-            // Fallback to gradient if image fails
             e.target.style.display = 'none';
-            e.target.parentElement.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600"></div>';
+            e.target.parentElement.innerHTML =
+              '<div class="w-full h-full bg-gradient-to-br from-orange-400 to-orange-600"></div>';
           }}
         />
       </div>
 
-      {/* Info Container */}
+      {/* Info */}
       <div className="flex flex-col items-center justify-center p-5 text-center">
         <h3 className="font-body font-semibold text-[20px] leading-[32px] text-neutral-black group-hover:text-accent-orange transition-colors">
           {cityName}
@@ -125,55 +96,113 @@ function LocationCard({ cityName, salonCount, imageUrl, onClick }) {
   );
 }
 
+// ─── MOBILE Location Row (LUZO Cities list style) ─────────────────────────────
+function MobileLocationRow({ cityName, salonCount, onClick }) {
+  return (
+    <div
+      className="bg-white rounded-xl shadow-sm border border-gray-100 px-4 py-3 flex items-center gap-3 cursor-pointer active:bg-gray-50 transition-colors w-full"
+      onClick={onClick}
+    >
+      {/* Pin icon circle */}
+      <div className="flex items-center justify-center w-9 h-9 rounded-full bg-orange-50 flex-shrink-0">
+        <FiMapPin size={16} className="text-accent-orange" />
+      </div>
+
+      {/* City info */}
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-[14px] text-neutral-black leading-[18px]">
+          {cityName}
+        </p>
+        <p className="text-[11px] text-gray-500 leading-[15px]">
+          {salonCount} {salonCount === 1 ? 'outlet' : 'outlets'}
+        </p>
+      </div>
+
+      {/* Chevron */}
+      <svg
+        className="w-4 h-4 text-gray-400 flex-shrink-0"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </div>
+  );
+}
+
 export default function PopularLocations() {
   const navigate = useNavigate();
-  
-  // Fetch aggregated city data from backend (efficient, scalable)
-  const { data, isLoading, error } = useGetPopularCitiesQuery({ limit: 8 });
 
+  const { data, isLoading, error } = useGetPopularCitiesQuery({ limit: 8 });
   const cities = data?.cities || [];
 
-  // Enhance cities with display images (memoized)
   const cityStats = useMemo(() => {
-    return cities.map(city => ({
-      cityName: city.city.charAt(0).toUpperCase() + city.city.slice(1), // Capitalize first letter for display
+    return cities.map((city) => ({
+      cityName: city.city.charAt(0).toUpperCase() + city.city.slice(1),
       salonCount: city.salon_count,
-      imageUrl: CITY_IMAGES[city.city] || 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&q=80'
+      imageUrl:
+        CITY_IMAGES[city.city] ||
+        'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=400&q=80',
     }));
   }, [cities]);
 
-  // Calculate total salons (sum of all city counts)
-  const totalSalons = useMemo(() => {
-    return cities.reduce((sum, city) => sum + city.salon_count, 0);
-  }, [cities]);
+  const totalSalons = useMemo(
+    () => cities.reduce((sum, city) => sum + city.salon_count, 0),
+    [cities]
+  );
 
-  // Navigate to salons page with city filter - uses React Router (no page reload)
   const handleCityClick = (cityName) => {
     navigate(`/salons?city=${encodeURIComponent(cityName)}`);
   };
 
   return (
-    <section className="w-full py-20 bg-neutral-gray-600">
+    <section className="w-full py-4 md:py-12 bg-neutral-gray-600">
       <div className="max-w-[1320px] mx-auto px-4">
-        <div className="flex flex-col gap-12 items-center">
-          <Header />
 
-          {/* Loading State */}
+        {/* ── MOBILE header: "Cities" + "View All" inline ── */}
+        {cityStats.length > 0 && (
+          <div className="flex items-center justify-between mb-4 md:hidden">
+            <h2 className="font-bold text-[20px] text-neutral-black">Cities</h2>
+            <a href="/salons">
+              <button className="bg-blue-100 text-blue-600 text-[12px] font-semibold px-3 py-1.5 rounded-lg">
+                View All
+              </button>
+            </a>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-12 items-center">
+          {/* Desktop header */}
+          <div className="hidden md:block w-full">
+            <Header />
+          </div>
+
+          {/* ── Loading ── */}
           {isLoading && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full place-items-center">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
-                <div key={i} className="bg-white rounded-[10px] shadow-lg w-full max-w-[306px] h-[280px] animate-pulse">
-                  <div className="h-[197px] bg-gray-300"></div>
-                  <div className="p-5 space-y-2">
-                    <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto"></div>
-                    <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto"></div>
+            <>
+              {/* Desktop skeletons */}
+              <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full place-items-center">
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+                  <div key={i} className="bg-white rounded-[10px] shadow-lg w-full max-w-[306px] h-[280px] animate-pulse">
+                    <div className="h-[197px] bg-gray-300"></div>
+                    <div className="p-5 space-y-2">
+                      <div className="h-6 bg-gray-300 rounded w-3/4 mx-auto"></div>
+                      <div className="h-4 bg-gray-300 rounded w-1/2 mx-auto"></div>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              {/* Mobile skeletons */}
+              <div className="flex flex-col gap-2 w-full md:hidden">
+                {[1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className="bg-white rounded-xl h-[60px] animate-pulse border border-gray-100" />
+                ))}
+              </div>
+            </>
           )}
 
-          {/* Error State */}
+          {/* ── Error ── */}
           {error && (
             <div className="text-center py-12">
               <p className="text-xl text-red-500">
@@ -182,10 +211,11 @@ export default function PopularLocations() {
             </div>
           )}
 
-          {/* Locations Grid */}
+          {/* ── Data ── */}
           {!isLoading && !error && cityStats.length > 0 && (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full place-items-center">
+              {/* Desktop: image-card grid */}
+              <div className="hidden md:grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full place-items-center">
                 {cityStats.map((location) => (
                   <LocationCard
                     key={location.cityName}
@@ -197,9 +227,21 @@ export default function PopularLocations() {
                 ))}
               </div>
 
-              {/* View All Button - Shows actual total */}
+              {/* Mobile: list rows */}
+              <div className="flex flex-col gap-2 w-full md:hidden">
+                {cityStats.map((location) => (
+                  <MobileLocationRow
+                    key={location.cityName}
+                    cityName={location.cityName}
+                    salonCount={location.salonCount}
+                    onClick={() => handleCityClick(location.cityName)}
+                  />
+                ))}
+              </div>
+
+              {/* View All Button — desktop only */}
               {totalSalons > 0 && (
-                <a href="/salons">
+                <a href="/salons" className="hidden md:inline-block">
                   <button className="bg-accent-orange hover:bg-accent-orange/90 transition-colors px-6 py-3 rounded-[5px] mt-8">
                     <span className="font-body font-medium text-[14px] leading-[24px] text-primary-white">
                       VIEW ALL {totalSalons} SALONS
@@ -210,7 +252,7 @@ export default function PopularLocations() {
             </>
           )}
 
-          {/* No Data State */}
+          {/* ── Empty ── */}
           {!isLoading && !error && cityStats.length === 0 && (
             <div className="text-center py-12">
               <p className="text-xl text-neutral-gray-500">

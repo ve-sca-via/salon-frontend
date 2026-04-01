@@ -37,6 +37,7 @@ import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/a
 import { useGetCartQuery, useAddToCartMutation, useRemoveFromCartMutation } from "../../services/api/cartApi";
 import { showSuccessToast, showErrorToast, showInfoToast } from "../../utils/toastConfig";
 import { NotFound, NetworkError } from "../../components/shared/ErrorFallback";
+import { FiScissors } from "react-icons/fi";
 
 /**
  * getCategoryImage - Returns category image URL
@@ -238,7 +239,7 @@ export default function ServiceBooking() {
     // Check if trying to add from different salon
     if (cart?.salon_id && cart.salon_id !== id) {
       showErrorToast(
-        `Your cart contains items from ${cart.salon_name}. Please clear your cart to add items from a different salon.`,
+        `Your selected services contain items from ${cart.salon_name}. Please clear your selection to add items from a different salon.`,
         { autoClose: 4000 }
       );
       return;
@@ -259,7 +260,7 @@ export default function ServiceBooking() {
 
     try {
       await addToCart(cartItem).unwrap();
-      showSuccessToast(`${service.name} added to cart!`);
+      showSuccessToast(`${service.name} added to services!`);
     } catch (error) {
       const errorMessage = error?.data?.detail || 'Failed to add to cart';
       showErrorToast(errorMessage);
@@ -276,7 +277,7 @@ export default function ServiceBooking() {
     if (cartItem) {
       try {
         await removeFromCart(cartItem.id).unwrap();
-        showInfoToast(`${service.name} removed from cart!`);
+        showInfoToast(`${service.name} removed from services!`);
       } catch (error) {
         showErrorToast('Failed to remove from cart');
       }
@@ -388,29 +389,34 @@ export default function ServiceBooking() {
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
-          <button
-            onClick={() => navigate(`/salons/${id}`)}
-            className="flex items-center gap-2 text-neutral-gray-500 hover:text-accent-orange transition-colors mb-4"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
+          <div className="flex justify-between items-center mb-4">
+            <button
+              onClick={() => navigate(`/salons/${id}`)}
+              className="flex items-center gap-1.5 text-neutral-gray-500 hover:text-accent-orange transition-colors"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-            <span className="font-body font-medium">Back to Salon</span>
-          </button>
-          <h1 className="font-display font-bold text-[26px] sm:text-[32px] text-neutral-black mb-2">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span className="font-body font-medium text-[15px] sm:text-[16px]">Back to Salon</span>
+            </button>
+            
+            {/* View Cart Button at top */}
+            {cart?.item_count > 0 && (
+              <button
+                onClick={() => navigate(`/cart`)}
+                className="bg-accent-orange hover:bg-orange-600 text-white rounded-full px-4 py-1.5 flex items-center gap-2 shadow-sm transition-colors"
+              >
+                <FiScissors className="w-4 h-4" />
+                <span className="font-body font-semibold text-[13px]">
+                  {cart?.item_count} {cart?.item_count === 1 ? 'Service' : 'Services'} • ₹{cart?.total_amount || 0}
+                </span>
+              </button>
+            )}
+          </div>
+          <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black mb-1">
             Select Services
           </h1>
-          <p className="font-body text-[14px] sm:text-[16px] text-neutral-gray-500">
+          <p className="font-body text-[13px] sm:text-[15px] text-neutral-gray-500">
             Choose from our wide range of services at {salon.name}
           </p>
         </div>
@@ -502,65 +508,49 @@ export default function ServiceBooking() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 px-2">
               {currentServices.map((service) => (
                 <div
                   key={service.id}
-                  className="border border-neutral-gray-600 rounded-lg p-3 sm:p-4 hover:shadow-lg hover:border-accent-orange transition-all"
+                  className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 hover:shadow-md transition-all flex items-center justify-between"
                 >
-                  {/* Service Info */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h3 className="font-display font-semibold text-[16px] sm:text-[18px] text-neutral-black mb-1">
-                        {service.name}
-                      </h3>
-                      {service.description && (
-                        <p className="font-body text-[13px] sm:text-[14px] text-neutral-gray-500 mb-2 line-clamp-2">
-                          {service.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4">
-                        <div className="flex items-center gap-1">
-                          <svg
-                            className="w-4 h-4 text-accent-orange"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                          <span className="font-body text-[13px] sm:text-[14px] text-neutral-black">
-                            {service.duration_minutes} min
-                          </span>
-                        </div>
-                        <div className="font-display font-bold text-[16px] sm:text-[18px] text-accent-orange">
-                          ₹{service.price}
-                        </div>
-                      </div>
+                  {/* Left: Name and Duration */}
+                  <div className="flex flex-col pr-3">
+                    <h3 className="font-display font-bold text-[14px] text-neutral-black leading-tight line-clamp-2 mb-1" title={service.name}>
+                      {service.name}
+                    </h3>
+                    
+                    <div className="flex items-center gap-1 text-neutral-gray-500">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="font-body text-[12px] whitespace-nowrap">
+                        {service.duration_minutes}m
+                      </span>
                     </div>
                   </div>
 
-                  {/* Add to Cart Button */}
-                  {isServiceInCart(service) ? (
-                    <button
-                      disabled
-                      className="w-full py-2.5 bg-neutral-gray-600 text-neutral-black rounded-lg font-body font-semibold text-[13px] sm:text-[14px] cursor-not-allowed"
-                    >
-                      Added to Cart
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleAddToCart(service)}
-                      className="w-full py-2.5 bg-accent-orange text-primary-white rounded-lg font-body font-semibold text-[13px] sm:text-[14px] hover:bg-orange-600 transition-colors"
-                    >
-                      Add to Cart
-                    </button>
-                  )}
+                  {/* Right: Price and Add Button */}
+                  <div className="flex flex-col items-end shrink-0 ml-2 gap-1.5">
+                    <span className="font-display font-extrabold text-[14px] text-accent-orange">
+                      ₹{service.price}
+                    </span>
+                      {isServiceInCart(service) ? (
+                        <button
+                          disabled
+                          className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-[5px] font-body font-bold text-[10px] cursor-not-allowed uppercase tracking-wide"
+                        >
+                          Added
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => handleAddToCart(service)}
+                          className="px-3 py-1.5 bg-accent-orange/10 text-accent-orange border border-accent-orange/20 rounded-[5px] font-body font-bold text-[10px] hover:bg-accent-orange hover:text-white transition-colors uppercase tracking-wide"
+                        >
+                          + Add
+                        </button>
+                      )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -568,42 +558,7 @@ export default function ServiceBooking() {
         </div>
       </div>
 
-      {/* Floating Cart Button */}
-      {cart?.item_count > 0 && (
-        <div className="fixed bottom-6 right-6 z-50">
-          <button
-            onClick={() => navigate(`/cart`)}
-            className="bg-accent-orange hover:opacity-90 text-primary-white rounded-full px-6 py-4 shadow-2xl flex items-center gap-3 transition-opacity"
-          >
-            <div className="relative">
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                />
-              </svg>
-              <span className="absolute -top-2 -right-2 bg-neutral-black text-primary-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
-                {cart?.item_count || 0}
-              </span>
-            </div>
-            <div className="text-left">
-              <span className="font-body font-semibold text-[16px] block">
-                View Cart
-              </span>
-              <span className="font-body text-[12px] opacity-90">
-                ₹{cart?.total_amount || 0}
-              </span>
-            </div>
-          </button>
-        </div>
-      )}
+      {/* No bottom floating cart button anymore */}
     </div>
   );
 }
