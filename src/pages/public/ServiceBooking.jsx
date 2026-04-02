@@ -292,11 +292,44 @@ export default function ServiceBooking() {
     return cart?.items?.some((item) => item.service_id === service.id) || false;
   };
 
-  // Horizontal scroll controls for category strip
-  const handleCategoryScroll = (direction) => {
-    if (!categoryScrollRef.current) return;
-    const scrollAmount = direction === "left" ? -220 : 220;
-    categoryScrollRef.current.scrollBy({ left: scrollAmount, behavior: "smooth" });
+  /**
+   * handleCategoryNavigation - Changes selection and scrolls to category
+   * Moves from one category to another based on direction
+   */
+  const handleCategoryNavigation = (direction) => {
+    if (serviceCategories.length === 0) return;
+    
+    const currentIndex = serviceCategories.findIndex(cat => cat.name === selectedCategory);
+    let nextIndex;
+    
+    if (direction === "left") {
+      nextIndex = currentIndex > 0 ? currentIndex - 1 : serviceCategories.length - 1;
+    } else {
+      nextIndex = currentIndex < serviceCategories.length - 1 ? currentIndex + 1 : 0;
+    }
+    
+    const nextCategory = serviceCategories[nextIndex];
+    setSelectedCategory(nextCategory.name);
+
+    // Smoothly scroll the container to center the new category
+    if (categoryScrollRef.current) {
+      const container = categoryScrollRef.current;
+      const activeItem = container.children[nextIndex];
+      
+      if (activeItem) {
+        const containerWidth = container.offsetWidth;
+        const itemLeft = activeItem.offsetLeft;
+        const itemWidth = activeItem.offsetWidth;
+        
+        // Calculate scroll position to center the item
+        const scrollPos = itemLeft - (containerWidth / 2) + (itemWidth / 2);
+        
+        container.scrollTo({
+          left: scrollPos,
+          behavior: "smooth"
+        });
+      }
+    }
   };
 
   // Loading state - shows spinner while fetching data
@@ -422,17 +455,17 @@ export default function ServiceBooking() {
         </div>
 
         {/* Service Categories with Navigation Arrows */}
-        <div className="py-3 sm:p-6 mb-4 sm:mb-6">
+        <div className="py-3 mb-4 sm:mb-6">
           <div className="relative">
-            <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="flex items-center justify-between gap-1 sm:gap-4">
               <button
                 type="button"
-                onClick={() => handleCategoryScroll("left")}
-                className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-white sm:bg-bg-secondary border border-neutral-gray-600 sm:border-0 rounded-full hover:bg-neutral-gray-600 transition-colors"
-                aria-label="Scroll categories left"
+                onClick={() => handleCategoryNavigation("left")}
+                className="flex-shrink-0 w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-white border border-neutral-gray-600 rounded-full shadow-sm hover:bg-neutral-gray-600 transition-all active:scale-95 disabled:opacity-30"
+                aria-label="Previous category"
               >
                 <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-black"
+                  className="w-5 h-5 text-neutral-black"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -440,7 +473,7 @@ export default function ServiceBooking() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     d="M15 19l-7-7 7-7"
                   />
                 </svg>
@@ -448,7 +481,7 @@ export default function ServiceBooking() {
 
               <div
                 ref={categoryScrollRef}
-                className="flex gap-3 sm:gap-6 overflow-x-auto py-2 px-1 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                className="flex flex-1 gap-4 sm:gap-8 overflow-x-auto py-2 px-2 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
                 style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
               >
                 {serviceCategories.map((category) => (
@@ -463,12 +496,12 @@ export default function ServiceBooking() {
 
               <button
                 type="button"
-                onClick={() => handleCategoryScroll("right")}
-                className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center bg-white sm:bg-bg-secondary border border-neutral-gray-600 sm:border-0 rounded-full hover:bg-neutral-gray-600 transition-colors"
-                aria-label="Scroll categories right"
+                onClick={() => handleCategoryNavigation("right")}
+                className="flex-shrink-0 w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-white border border-neutral-gray-600 rounded-full shadow-sm hover:bg-neutral-gray-600 transition-all active:scale-95 disabled:opacity-30"
+                aria-label="Next category"
               >
                 <svg
-                  className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-black"
+                  className="w-5 h-5 text-neutral-black"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -476,7 +509,7 @@ export default function ServiceBooking() {
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     d="M9 5l7 7-7 7"
                   />
                 </svg>
