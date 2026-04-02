@@ -7,6 +7,7 @@ import { useGetSalonsQuery, useSearchSalonsQuery } from "../../services/api/salo
 import { FiStar, FiMapPin, FiClock, FiCalendar, FiNavigation, FiX } from "react-icons/fi";
 import { getUserLocation, clearLocation as clearLocationAction } from "../../store/slices/locationSlice";
 import { SkeletonSalonCard } from "../../components/shared/Skeleton";
+import { SalonCard, MobileSalonCard } from "../../components/shared/SalonCard";
 
 
 // Hero Section Component
@@ -325,102 +326,21 @@ const PublicSalonListing = () => {
               ))}
             </div>
           ) : (
-            <div className="grid md:grid-cols-3 gap-8">
-              {filteredSalons.map((salon) => {
-                // Use logo_url from database for list view
-                let logoImage = salon.logo_url;
-                // First cover image as fallback
-                let coverImage = salon.cover_images && salon.cover_images.length > 0 ? salon.cover_images[0] : null;
-                
-                // Get today's hours - handle both business_hours JSONB and legacy fields
-                let hoursDisplay = '9:00 AM - 9:00 PM'; // Default
-                
-                if (salon.business_hours && typeof salon.business_hours === 'object') {
-                  // New format: business_hours JSONB
-                  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-                  const todayHours = salon.business_hours[today] || salon.business_hours.monday || {};
-                  hoursDisplay = todayHours.closed 
-                    ? 'Closed' 
-                    : todayHours.open && todayHours.close
-                    ? `${todayHours.open} - ${todayHours.close}`
-                    : '9:00 AM - 9:00 PM';
-                } else if (salon.opening_time && salon.closing_time) {
-                  // Legacy format: opening_time and closing_time
-                  hoursDisplay = `${salon.opening_time} - ${salon.closing_time}`;
-                }
+            <>
+              {/* Desktop View */}
+              <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredSalons.map((salon) => (
+                  <SalonCard key={salon.id} salon={salon} userLocation={userLocation} />
+                ))}
+              </div>
 
-                return (
-                  <Link
-                    key={salon.id}
-                    to={`/salons/${salon.id}`}
-                    className="bg-white rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group block"
-                  >
-                    {/* Image Section - Show Logo or Cover Image */}
-                    <div className="relative h-[300px] w-full overflow-hidden">
-                      {logoImage || coverImage ? (
-                        <img
-                          src={logoImage || coverImage}
-                          alt={salon.business_name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          onError={(e) => {
-                            // Fallback to gradient if image fails to load
-                            e.target.style.display = 'none';
-                            e.target.parentElement.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600"></div>';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600"></div>
-                      )}
-                      
-                      {/* Subtle Gradient Overlay for better text visibility */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
-                      
-                      {/* COMMENTED OUT - Rating badge not yet implemented
-                      <div className="absolute top-4 right-4 bg-white shadow-lg px-4 py-2 rounded-full flex items-center gap-2">
-                        <FiStar className="text-yellow-500" fill="#FFC107" size={18} />
-                        <span className="font-bold text-neutral-black text-lg">
-                          {salon.average_rating || '4.5'}
-                        </span>
-                      </div>
-                      */}
-                    </div>
-
-                    {/* Content Section */}
-                    <div className="p-6">
-                      {/* Salon Name */}
-                      <h3 className="text-2xl font-bold text-neutral-black mb-4 group-hover:text-accent-orange transition-colors">
-                        {salon.business_name}
-                      </h3>
-
-                      {/* Location */}
-                      <div className="flex items-start gap-3 mb-3">
-                        <FiMapPin className="text-accent-orange mt-0.5 flex-shrink-0" size={18} />
-                        <div className="flex-1">
-                          <p className="font-body text-[15px] leading-[22px] text-neutral-gray-700">
-                            {salon.address || `${salon.city}, ${salon.state}`}
-                          </p>
-                          {salon.distance_km && (
-                            <p className="font-body text-[14px] leading-[20px] text-accent-orange font-semibold mt-1">
-                              {salon.distance_km < 1 
-                                ? `${Math.round(salon.distance_km * 1000)} m away`
-                                : `${salon.distance_km.toFixed(1)} km away`}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Business Hours */}
-                      <div className="flex items-center gap-3">
-                        <FiClock className="text-accent-orange flex-shrink-0" size={18} />
-                        <p className="font-body text-[15px] leading-[22px] text-neutral-gray-700">
-                          {hoursDisplay}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+              {/* Mobile View */}
+              <div className="grid grid-cols-1 gap-4 md:hidden px-2">
+                {filteredSalons.map((salon) => (
+                  <MobileSalonCard key={salon.id} salon={salon} userLocation={userLocation} />
+                ))}
+              </div>
+            </>
           )}
 
           {!loading && filteredSalons.length === 0 && (
