@@ -1,6 +1,6 @@
 /**
  * Authentication API - RTK Query
- * 
+ *
  * Handles all authentication operations using RTK Query.
  * Token refresh is automatically handled by apiClient.js interceptors.
  */
@@ -118,6 +118,62 @@ export const authApi = createApi({
         data: resetData,
       }),
     }),
+
+    // Phone OTP Login - Send OTP
+    sendPhoneOTP: builder.mutation({
+      query: (phoneData) => ({
+        url: '/api/v1/auth/login/phone/send-otp',
+        method: 'POST',
+        data: phoneData, // { phone, country_code }
+      }),
+    }),
+
+    // Phone OTP Login - Verify OTP and Login
+    verifyPhoneOTP: builder.mutation({
+      query: (otpData) => ({
+        url: '/api/v1/auth/login/phone/verify-otp',
+        method: 'POST',
+        data: otpData, // { phone, otp, verification_id }
+      }),
+      invalidatesTags: ['Auth', 'User'],
+    }),
+
+    // Phone OTP Signup - Send OTP
+    sendPhoneSignupOTP: builder.mutation({
+      query: (phoneData) => ({
+        url: '/api/v1/auth/signup/phone/send-otp',
+        method: 'POST',
+        data: phoneData, // { phone, country_code }
+      }),
+    }),
+
+    // Phone OTP Signup - Verify OTP
+    verifyPhoneSignupOTP: builder.mutation({
+      query: (otpData) => ({
+        url: '/api/v1/auth/signup/phone/verify-otp',
+        method: 'POST',
+        data: otpData, // { phone, otp, verification_id }
+      }),
+    }),
+
+    // Phone verification (authenticated user)
+    sendPhoneVerificationOTP: builder.mutation({
+      query: (phoneData) => ({
+        url: '/api/v1/auth/verify-phone/send-otp',
+        method: 'POST',
+        data: phoneData, // { phone, country_code }
+      }),
+    }),
+
+    // Confirm phone verification OTP (authenticated user)
+    confirmPhoneVerificationOTP: builder.mutation({
+      query: (otpData) => ({
+        url: '/api/v1/auth/verify-phone/confirm-otp',
+        method: 'POST',
+        data: otpData, // { phone, otp, verification_id }
+      }),
+      invalidatesTags: ['User'],
+    }),
   }),
 });
 
@@ -131,6 +187,12 @@ export const {
   useRefreshTokenMutation,
   useForgotPasswordMutation,
   useResetPasswordMutation,
+  useSendPhoneOTPMutation,
+  useVerifyPhoneOTPMutation,
+  useSendPhoneVerificationOTPMutation,
+  useConfirmPhoneVerificationOTPMutation,
+  useSendPhoneSignupOTPMutation,
+  useVerifyPhoneSignupOTPMutation,
 } = authApi;
 
 export default authApi;
