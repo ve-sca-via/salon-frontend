@@ -113,9 +113,9 @@ const AddSalonForm = () => {
 
   // Load draft data if editing
   useEffect(() => {
-    if (draftId && draftData && serviceCategories.length > 0) { // FIX: Wait for categories to load
-      // Populate form with draft data
-      const draft = draftData;
+    if (draftId && draftData && !loadingDraft && !loadingCategories) { 
+      // Populate form with draft data, safely unwrapping `{data}` layer if it exists
+      const draft = draftData.data || draftData;
       const documents = draft.documents || {};
       
       // Basic info
@@ -239,7 +239,7 @@ const AddSalonForm = () => {
       setCurrentStep(startStep);
       showInfoToast(`Draft loaded. Starting from Step ${startStep}...`);
     }
-  }, [draftId, draftData, serviceCategories, reset]); // FIX: Added serviceCategories to dependencies
+  }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset]); 
 
   const handleImageUpload = async (e, type) => {
     const files = Array.from(e.target.files);
@@ -1447,9 +1447,6 @@ const AddSalonForm = () => {
                   <div className="text-sm text-blue-800 font-body">
                     <p className="font-semibold mb-1">Add Salon Services</p>
                     <p className="text-xs mb-2">Add services offered by the salon. Make sure to select the correct category for each service from the dropdown.</p>
-                    <p className="text-xs font-semibold text-red-700 bg-red-100 p-2 rounded mt-2">
-                      ⚠️ IMPORTANT: Services without a selected category will NOT be transferred to the vendor account and will be LOST!
-                    </p>
                   </div>
                 </div>
               </div>
@@ -1514,9 +1511,6 @@ const AddSalonForm = () => {
                           <div>
                             <label className="block text-xs font-body font-medium text-gray-700 mb-1">
                               Category <span className="text-red-500">*</span>
-                              {!service.category_id && (
-                                <span className="ml-2 text-xs text-red-600 font-semibold">⚠️ Required for migration!</span>
-                              )}
                             </label>
                             <select
                               value={service.category_id || ''}
@@ -1525,18 +1519,12 @@ const AddSalonForm = () => {
                                 !service.category_id ? 'border-red-300 bg-red-50' : 'border-gray-200'
                               }`}
                             >
-                              <option value="">⚠️ Select category (REQUIRED)</option>
+                              <option value="">Select category</option>
                               {serviceCategories.map(cat => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
                               ))}
                             </select>
-                            {!service.category_id && service.name && (
-                              <p className="mt-1 text-xs text-red-600">
-                                This service will be SKIPPED if no category is selected!
-                              </p>
-                            )}
                           </div>
-                          
                           <div>
                             <label className="block text-xs font-body font-medium text-gray-700 mb-1">
                               Price (₹) <span className="text-red-500">*</span>
