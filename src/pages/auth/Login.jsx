@@ -518,12 +518,6 @@ const Login = () => {
                   {!otpSent ? (
                     /* Step 1: Enter Phone Number */
                     <form onSubmit={handleSendOTP} className="space-y-5">
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-                        <p className="font-body text-sm text-blue-800">
-                          📱 We'll send a 6-digit OTP to your registered phone number
-                        </p>
-                      </div>
-
                       {/* Country Code & Phone Input */}
                       <div className="flex gap-3">
                         <div className="w-24">
@@ -566,11 +560,16 @@ const Login = () => {
                         Send OTP
                       </Button>
 
-                      <div className="text-center mt-2">
+                      <div className="flex items-center gap-3 mt-4">
+                        <div className="flex-1 h-px bg-neutral-gray-300" />
+                        <span className="font-body text-xs text-neutral-gray-400 uppercase tracking-wide">or</span>
+                        <div className="flex-1 h-px bg-neutral-gray-300" />
+                      </div>
+                      <div className="text-center mt-3">
                         <button
                           type="button"
                           onClick={() => switchLoginMethod('email')}
-                          className="font-body text-sm font-semibold text-neutral-gray-600 hover:text-neutral-black transition-colors"
+                          className="font-body text-sm font-semibold text-accent-orange hover:opacity-75 transition-opacity underline underline-offset-2"
                         >
                           Login with Email instead
                         </button>
