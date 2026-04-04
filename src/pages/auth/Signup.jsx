@@ -340,7 +340,7 @@ const Signup = () => {
             <div className="bg-primary-white rounded-[10px] shadow-2xl p-8 lg:p-10">
               <div className="mb-8">
                 <h2 className="font-display font-bold text-[32px] leading-[48px] text-neutral-black mb-2">
-                  {step === "form" ? "Create Account" : "Verify Phone"}
+                  Create Account
                 </h2>
                 <p className="font-body text-[16px] leading-[24px] text-neutral-gray-500">
                   {step === "phone_input" && "Sign up with your phone number"}
@@ -375,11 +375,16 @@ const Signup = () => {
                     Send OTP
                   </Button>
 
-                  <div className="text-center mt-2">
+                  <div className="flex items-center gap-3 mt-4">
+                    <div className="flex-1 h-px bg-neutral-gray-300" />
+                    <span className="font-body text-xs text-neutral-gray-400 uppercase tracking-wide">or</span>
+                    <div className="flex-1 h-px bg-neutral-gray-300" />
+                  </div>
+                  <div className="text-center mt-3">
                     <button
                       type="button"
                       onClick={() => handleMethodChange('email')}
-                      className="font-body text-sm font-semibold text-neutral-gray-600 hover:text-neutral-black transition-colors"
+                      className="font-body text-sm font-semibold text-accent-orange hover:opacity-75 transition-opacity underline underline-offset-2"
                     >
                       Sign up with Email instead
                     </button>
