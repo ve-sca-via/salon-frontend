@@ -16,8 +16,8 @@
  * 5. User selects time slots (up to 3, 15-min intervals)
  * 6. Component displays pricing:
  *    - Service Total: Sum of all service prices
- *    - Booking Fee: 10% of service total (from config)
- *    - Pay Now: Booking Fee (convenience fee)
+ *    - Convenience Fee: 10% of service total (from config)
+ *    - Pay Now: Convenience Fee
  *    - Pay at Salon: Service Total (full service amount)
  * 7. User clicks "Proceed to Payment"
  * 8. Component calls POST /api/v1/payments/cart/create-order
@@ -45,7 +45,7 @@
  * 
  * DATA SOURCES:
  * - Cart data: RTK Query (useGetCartQuery)
- * - Booking fee %: Backend config (convenience_fee_percentage)
+ * - Convenience fee %: Backend config (convenience_fee_percentage)
  * - Max advance days: Backend config (max_booking_advance_days)
  * - Razorpay key: Backend config (razorpay_key_id)
  */
@@ -79,8 +79,8 @@ export default function Checkout() {
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  // Get booking fee from config (dynamically set by admin, no hardcoded fallback)
-  const bookingFeePercentage = configs?.convenience_fee_percentage;
+  // Get convenience fee from config (dynamically set by admin, no hardcoded fallback)
+  const convenienceFeePercentage = configs?.convenience_fee_percentage;
   
   // Get max advance booking days from config or default to 30
   const maxAdvanceDays = configs?.max_booking_advance_days || 30;
@@ -95,12 +95,12 @@ export default function Checkout() {
 
   // Check if required config is loaded
   useEffect(() => {
-    if (configs && !bookingFeePercentage) {
+    if (configs && !convenienceFeePercentage) {
       showErrorToast("Payment configuration not available. Please contact support.", {
         position: "top-center"
       });
     }
-  }, [configs, bookingFeePercentage]);
+  }, [configs, convenienceFeePercentage]);
 
   /**
    * Generate date selection based on max_booking_advance_days config
@@ -149,8 +149,8 @@ export default function Checkout() {
 
   // Calculate pricing (only if config is loaded)
   const servicesTotalAmount = cart?.total_amount || 0;
-  const bookingFee = bookingFeePercentage ? Math.round((servicesTotalAmount * bookingFeePercentage) / 100) : 0;
-  const totalBookingAmount = bookingFee;
+  const convenienceFee = convenienceFeePercentage ? Math.round((servicesTotalAmount * convenienceFeePercentage) / 100) : 0;
+  const totalBookingAmount = convenienceFee;
   const remainingAmount = servicesTotalAmount;
 
   /**
@@ -183,7 +183,7 @@ export default function Checkout() {
     }
 
     // Validate config is loaded (critical for payment calculation)
-    if (!bookingFeePercentage) {
+    if (!convenienceFeePercentage) {
       showErrorToast("Payment configuration not available. Please refresh the page or contact support.");
       return;
     }
@@ -437,8 +437,8 @@ export default function Checkout() {
                   <span className="text-neutral-black font-semibold">₹{servicesTotalAmount}</span>
                 </div>
                 <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
-                  <span className="text-neutral-gray-500">Booking Fee</span>
-                  <span className="text-neutral-black font-semibold">₹{bookingFee}</span>
+                  <span className="text-neutral-gray-500">Convenience Fee</span>
+                  <span className="text-neutral-black font-semibold">₹{convenienceFee}</span>
                 </div>
                 <div className="pt-2.5 sm:pt-3 border-t border-neutral-gray-600">
                   <div className="flex justify-between font-body text-[15px] sm:text-[16px]">
