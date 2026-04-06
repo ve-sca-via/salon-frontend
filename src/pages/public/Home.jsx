@@ -155,7 +155,7 @@ function HeroSection() {
   };
 
   return (
-    <section className="relative w-full h-[320px] md:h-[600px] overflow-hidden">
+    <section className="relative w-full h-[220px] md:h-[600px] overflow-hidden">
       {/* Carousel Items with Crossfade Transition */}
       {carouselItems.map((item, index) => (
         <div
@@ -182,9 +182,6 @@ function HeroSection() {
           )}
         </div>
       ))}
-
-      {/* Dark overlay temporarily removed for testing */}
-      {/* <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-transparent z-20"></div> */}
 
       {/* Previous Slide Button — hidden on mobile */}
       <button
@@ -245,20 +242,9 @@ function HeroSection() {
         ))}
       </div>
 
-      {/* Hero Content */}
-      <div className="relative h-full max-w-7xl mx-auto px-4 flex items-center z-30">
+      {/* Hero Content — buttons only, text removed since it's in the images */}
+      <div className="relative h-full max-w-7xl mx-auto px-4 flex items-end pb-16 md:pb-24 z-30">
         <div className="max-w-2xl flex flex-col gap-3 md:gap-6">
-          {/* Main Heading */}
-          <h1 className="font-display font-bold text-[28px] leading-[34px] md:text-[52px] md:leading-[64px] text-white">
-            Beauty. Booking. Simplified.
-          </h1>
-
-          {/* Description — hidden on mobile to keep hero compact */}
-          <p className="hidden md:block font-body font-normal text-[16px] leading-[24px] text-white max-w-xl">
-            Discover verified salons, check real-time availability, and book appointments 
-            within seconds. No calls, no confusion — just a delightful booking experience.
-          </p>
-
           {/* CTA Buttons — hidden on mobile */}
           <div className="hidden md:flex gap-4 mt-4">
             <Link to="/signup">
