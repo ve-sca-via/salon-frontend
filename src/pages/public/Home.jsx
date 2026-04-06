@@ -183,14 +183,14 @@ function HeroSection() {
         </div>
       ))}
 
-      {/* Previous Slide Button — hidden on mobile */}
+      {/* Previous Slide Button */}
       <button
         onClick={goToPrevious}
-        className="hidden md:flex absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-white/50"
+        className="flex absolute left-2 md:left-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-1.5 md:p-3 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-white/50"
         aria-label="Previous image"
       >
         <svg
-          className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
+          className="w-4 h-4 md:w-6 md:h-6 text-white group-hover:scale-110 transition-transform"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -204,14 +204,14 @@ function HeroSection() {
         </svg>
       </button>
 
-      {/* Next Slide Button — hidden on mobile */}
+      {/* Next Slide Button */}
       <button
         onClick={goToNext}
-        className="hidden md:flex absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-3 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-white/50"
+        className="flex absolute right-2 md:right-4 top-1/2 -translate-y-1/2 z-30 bg-white/20 hover:bg-white/30 backdrop-blur-sm p-1.5 md:p-3 rounded-full transition-all group focus:outline-none focus:ring-2 focus:ring-white/50"
         aria-label="Next image"
       >
         <svg
-          className="w-6 h-6 text-white group-hover:scale-110 transition-transform"
+          className="w-4 h-4 md:w-6 md:h-6 text-white group-hover:scale-110 transition-transform"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -225,8 +225,8 @@ function HeroSection() {
         </svg>
       </button>
 
-      {/* Carousel Dot Indicators — hidden on mobile */}
-      <div className="hidden md:flex absolute bottom-24 left-1/2 -translate-x-1/2 z-30 gap-2">
+      {/* Carousel Dot Indicators */}
+      <div className="flex absolute bottom-4 md:bottom-24 left-1/2 -translate-x-1/2 z-30 gap-1.5 md:gap-2">
         {carouselItems.map((_, index) => (
           <button
             key={index}
@@ -243,10 +243,10 @@ function HeroSection() {
       </div>
 
       {/* Hero Content — buttons only, text removed since it's in the images */}
-      <div className="relative h-full max-w-7xl mx-auto px-4 flex items-end pb-16 md:pb-24 z-30">
+      <div className="relative h-full max-w-7xl mx-auto px-4 flex items-end pb-10 md:pb-24 z-30 pointer-events-none">
         <div className="max-w-2xl flex flex-col gap-3 md:gap-6">
           {/* CTA Buttons — hidden on mobile */}
-          <div className="hidden md:flex gap-4 mt-4">
+          <div className="hidden md:flex gap-4 mt-4 pointer-events-auto">
             <Link to="/signup">
               <button className="bg-white hover:bg-gray-100 transition-colors box-border flex gap-2 items-center justify-center px-6 py-3 rounded-md group focus:outline-none focus:ring-2 focus:ring-white/50">
                 <span className="font-body font-medium text-[16px] leading-[24px] text-neutral-black">
@@ -266,11 +266,23 @@ function HeroSection() {
             </Link>
           </div>
 
-          {/* Mobile CTA — small Browse Salons link */}
-          <div className="md:hidden">
+          {/* Mobile CTA — smaller buttons for mobile */}
+          <div className="flex md:hidden gap-2 pointer-events-auto">
+            <Link to="/signup">
+              <button className="bg-white hover:bg-gray-100 transition-colors flex gap-1 items-center justify-center px-3 py-1.5 rounded-md group focus:outline-none focus:ring-2 focus:ring-white/50">
+                <span className="font-body font-medium text-[11px] leading-[16px] text-neutral-black">
+                  Get Started
+                </span>
+                <div className="size-2.5 group-hover:translate-x-0.5 transition-transform">
+                  <ArrowCircleRight />
+                </div>
+              </button>
+            </Link>
             <Link to="/salons">
-              <button className="bg-white/20 backdrop-blur-sm border border-white/50 text-white text-[13px] font-semibold px-4 py-2 rounded-full">
-                Browse Salons →
+              <button className="bg-transparent border border-white hover:bg-white/10 transition-colors flex items-center justify-center px-3 py-1.5 rounded-md focus:outline-none focus:ring-2 focus:ring-white/50">
+                <span className="font-body font-medium text-[11px] leading-[16px] text-white">
+                  Browse Salons
+                </span>
               </button>
             </Link>
           </div>
