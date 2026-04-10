@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiStar, FiMapPin, FiClock, FiCalendar } from "react-icons/fi";
+import { FiStar, FiMapPin, FiClock, FiCalendar, FiChevronDown, FiChevronUp } from "react-icons/fi";
 
 // Helper formula to calculate distance
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -72,18 +72,16 @@ export function SalonCard({ salon, userLocation }) {
 
         <div className="flex items-start gap-3 mb-3">
           <FiMapPin className="text-accent-orange mt-0.5 flex-shrink-0" size={18} />
-          <div className="flex-1">
-            <p className="font-body text-[15px] leading-[22px] text-neutral-gray-700">
-              {salon.address || `${salon.city}, ${salon.state}`}
+          <div className="flex-1 min-w-0">
+            <p className="font-body text-[15px] leading-[22px] text-neutral-gray-700 line-clamp-2">
+              {(salon.address || `${salon.city}, ${salon.state}`).trim()}
             </p>
             {(() => {
               const distance = salon.distance_km ?? (userLocation ? calculateDistance(userLocation.lat, userLocation.lon, salon.latitude, salon.longitude) : null);
               if (distance === null || distance === undefined) return null;
-
               const formattedDistance = distance < 1
                 ? `${Math.round(distance * 1000)} m`
                 : `${distance.toFixed(1)} km`;
-
               return (
                 <p className="font-body text-[14px] leading-[20px] text-accent-orange font-semibold mt-1">
                   {formattedDistance} away
@@ -121,6 +119,7 @@ export function SalonCard({ salon, userLocation }) {
 export function MobileSalonCard({ salon, userLocation }) {
   const navigate = useNavigate();
   const [isClicked, setIsClicked] = useState(false);
+  const [addressExpanded, setAddressExpanded] = useState(false);
 
   const handleCardClick = (e) => {
     e.preventDefault();
@@ -200,29 +199,45 @@ export function MobileSalonCard({ salon, userLocation }) {
           </span>
         </div>
 
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-1 text-neutral-gray-500">
-            <FiMapPin size={12} className="flex-shrink-0 text-accent-orange" />
-            <p className="text-[12px] font-medium leading-tight line-clamp-1">
-              {salon.address || `${salon.city || ''}, ${salon.state || ''}`}
-              {(() => {
-                const distance = salon.distance_km ?? (userLocation ? calculateDistance(userLocation.lat, userLocation.lon, salon.latitude, salon.longitude) : null);
-                if (distance === null || distance === undefined) return '';
-
-                const formattedDistance = distance < 1
-                  ? `${Math.round(distance * 1000)} m`
-                  : `${distance.toFixed(1)} km`;
-
-                return ` • ${formattedDistance}`;
-              })()}
-            </p>
+        {/* Address row with tap-to-expand */}
+        <div className="mb-3">
+          {/* Expanded full address panel */}
+          {addressExpanded && (
+            <div className="mb-1.5 px-1 py-1.5 bg-orange-50 border border-orange-100 rounded-lg">
+              <p className="text-[11px] text-neutral-black leading-snug">
+                {(salon.address || salon.address_line1 || [salon.city, salon.state].filter(Boolean).join(', ')).trim()}
+              </p>
+            </div>
+          )}
+          <div className="flex items-center justify-between">
+            {/* Address + chevron toggle */}
+            <button
+              className="flex items-center gap-1 text-neutral-gray-500 min-w-0 flex-1 text-left"
+              onClick={(e) => { e.stopPropagation(); setAddressExpanded(v => !v); }}
+            >
+              <FiMapPin size={12} className="flex-shrink-0 text-accent-orange" />
+              <span className="text-[12px] font-medium leading-tight line-clamp-1 flex-1 min-w-0">
+                {(() => {
+                  const addr = (salon.address || salon.address_line1 || '').trim();
+                  const cityState = [salon.city, salon.state].filter(Boolean).join(', ');
+                  const display = addr || cityState;
+                  const distance = salon.distance_km ?? (userLocation ? calculateDistance(userLocation.lat, userLocation.lon, salon.latitude, salon.longitude) : null);
+                  const formattedDistance = distance == null ? '' : distance < 1 ? ` • ${Math.round(distance * 1000)} m` : ` • ${distance.toFixed(1)} km`;
+                  return display + formattedDistance;
+                })()}
+              </span>
+              {addressExpanded
+                ? <FiChevronUp size={12} className="flex-shrink-0 text-accent-orange ml-0.5" />
+                : <FiChevronDown size={12} className="flex-shrink-0 text-neutral-gray-400 ml-0.5" />}
+            </button>
+            {/* Book Now */}
+            <button
+              className="bg-accent-orange text-white font-bold text-[11px] px-4 py-1.5 rounded-md shrink-0 shadow-md transition-transform active:scale-95 z-30 ml-2"
+              onClick={handleBookNow}
+            >
+              BOOK NOW
+            </button>
           </div>
-          <button
-            className="bg-accent-orange text-white font-bold text-[11px] px-4 py-1.5 rounded-md shrink-0 shadow-md transition-transform active:scale-95 z-30 ml-2"
-            onClick={handleBookNow}
-          >
-            BOOK NOW
-          </button>
         </div>
 
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex items-center gap-2">

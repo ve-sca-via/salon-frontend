@@ -419,7 +419,7 @@ export default function ServiceBooking() {
     <div className="min-h-screen bg-bg-secondary">
       <PublicNavbar />
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-24">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex justify-between items-center mb-4">
@@ -591,7 +591,22 @@ export default function ServiceBooking() {
         </div>
       </div>
 
-      {/* No bottom floating cart button anymore */}
+      {/* Fixed Bottom Checkout Bar — appears when cart has items */}
+      {cart?.item_count > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0px_-2px_16px_rgba(0,0,0,0.12)] z-40">
+          <div className="max-w-7xl mx-auto">
+            <button
+              onClick={() => navigate('/checkout')}
+              className="w-full bg-accent-orange hover:opacity-90 active:opacity-80 text-white font-body font-semibold text-[16px] py-3.5 rounded-lg transition-opacity shadow-md flex items-center justify-center gap-2"
+            >
+              Proceed to Checkout
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
