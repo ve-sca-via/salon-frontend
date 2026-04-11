@@ -773,30 +773,12 @@ const BookingsManagement = () => {
               </div>
             </div>
 
-            {/* Payment Breakdown */}
+            {/* Collection Details */}
             <div className="bg-gradient-to-br from-orange-50 to-yellow-50 p-4 rounded-lg border border-orange-200">
               <h3 className="text-sm font-body font-semibold text-gray-700 mb-3">
-                Payment Details
+                Collection Details
               </h3>
               <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 font-body">Services Total:</span>
-                  <span className="text-sm font-body font-semibold text-gray-900">
-                    ₹{selectedBooking.service_price?.toLocaleString() || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm text-gray-600 font-body">Booking Fee (Paid Online):</span>
-                  <span className="text-sm font-body text-gray-500 line-through">
-                    ₹{selectedBooking.convenience_fee?.toLocaleString() || 0}
-                  </span>
-                </div>
-                <div className="flex justify-between pt-2 border-t border-orange-200">
-                  <span className="text-sm font-body font-semibold text-gray-700">Total Amount:</span>
-                  <span className="text-sm font-body font-semibold text-gray-900">
-                    ₹{selectedBooking.total_amount?.toLocaleString() || 0}
-                  </span>
-                </div>
                 <div className="flex justify-between pt-2 mt-2 border-t-2 border-green-500">
                   <span className="text-base font-display font-bold text-green-700">To Collect at Salon:</span>
                   <span className="text-lg font-display font-bold text-green-600">
@@ -805,8 +787,7 @@ const BookingsManagement = () => {
                 </div>
               </div>
               <p className="text-xs text-gray-600 font-body mt-3 p-2 bg-white/60 rounded">
-                💡 Customer already paid ₹{selectedBooking.convenience_fee?.toLocaleString() || 0} booking fee online. 
-                Collect ₹{selectedBooking.service_price?.toLocaleString() || 0} after completing the service.
+                Collect this amount from the customer after completing the service.
               </p>
             </div>
 

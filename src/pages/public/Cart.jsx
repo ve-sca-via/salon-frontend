@@ -90,10 +90,22 @@ function CartItem({ item, onIncrement, onDecrement, onRemove }) {
               </p>
             )}
             
-            <p className="font-body text-[13px] text-accent-orange font-semibold">
-              ₹{item.unit_price || item.price || 0}
+            <p className="font-body text-[13px] text-accent-orange font-semibold flex flex-wrap items-center gap-2">
+              <span>₹{item.unit_price || item.price || 0}</span>
+              {item.service_details?.discounted_price !== null && item.service_details?.discounted_price !== undefined && (
+                <>
+                  <span className="text-neutral-gray-500 text-[11px] font-normal line-through">
+                    ₹{item.service_details.price || 0}
+                  </span>
+                  {item.service_details.discount_percentage !== null && item.service_details.discount_percentage !== undefined && (
+                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-[11px] font-semibold">
+                      {item.service_details.discount_percentage}% OFF
+                    </span>
+                  )}
+                </>
+              )}
               {item.quantity > 1 && (
-                <span className="text-neutral-gray-500 text-[11px] font-normal ml-1">
+                <span className="text-neutral-gray-500 text-[11px] font-normal">
                   x {item.quantity}
                 </span>
               )}
@@ -128,7 +140,7 @@ function CartItem({ item, onIncrement, onDecrement, onRemove }) {
             {/* Total and Trash in one row */}
             <div className="flex items-center gap-3 mt-auto">
               <p className="font-body font-bold text-[14px] text-neutral-black">
-                ₹{(item.unit_price || item.price || 0) * item.quantity}
+                ₹{((item.unit_price || item.price || 0) * item.quantity).toFixed(2)}
               </p>
               <button
                 onClick={() => onRemove(item.id)}
@@ -401,7 +413,7 @@ export default function Cart() {
                     <div className="flex justify-between font-body text-[18px]">
                       <span className="text-neutral-black font-bold">Total</span>
                       <span className="text-accent-orange font-bold">
-                        ₹{cart.total_amount}
+                        ₹{(cart.total_amount || 0).toFixed(2)}
                       </span>
                     </div>
                     <p className="text-[11px] text-neutral-gray-500 mt-1">

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * App.jsx - Main Application Root Component
  * 
  * PURPOSE:
@@ -343,7 +343,7 @@ function App() {
           </Suspense>
           
           {/* Global toast notifications container */}
-          <ToastContainer position="top-right" autoClose={3000} />
+          <ToastContainer position="top-right" autoClose={3000} limit={1} />
         </div>
       </Router>
     </ErrorBoundary>

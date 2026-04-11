@@ -206,6 +206,13 @@ const PartnerWithUs = () => {
               >
                 {isSubmitting ? "Submitting..." : "Continue"}
               </button>
+
+              <p className="text-center text-[12px] text-neutral-gray-500 mt-2">
+                By continuing, you agree to our Terms of Service and{" "}
+                <Link to="/privacy-policy" className="text-accent-orange hover:underline font-medium">
+                  Privacy Policy
+                </Link>
+              </p>
             </form>
 
             <div className="mt-8 text-center">

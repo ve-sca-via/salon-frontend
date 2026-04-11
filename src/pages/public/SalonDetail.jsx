@@ -187,6 +187,11 @@ function CategoryCard({ category, onClick }) {
       <h4 className="font-body font-semibold text-[13px] sm:text-[14px] text-neutral-black leading-tight px-1">
         {category.name}
       </h4>
+      {category.hasDiscount && (
+        <span className="mt-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-body font-semibold text-[10px] uppercase tracking-wide">
+          Discount Available
+        </span>
+      )}
     </div>
   );
 }
@@ -314,16 +319,22 @@ export default function SalonDetail() {
         const iconUrl = service.service_categories?.icon_url;
         
         if (categoryId && categoryName) {
+          const hasDiscountForService =
+            (service.discounted_price !== null && service.discounted_price !== undefined) ||
+            (service.discount_percentage !== null && service.discount_percentage !== undefined && Number(service.discount_percentage) > 0);
+
           if (!categoriesMap.has(categoryId)) {
             categoriesMap.set(categoryId, {
               id: categoryId,
               name: categoryName,
               icon_url: iconUrl,
-              serviceCount: 1
+              serviceCount: 1,
+              hasDiscount: hasDiscountForService
             });
           } else {
             const cat = categoriesMap.get(categoryId);
             cat.serviceCount += 1;
+            cat.hasDiscount = cat.hasDiscount || hasDiscountForService;
           }
         }
       });

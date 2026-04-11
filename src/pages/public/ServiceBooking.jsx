@@ -419,7 +419,7 @@ export default function ServiceBooking() {
     <div className="min-h-screen bg-bg-secondary">
       <PublicNavbar />
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-24">
         {/* Header */}
         <div className="mb-4 sm:mb-6">
           <div className="flex justify-between items-center mb-4">
@@ -565,9 +565,25 @@ export default function ServiceBooking() {
 
                   {/* Right: Price and Add Button */}
                   <div className="flex flex-col items-end shrink-0 ml-2 gap-1.5">
-                    <span className="font-display font-extrabold text-[14px] text-accent-orange">
-                      ₹{service.price}
-                    </span>
+                    {service.discounted_price !== null && service.discounted_price !== undefined ? (
+                      <div className="flex flex-col items-end leading-tight">
+                        <span className="font-display font-extrabold text-[14px] text-accent-orange">
+                          ₹{service.discounted_price}
+                        </span>
+                        <span className="font-body text-[11px] text-neutral-gray-500 line-through">
+                          ₹{service.price}
+                        </span>
+                        {service.discount_percentage !== null && service.discount_percentage !== undefined && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-body font-semibold text-[9px] uppercase tracking-wide mt-0.5">
+                            {service.discount_percentage}% off
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="font-display font-extrabold text-[14px] text-accent-orange">
+                        ₹{service.price}
+                      </span>
+                    )}
                       {isServiceInCart(service) ? (
                         <button
                           disabled
@@ -591,7 +607,22 @@ export default function ServiceBooking() {
         </div>
       </div>
 
-      {/* No bottom floating cart button anymore */}
+      {/* Fixed Bottom Checkout Bar — appears when cart has items */}
+      {cart?.item_count > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0px_-2px_16px_rgba(0,0,0,0.12)] z-40">
+          <div className="max-w-7xl mx-auto">
+            <button
+              onClick={() => navigate('/checkout')}
+              className="w-full bg-accent-orange hover:opacity-90 active:opacity-80 text-white font-body font-semibold text-[16px] py-3.5 rounded-lg transition-opacity shadow-md flex items-center justify-center gap-2"
+            >
+              Proceed to Checkout
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
