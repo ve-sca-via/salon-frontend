@@ -88,6 +88,7 @@ const ServicesManagement = () => {
     name: '',
     description: '',
     price: '',
+    discount_percentage: '',
     duration: '',
     category_id: '',
     is_active: true,
@@ -105,6 +106,10 @@ const ServicesManagement = () => {
         name: service.name || '',
         description: service.description || '',
         price: service.price || '',
+        discount_percentage:
+          service.discount_percentage !== null && service.discount_percentage !== undefined
+            ? service.discount_percentage
+            : '',
         // Handle API inconsistency: duration_minutes is canonical, but may receive 'duration'
         duration: service.duration_minutes || service.duration || '',
         category_id: service.category_id || (categories.length > 0 ? categories[0].id : ''),
@@ -117,6 +122,7 @@ const ServicesManagement = () => {
         name: '',
         description: '',
         price: '',
+        discount_percentage: '',
         duration: '',
         category_id: categories.length > 0 ? categories[0].id : '',
         is_active: true,
@@ -135,6 +141,7 @@ const ServicesManagement = () => {
       name: '',
       description: '',
       price: '',
+      discount_percentage: '',
       duration: '',
       category_id: categories.length > 0 ? categories[0].id : '',
       is_active: true,
@@ -178,12 +185,28 @@ const ServicesManagement = () => {
       return;
     }
 
+    if (formData.discount_percentage !== '' && formData.discount_percentage !== null) {
+      const discountValue = parseFloat(formData.discount_percentage);
+      if (Number.isNaN(discountValue) || discountValue < 0 || discountValue > 100) {
+        showErrorToast('Discount must be between 0 and 100');
+        return;
+      }
+      if (parseFloat(formData.price) <= 0 && discountValue > 0) {
+        showErrorToast('Discount can only be applied when price is greater than 0');
+        return;
+      }
+    }
+
     try {
       // Prepare service data for API
       const serviceData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price) || 0,
+        discount_percentage:
+          formData.discount_percentage === '' || parseFloat(formData.discount_percentage) === 0
+            ? null
+            : parseFloat(formData.discount_percentage),
         duration_minutes: parseInt(formData.duration),
         category_id: formData.category_id || null,
         is_active: formData.is_active,
@@ -213,6 +236,7 @@ const ServicesManagement = () => {
         name: service.name,
         description: service.description,
         price: service.price,
+        discount_percentage: service.discount_percentage,
         // Handle API inconsistency: duration_minutes is canonical
         duration_minutes: service.duration_minutes || service.duration,
         category_id: service.category_id,
@@ -400,9 +424,21 @@ const ServicesManagement = () => {
                   {/* Details */}
                   <div className="flex items-center gap-4 text-sm">
                     <div className="flex items-center text-accent-orange">
-                      <span className="font-semibold font-body">
-                        {!service.price || service.price === 0 ? 'FREE' : `₹${service.price}`}
-                      </span>
+                      {service.discounted_price !== null && service.discounted_price !== undefined ? (
+                        <div className="flex items-center gap-2 font-body">
+                          <span className="font-semibold">₹{service.discounted_price}</span>
+                          <span className="text-xs text-gray-500 line-through">₹{service.price}</span>
+                          {service.discount_percentage !== null && service.discount_percentage !== undefined && (
+                            <span className="px-2 py-0.5 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
+                              {service.discount_percentage}% OFF
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="font-semibold font-body">
+                          {!service.price || service.price === 0 ? 'FREE' : `₹${service.price}`}
+                        </span>
+                      )}
                     </div>
                     <div className="flex items-center text-gray-600">
                       <FiClock className="mr-1" />
@@ -509,7 +545,7 @@ const ServicesManagement = () => {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <InputField
               label="Price (₹)"
               type="number"
@@ -520,6 +556,19 @@ const ServicesManagement = () => {
               min="0"
               step="0.01"
               placeholder="0 for FREE"
+              disabled={isCreating || isUpdating}
+            />
+
+            <InputField
+              label="Discount (%)"
+              type="number"
+              name="discount_percentage"
+              value={formData.discount_percentage}
+              onChange={handleChange}
+              min="0"
+              max="100"
+              step="0.01"
+              placeholder="Optional"
               disabled={isCreating || isUpdating}
             />
 
