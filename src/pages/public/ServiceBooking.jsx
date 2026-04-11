@@ -565,9 +565,25 @@ export default function ServiceBooking() {
 
                   {/* Right: Price and Add Button */}
                   <div className="flex flex-col items-end shrink-0 ml-2 gap-1.5">
-                    <span className="font-display font-extrabold text-[14px] text-accent-orange">
-                      ₹{service.price}
-                    </span>
+                    {service.discounted_price !== null && service.discounted_price !== undefined ? (
+                      <div className="flex flex-col items-end leading-tight">
+                        <span className="font-display font-extrabold text-[14px] text-accent-orange">
+                          ₹{service.discounted_price}
+                        </span>
+                        <span className="font-body text-[11px] text-neutral-gray-500 line-through">
+                          ₹{service.price}
+                        </span>
+                        {service.discount_percentage !== null && service.discount_percentage !== undefined && (
+                          <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-body font-semibold text-[9px] uppercase tracking-wide mt-0.5">
+                            {service.discount_percentage}% off
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="font-display font-extrabold text-[14px] text-accent-orange">
+                        ₹{service.price}
+                      </span>
+                    )}
                       {isServiceInCart(service) ? (
                         <button
                           disabled

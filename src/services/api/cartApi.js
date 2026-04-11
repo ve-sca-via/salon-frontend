@@ -61,7 +61,7 @@ export const cartApi = createApi({
               
               // Recalculate totals
               draft.total_amount = draft.items.reduce(
-                (total, item) => total + item.price * item.quantity,
+                (total, item) => total + (item.unit_price ?? item.price) * item.quantity,
                 0
               );
               draft.item_count = draft.items.reduce(
@@ -98,7 +98,7 @@ export const cartApi = createApi({
             
             // Recalculate totals
             draft.total_amount = draft.items.reduce(
-              (total, item) => total + item.price * item.quantity,
+              (total, item) => total + (item.unit_price ?? item.price) * item.quantity,
               0
             );
             draft.item_count = draft.items.reduce(

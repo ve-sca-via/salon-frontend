@@ -70,6 +70,14 @@ export function SalonCard({ salon, userLocation }) {
           {salon.business_name}
         </h3>
 
+        {salon.has_discounted_services && (
+          <div className="mb-3">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-[11px] font-bold uppercase tracking-wide">
+              Discount Available
+            </span>
+          </div>
+        )}
+
         <div className="flex items-start gap-3 mb-3">
           <FiMapPin className="text-accent-orange mt-0.5 flex-shrink-0" size={18} />
           <div className="flex-1 min-w-0">
@@ -180,6 +188,14 @@ export function MobileSalonCard({ salon, userLocation }) {
             <FiStar size={8} className="fill-current" /> Featured
           </span>
         </div>
+
+        {salon.has_discounted_services && (
+          <div className="absolute top-8 left-2 z-10 pointer-events-none">
+            <span className="bg-green-600 text-white text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm h-[18px] inline-flex items-center">
+              Discount Available
+            </span>
+          </div>
+        )}
 
         <div className="absolute bottom-0 left-0 bg-gradient-to-r from-orange-100 to-orange-50 text-accent-orange text-[10px] font-bold px-2.5 py-1 rounded-tr-lg z-10 shadow-sm border-t border-r border-orange-200/50">
           UPTO 20% OFF

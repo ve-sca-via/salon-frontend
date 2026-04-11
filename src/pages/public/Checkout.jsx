@@ -149,9 +149,15 @@ export default function Checkout() {
 
   // Calculate pricing (only if config is loaded)
   const servicesTotalAmount = cart?.total_amount || 0;
-  const convenienceFee = convenienceFeePercentage ? Math.round((servicesTotalAmount * convenienceFeePercentage) / 100) : 0;
+  const originalServicesTotal = (cart?.items || []).reduce(
+    (total, item) => total + (Number(item?.service_details?.price) || Number(item?.unit_price) || 0) * (item?.quantity || 1),
+    0
+  );
+  const discountAmount = Math.max(0, originalServicesTotal - servicesTotalAmount);
+  const convenienceFee = convenienceFeePercentage ? Math.round((originalServicesTotal * convenienceFeePercentage) / 100) : 0;
   const totalBookingAmount = convenienceFee;
   const remainingAmount = servicesTotalAmount;
+  const grandTotal = servicesTotalAmount + convenienceFee;
 
   /**
    * Handle time slot selection (max 3 slots)
@@ -447,19 +453,31 @@ export default function Checkout() {
               <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
                 <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
                   <span className="text-neutral-gray-500">Service Total</span>
-                  <span className="text-neutral-black font-semibold">₹{servicesTotalAmount}</span>
+                  <span className="text-neutral-black font-semibold">₹{originalServicesTotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
+                  <span className="text-neutral-gray-500">Discount</span>
+                  <span className="text-green-700 font-semibold">-₹{discountAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
+                  <span className="text-neutral-gray-500">Discounted Service Total</span>
+                  <span className="text-neutral-black font-semibold">₹{servicesTotalAmount.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
                   <span className="text-neutral-gray-500">Convenience Fee</span>
-                  <span className="text-neutral-black font-semibold">₹{convenienceFee}</span>
+                  <span className="text-neutral-black font-semibold">₹{convenienceFee.toFixed(2)}</span>
                 </div>
                 <div className="pt-2.5 sm:pt-3 border-t border-neutral-gray-600">
+                  <div className="flex justify-between font-body text-[15px] sm:text-[16px] mb-1">
+                    <span className="text-neutral-black font-bold">Total</span>
+                    <span className="text-neutral-black font-bold">₹{grandTotal.toFixed(2)}</span>
+                  </div>
                   <div className="flex justify-between font-body text-[15px] sm:text-[16px]">
                     <span className="text-neutral-black font-bold">Pay Now</span>
-                    <span className="text-accent-orange font-bold">₹{totalBookingAmount}</span>
+                    <span className="text-accent-orange font-bold">₹{totalBookingAmount.toFixed(2)}</span>
                   </div>
                   <p className="text-[10px] sm:text-[11px] text-neutral-gray-500 mt-1">
-                    Pay ₹{remainingAmount} at salon
+                    Pay ₹{remainingAmount.toFixed(2)} at salon
                   </p>
                 </div>
               </div>
