@@ -396,20 +396,33 @@ export default function Checkout() {
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
-                  {timeSlots.map((time, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleTimeSelection(time)}
-                      className={`py-2.5 sm:py-2 px-3 rounded-lg border text-[12px] sm:text-[13px] font-body font-medium transition-all min-h-[44px] sm:min-h-0 ${
-                        selectedTimes.includes(time)
-                          ? "bg-accent-orange border-accent-orange text-primary-white"
-                          : "border-neutral-gray-600 text-neutral-black hover:border-accent-orange active:bg-orange-50"
-                      }`}
-                    >
-                      {time}
-                    </button>
-                  ))}
+                <div
+                  className="overflow-x-auto pb-2 scrollbar-hide"
+                  style={{ WebkitOverflowScrolling: "touch" }}
+                >
+                  <div
+                    style={{
+                      display: "grid",
+                      gridTemplateRows: "repeat(3, auto)",
+                      gridAutoFlow: "column",
+                      gap: "8px",
+                      width: "max-content",
+                    }}
+                  >
+                    {timeSlots.map((time, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleTimeSelection(time)}
+                        className={`py-2.5 px-4 rounded-lg border text-[12px] sm:text-[13px] font-body font-medium transition-all min-h-[44px] whitespace-nowrap ${
+                          selectedTimes.includes(time)
+                            ? "bg-accent-orange border-accent-orange text-primary-white"
+                            : "border-neutral-gray-600 text-neutral-black hover:border-accent-orange active:bg-orange-50"
+                        }`}
+                      >
+                        {time}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

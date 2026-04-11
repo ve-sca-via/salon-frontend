@@ -27,12 +27,21 @@ const baseConfig = {
   },
 };
 
+// Helper: Safely dismiss all toasts to instantly show the newest one without queues or double-firing
+const dismissToast = () => {
+  toast.dismiss();
+};
+
 /**
  * Success toast - green background
  */
 export const showSuccessToast = (message, options = {}) => {
+  dismissToast();
+  const customId = typeof message === 'string' ? message : undefined;
+
   return toast.success(message, {
     ...baseConfig,
+    toastId: customId,
     autoClose: 2000,
     style: {
       ...baseConfig.style,
@@ -47,8 +56,12 @@ export const showSuccessToast = (message, options = {}) => {
  * Error toast - red background
  */
 export const showErrorToast = (message, options = {}) => {
+  dismissToast();
+  const customId = typeof message === 'string' ? message : undefined;
+
   return toast.error(message, {
     ...baseConfig,
+    toastId: customId,
     autoClose: 3000,
     style: {
       ...baseConfig.style,
@@ -63,8 +76,12 @@ export const showErrorToast = (message, options = {}) => {
  * Info toast - neutral gray background (design token: neutral-gray-400)
  */
 export const showInfoToast = (message, options = {}) => {
+  dismissToast();
+  const customId = typeof message === 'string' ? message : undefined;
+
   return toast.info(message, {
     ...baseConfig,
+    toastId: customId,
     autoClose: 2000,
     style: {
       ...baseConfig.style,
@@ -79,8 +96,12 @@ export const showInfoToast = (message, options = {}) => {
  * Warning toast - brand orange background (design token: accent-orange)
  */
 export const showWarningToast = (message, options = {}) => {
+  dismissToast();
+  const customId = typeof message === 'string' ? message : undefined;
+
   return toast.warning(message, {
     ...baseConfig,
+    toastId: customId,
     autoClose: 2500,
     style: {
       ...baseConfig.style,
@@ -111,10 +132,13 @@ export const showTopCenterToast = (message, type = 'error', options = {}) => {
   };
 
   const config = typeConfig[type] || typeConfig.error;
+  dismissToast();
+  const customId = typeof message === 'string' ? message : undefined;
 
   return toast[type](message, {
     position: "top-center",
     className: "font-body",
+    toastId: customId,
     autoClose: config.autoClose,
     style: {
       fontFamily: "DM Sans, sans-serif",
