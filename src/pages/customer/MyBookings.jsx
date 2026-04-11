@@ -84,6 +84,16 @@ function BookingCard({ booking, onCancel }) {
   const isUpcoming =
     booking.status === "pending" || booking.status === "confirmed";
 
+  const bookingOriginalServicesTotal = (booking.services || []).reduce((total, service) => {
+    const quantity = service.quantity || 1;
+    const originalUnitPrice =
+      service.original_price !== null && service.original_price !== undefined
+        ? service.original_price
+        : service.unit_price;
+    return total + (Number(originalUnitPrice) || 0) * quantity;
+  }, 0);
+  const bookingDiscountAmount = Math.max(0, bookingOriginalServicesTotal - (booking.service_price || 0));
+
   return (
     <div className="bg-primary-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden mb-6">
       {/* Header with Salon Info */}
@@ -183,6 +193,15 @@ function BookingCard({ booking, onCancel }) {
                     <p className="font-body text-[16px] text-accent-orange font-bold">
                       ₹{(service.unit_price * service.quantity).toFixed(2)}
                     </p>
+                    {(service.original_price !== null && service.original_price !== undefined &&
+                      Number(service.original_price) > Number(service.unit_price || 0)) && (
+                      <p className="font-body text-[11px] text-neutral-gray-500">
+                        <span className="line-through">₹{(service.original_price * service.quantity).toFixed(2)}</span>
+                        {service.discount_percentage !== null && service.discount_percentage !== undefined && (
+                          <span className="ml-2 text-green-700 font-semibold">{service.discount_percentage}% OFF</span>
+                        )}
+                      </p>
+                    )}
                     {service.quantity > 1 && (
                       <p className="font-body text-[11px] text-neutral-gray-500">
                         ₹{service.unit_price.toFixed(2)} × {service.quantity}
@@ -215,7 +234,25 @@ function BookingCard({ booking, onCancel }) {
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="font-body text-[13px] text-neutral-gray-500">
-                Services Total
+                Original Service Total
+              </span>
+              <span className="font-body text-[13px] text-neutral-black font-semibold">
+                ₹{bookingOriginalServicesTotal.toFixed(2)}
+              </span>
+            </div>
+            {bookingDiscountAmount > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="font-body text-[13px] text-neutral-gray-500">
+                  Discount
+                </span>
+                <span className="font-body text-[13px] text-green-700 font-semibold">
+                  -₹{bookingDiscountAmount.toFixed(2)}
+                </span>
+              </div>
+            )}
+            <div className="flex justify-between items-center">
+              <span className="font-body text-[13px] text-neutral-gray-500">
+                Discounted Service Total
               </span>
               <span className="font-body text-[13px] text-neutral-black font-semibold">
                 ₹{(booking.service_price || 0).toFixed(2)}
