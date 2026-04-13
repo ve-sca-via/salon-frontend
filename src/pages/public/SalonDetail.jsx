@@ -503,7 +503,13 @@ export default function SalonDetail() {
     ];
   };
 
-
+  const getMapDirectionUrl = () => {
+    if (salon.latitude && salon.longitude) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${salon.latitude},${salon.longitude}`;
+    }
+    const fallbackAddress = salon.address || `${salon.city || ''}, ${salon.state || ''}`.trim();
+    return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(fallbackAddress)}`;
+  };
 
   return (
     <div className="min-h-screen bg-bg-secondary overflow-x-hidden">
@@ -713,6 +719,21 @@ export default function SalonDetail() {
                       </span>
                     </div>
 
+                    {/* Mobile Directions Button - Mobile only */}
+                    <div className="lg:hidden w-full mt-1">
+                      <a
+                        href={getMapDirectionUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 text-accent-orange hover:text-orange-600 font-body font-medium text-[14px]"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        </svg>
+                        Get Directions
+                      </a>
+                    </div>
+
                     {/* Call button - Mobile only, side by side */}
                     {salon.phone && (
                       <div className="lg:hidden flex items-center gap-2">
@@ -729,6 +750,19 @@ export default function SalonDetail() {
                 </div>
                 {/* Call and Share buttons - Desktop only */}
                 <div className="hidden lg:flex items-center gap-2 sm:gap-3">
+                  {/* Get Directions - Desktop */}
+                  <a
+                    href={getMapDirectionUrl()}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-orange-200 text-accent-orange bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                    aria-label={`Get directions to ${salon.business_name || salon.name}`}
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                    <span className="font-body font-medium text-sm sm:text-base">Directions</span>
+                  </a>
                   {salon.phone && (
                     <a
                       href={`tel:${salon.phone}`}
@@ -946,9 +980,22 @@ export default function SalonDetail() {
                 {/* Address */}
                 <div className="flex items-start gap-3">
                   <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5 flex-shrink-0" />
-                  <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
-                    {salon.address || `${salon.city}, ${salon.state}`}
-                  </span>
+                  <div className="flex flex-col gap-2 w-full">
+                    <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
+                      {salon.address || `${salon.city}, ${salon.state}`}
+                    </span>
+                    <a
+                      href={getMapDirectionUrl()}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full inline-flex items-center justify-center gap-2 border border-orange-200 text-accent-orange bg-orange-50 hover:bg-orange-100 font-body font-medium text-[13px] py-1.5 px-3 rounded-md transition-colors"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                      </svg>
+                      Get Directions
+                    </a>
+                  </div>
                 </div>
               </div>
 
