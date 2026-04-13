@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CompleteRegistration Component
  * 
  * Purpose:
@@ -423,14 +423,14 @@ const CompleteRegistration = () => {
                 <span className="text-sm text-gray-700 font-body leading-relaxed">
                   I agree to the{' '}
                   <Link 
-                    to="/terms"
+                    to="/terms-of-service"
                     className="text-[#F89C02] hover:text-orange-700 font-semibold underline"
                   >
                     Terms and Conditions
                   </Link>{' '}
                   and{' '}
                   <Link 
-                    to="/privacy"
+                    to="/privacy-policy"
                     className="text-[#F89C02] hover:text-orange-700 font-semibold underline"
                   >
                     Privacy Policy
