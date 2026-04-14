@@ -100,6 +100,7 @@ const SalonProfile = () => {
       saturday: '',
       sunday: '',
     },
+    facilities: {},
   });
 
   /**
@@ -173,6 +174,7 @@ const SalonProfile = () => {
         closing_time: salonProfile.closing_time || '',
         working_days: salonProfile.working_days || [],
         business_hours: convertDbToBusinessHours(salonProfile),
+        facilities: salonProfile.facilities || salonProfile.documents?.facilities || {},
       });
     }
   }, [salonProfile]);
@@ -298,6 +300,7 @@ const SalonProfile = () => {
         closing_time: salonProfile.closing_time || '',
         working_days: salonProfile.working_days || [],
         business_hours: convertDbToBusinessHours(salonProfile),
+        facilities: salonProfile.facilities || salonProfile.documents?.facilities || {},
       });
     }
     setIsEditing(false);
@@ -917,6 +920,49 @@ const SalonProfile = () => {
                     </div>
                   );
                 })}
+              </div>
+            </Card>
+
+            {/* Facilities Card */}
+            <Card className="mt-6">
+              <h2 className="text-xl font-display font-bold text-gray-900 mb-4 flex items-center">
+                <svg className="mr-2 text-accent-orange w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Facilities
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                {[
+                  { id: 'air_conditioner', label: 'Air Conditioner' },
+                  { id: 'car_parking', label: 'Car Parking' },
+                  { id: 'free_wifi', label: 'Free WiFi' },
+                  { id: 'shower_facility', label: 'Shower Facility' },
+                  { id: 'steam_room', label: 'Steam Room' },
+                  { id: 'hygienic_environment', label: 'Hygienic environment' },
+                  { id: 'comfortable_seating', label: 'Comfortable seating' },
+                  { id: 'sanitized_tools', label: 'Sanitized Tools' }
+                ].map((facility) => (
+                  <label key={facility.id} className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${isEditing ? 'hover:bg-gray-50' : ''} ${formData.facilities?.[`facility_${facility.id}`] ? 'bg-orange-50 border-accent-orange' : 'border-gray-200 bg-white'}`}>
+                    <input
+                      type="checkbox"
+                      checked={!!formData.facilities?.[`facility_${facility.id}`]}
+                      onChange={(e) => {
+                        if (isEditing) {
+                          setFormData({
+                            ...formData,
+                            facilities: {
+                              ...formData.facilities,
+                              [`facility_${facility.id}`]: e.target.checked
+                            }
+                          });
+                        }
+                      }}
+                      disabled={!isEditing}
+                      className="w-4 h-4 text-accent-orange bg-gray-100 border-gray-300 rounded focus:ring-accent-orange"
+                    />
+                    <span className="ml-3 text-sm font-body font-medium text-gray-700">{facility.label}</span>
+                  </label>
+                ))}
               </div>
             </Card>
           </div>
