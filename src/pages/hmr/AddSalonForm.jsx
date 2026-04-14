@@ -109,7 +109,7 @@ const AddSalonForm = () => {
   // Edit mode derived from URL param
   const isEditMode = Boolean(draftId);
 
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   // Load draft data if editing
   useEffect(() => {
@@ -146,6 +146,16 @@ const AddSalonForm = () => {
         friday: documents.business_hours?.friday || '9:00 AM - 6:00 PM',
         saturday: documents.business_hours?.saturday || '9:00 AM - 6:00 PM',
         sunday: documents.business_hours?.sunday || 'Closed',
+        
+        // Facilities
+        facility_air_conditioner: draft.facilities?.air_conditioner || documents.facilities?.air_conditioner || false,
+        facility_car_parking: draft.facilities?.car_parking || documents.facilities?.car_parking || false,
+        facility_free_wifi: draft.facilities?.free_wifi || documents.facilities?.free_wifi || false,
+        facility_shower_facility: draft.facilities?.shower_facility || documents.facilities?.shower_facility || false,
+        facility_steam_room: draft.facilities?.steam_room || documents.facilities?.steam_room || false,
+        facility_hygienic_environment: draft.facilities?.hygienic_environment || documents.facilities?.hygienic_environment || false,
+        facility_comfortable_seating: draft.facilities?.comfortable_seating || documents.facilities?.comfortable_seating || false,
+        facility_sanitized_tools: draft.facilities?.sanitized_tools || documents.facilities?.sanitized_tools || false,
       });
       
       // Services - check both new and old format
@@ -565,7 +575,27 @@ const AddSalonForm = () => {
           current_step: currentStep,
           images: uploadedImages.length > 0 ? uploadedImages : null,
           cover_image: coverImage || null,
+          facilities: {
+            air_conditioner: !!data.facility_air_conditioner,
+            car_parking: !!data.facility_car_parking,
+            free_wifi: !!data.facility_free_wifi,
+            shower_facility: !!data.facility_shower_facility,
+            steam_room: !!data.facility_steam_room,
+            hygienic_environment: !!data.facility_hygienic_environment,
+            comfortable_seating: !!data.facility_comfortable_seating,
+            sanitized_tools: !!data.facility_sanitized_tools,
+          }
         },
+        facilities: {
+          air_conditioner: !!data.facility_air_conditioner,
+          car_parking: !!data.facility_car_parking,
+          free_wifi: !!data.facility_free_wifi,
+          shower_facility: !!data.facility_shower_facility,
+          steam_room: !!data.facility_steam_room,
+          hygienic_environment: !!data.facility_hygienic_environment,
+          comfortable_seating: !!data.facility_comfortable_seating,
+          sanitized_tools: !!data.facility_sanitized_tools,
+        }
       };
 
       // Console log the vendor request data including lat/long
@@ -756,7 +786,7 @@ const AddSalonForm = () => {
 
   const renderStepIndicator = () => (
     <div className="flex items-center justify-center mb-8 px-2">
-      {[1, 2, 3, 4].map((step) => (
+      {[1, 2, 3, 4, 5].map((step) => (
         <React.Fragment key={step}>
           <div className="flex flex-col items-center flex-1 max-w-[80px]">
             <div
@@ -772,16 +802,18 @@ const AddSalonForm = () => {
               {step === 1 && 'Basic Info'}
               {step === 2 && 'Services'}
               {step === 3 && 'Photos'}
-              {step === 4 && 'Review'}
+              {step === 4 && 'Facilities'}
+              {step === 5 && 'Review'}
             </span>
             <span className="text-xs font-body mt-1 text-gray-600 text-center sm:hidden">
               {step === 1 && 'Info'}
               {step === 2 && 'Services'}
               {step === 3 && 'Photos'}
-              {step === 4 && 'Review'}
+              {step === 4 && 'Facilities'}
+              {step === 5 && 'Review'}
             </span>
           </div>
-          {step < 4 && (
+          {step < 5 && (
             <div
               className={`h-1 flex-1 mx-1 sm:mx-2 transition-all ${
                 currentStep > step ? 'bg-accent-orange' : 'bg-gray-200'
@@ -1782,8 +1814,47 @@ const AddSalonForm = () => {
             </Card>
           )}
 
-          {/* Step 4: Review */}
+          {/* Step 4: Facilities */}
           {currentStep === 4 && (
+            <Card title="Salon Facilities">
+              <div className="mb-4 p-4 bg-teal-50 border-l-4 border-teal-500 rounded">
+                <div className="flex items-start">
+                  <FiInfo className="text-teal-500 mt-1 mr-3 flex-shrink-0" size={20} />
+                  <div className="text-sm text-teal-800 font-body">
+                    <p className="font-semibold mb-1">Available Facilities</p>
+                    <p className="text-xs">Select all the facilities that are available at the salon.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { id: 'facility_air_conditioner', label: 'Air Conditioner' },
+                  { id: 'facility_car_parking', label: 'Car Parking' },
+                  { id: 'facility_free_wifi', label: 'Free WiFi' },
+                  { id: 'facility_shower_facility', label: 'Shower Facility' },
+                  { id: 'facility_steam_room', label: 'Steam Room' },
+                  { id: 'facility_hygienic_environment', label: 'Hygienic environment' },
+                  { id: 'facility_comfortable_seating', label: 'Comfortable seating' },
+                  { id: 'facility_sanitized_tools', label: 'Sanitized Tools' }
+                ].map(facility => (
+                  <div key={facility.id} className="flex items-center p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-teal-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      id={facility.id}
+                      {...register(facility.id)}
+                      className="w-5 h-5 text-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-teal-500"
+                    />
+                    <label htmlFor={facility.id} className="ml-3 text-sm font-medium text-gray-700 cursor-pointer w-full">
+                      {facility.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Step 5: Review */}
+          {currentStep === 5 && (
             <Card title="Review & Submit">
               <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded">
                 <div className="flex items-start">
@@ -2025,6 +2096,41 @@ const AddSalonForm = () => {
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Facilities Review */}
+                <div className="border-l-4 border-teal-500 pl-4">
+                  <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
+                    <span className="bg-teal-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">4</span>
+                    Facilities
+                  </h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex flex-wrap gap-2 text-sm font-body">
+                      {[
+                        { id: 'facility_air_conditioner', label: 'Air Conditioner' },
+                        { id: 'facility_car_parking', label: 'Car Parking' },
+                        { id: 'facility_free_wifi', label: 'Free WiFi' },
+                        { id: 'facility_shower_facility', label: 'Shower Facility' },
+                        { id: 'facility_steam_room', label: 'Steam Room' },
+                        { id: 'facility_hygienic_environment', label: 'Hygienic environment' },
+                        { id: 'facility_comfortable_seating', label: 'Comfortable seating' },
+                        { id: 'facility_sanitized_tools', label: 'Sanitized Tools' }
+                      ].map(facility => 
+                        watch(facility.id) ? (
+                          <span key={facility.id} className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full border border-teal-200">
+                            ✓ {facility.label}
+                          </span>
+                        ) : null
+                      )}
+                      {[
+                        'facility_air_conditioner', 'facility_car_parking', 'facility_free_wifi', 
+                        'facility_shower_facility', 'facility_steam_room', 'facility_hygienic_environment', 
+                        'facility_comfortable_seating', 'facility_sanitized_tools'
+                      ].every(id => !watch(id)) && (
+                        <span className="text-gray-500 italic">No facilities selected</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 
