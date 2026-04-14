@@ -76,7 +76,9 @@ const AddSalonForm = () => {
   // React Hook Form setup
   const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm({
     defaultValues: {
-      services: [{ name: '', category_id: '', price: '', duration_minutes: '' }]
+      services: [{ name: '', category_id: '', price: '', duration_minutes: '' }],
+      // Initialize with default business hours preset
+      ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
     }
   });
 
