@@ -859,6 +859,63 @@ export default function SalonDetail() {
                         </p>
                       </div>
                     )}
+
+                    {/* Facilities below services */}
+                    {salon.facilities && Object.entries(salon.facilities).filter(([_, isAvailable]) => isAvailable).length > 0 && (
+                      <div className="pt-8 mt-8 border-t border-gray-100">
+                        <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-4 flex items-center gap-2">
+                          <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Facilities & Amenities
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {Object.entries(salon.facilities)
+                            .filter(([_, isAvailable]) => isAvailable)
+                            .map(([key]) => {
+                              const cleanKey = key.replace('facility_', '');
+                              const label = cleanKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                              
+                              let IconSVG;
+                              switch (cleanKey) {
+                                case 'air_conditioner':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
+                                  break;
+                                case 'car_parking':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h4a3 3 0 010 6H8V7zM8 17v-4m-3 0h14M5 10l2-4h10l2 4M3 13h18M5 13v7a1 1 0 001 1h2a1 1 0 001-1v-2h6v2a1 1 0 001 1h2a1 1 0 001-1v-7m-11 5h-2m8 0h-2" /></svg>;
+                                  break;
+                                case 'free_wifi':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M4.222 9.383c5.44-5.44 14.116-5.44 19.556 0" /></svg>;
+                                  break;
+                                case 'shower_facility':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2v10m-3-3l3 3 3-3m-9 9a9 9 0 1118 0" /></svg>;
+                                  break;
+                                case 'steam_room':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>;
+                                  break;
+                                case 'hygienic_environment':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>;
+                                  break;
+                                case 'comfortable_seating':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>;
+                                  break;
+                                case 'sanitized_tools':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>;
+                                  break;
+                                default:
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
+                              }
+
+                              return (
+                                <div key={key} className="flex items-center gap-2 text-neutral-gray-700 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                                  {IconSVG}
+                                  <span className="font-body text-[14px] font-medium">{label}</span>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -903,14 +960,90 @@ export default function SalonDetail() {
                         </div>
                       </div>
                     )}
+
+                    {/* Contact & Hours Details */}
+                    <div className="pt-6 mt-6 border-t border-gray-200">
+                      <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-4">
+                        Contact & Location
+                      </h3>
+                      <div className="space-y-4">
+                        {/* Email */}
+                        {salon.email && (
+                          <div className="flex items-center gap-3">
+                            <FiMail className="w-5 h-5 text-accent-orange flex-shrink-0" />
+                            <span className="font-body text-[15px] text-neutral-black font-medium break-all">
+                              {salon.email}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Working Hours Dropdown */}
+                        <div className="border border-neutral-gray-300 rounded-lg max-w-md">
+                          <button
+                            onClick={() =>
+                              document
+                                .getElementById("about-working-hours")
+                                .classList.toggle("hidden")
+                            }
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-neutral-gray-100 transition-colors rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <FiClock className="w-5 h-5 text-accent-orange" />
+                              <span className="font-body text-[15px] text-neutral-black font-medium">
+                                View Hours
+                              </span>
+                            </div>
+                            <svg
+                              className="w-5 h-5 text-neutral-gray-600"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          <div id="about-working-hours" className="hidden px-4 pb-3">
+                            <div className="space-y-2 pt-2 border-t border-neutral-gray-300">
+                              {getBusinessHours().map(([day, hours]) => (
+                                <div key={day} className="flex justify-between items-center">
+                                  <span className="font-body text-[14px] text-neutral-gray-700">{day}</span>
+                                  <span className="font-body text-[14px] text-neutral-black font-medium">{hours}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Address */}
+                        <div className="flex items-start gap-3">
+                          <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5 flex-shrink-0" />
+                          <div className="flex flex-col gap-2 w-full max-w-md">
+                            <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
+                              {salon.address || `${salon.city}, ${salon.state}`}
+                            </span>
+                            <a
+                              href={getMapDirectionUrl()}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full inline-flex items-center justify-center gap-2 border border-orange-200 text-accent-orange bg-orange-50 hover:bg-orange-100 font-body font-medium text-[13px] py-1.5 px-3 rounded-md transition-colors text-center"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                              </svg>
+                              Get Directions
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Column - Booking Card */}
-          <div className="lg:col-span-1">
+          {/* Right Column - Booking Card (Hidden on mobile) */}
+          <div className="hidden lg:block lg:col-span-1">
             <div className="bg-transparent lg:bg-white rounded-xl p-3 sm:p-6 shadow-lg lg:sticky lg:top-20">
               {/* Salon Name */}
               <h3 className="font-display font-bold text-[18px] sm:text-[22px] text-neutral-black mb-4 break-words">

@@ -7,16 +7,16 @@ import Card from '../../components/shared/Card';
 import InputField from '../../components/shared/InputField';
 import Button from '../../components/shared/Button';
 import { SkeletonFormField } from '../../components/shared/Skeleton';
-import { 
-  useSubmitVendorRequestMutation, 
+import {
+  useSubmitVendorRequestMutation,
   useUpdateVendorRequestMutation,
   useGetVendorRequestByIdQuery,
   useGetServiceCategoriesQuery
 } from '../../services/api/rmApi';
 import { uploadSalonImage, uploadAgreementDocument, getAgreementDocumentSignedUrl } from '../../services/api/uploadApi';
 import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../../utils/toastConfig';
-import { 
-  INDIAN_STATES, 
+import {
+  INDIAN_STATES,
   BUSINESS_HOURS_PRESETS,
   BUSINESS_TYPES
 } from '../../utils/salonFormConstants';
@@ -64,7 +64,7 @@ import { FiUpload, FiMapPin, FiChevronLeft, FiChevronRight, FiCheck, FiPlus, FiT
 
 const AddSalonForm = () => {
   const { draftId } = useParams(); // Get draft ID from URL if editing
-  
+
   // RTK Query hooks 
   const [submitVendorRequest, { isLoading: isSubmitting }] = useSubmitVendorRequestMutation();
   const [updateVendorRequest, { isLoading: isUpdating }] = useUpdateVendorRequestMutation();
@@ -72,11 +72,13 @@ const AddSalonForm = () => {
     skip: !draftId, // Only fetch if draftId exists
   });
   const { data: categoriesData, isLoading: loadingCategories } = useGetServiceCategoriesQuery();
-  
+
   // React Hook Form setup
   const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm({
     defaultValues: {
-      services: [{ name: '', category_id: '', price: '', duration_minutes: '' }]
+      services: [{ name: '', category_id: '', price: '', duration_minutes: '' }],
+      // Initialize with default business hours preset
+      ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
     }
   });
 
@@ -92,32 +94,32 @@ const AddSalonForm = () => {
   // UI State (wizard steps and selections)
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedHoursPreset, setSelectedHoursPreset] = useState('weekdays-9-6');
-  
+
   // Form data state (data being built before submission)
   const [services, setServices] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [coverImage, setCoverImage] = useState(null);
   const [logo, setLogo] = useState(null);
   const [agreementDocument, setAgreementDocument] = useState(null);
-  
+
   // Upload progress state
   const [uploading, setUploading] = useState(false);
-  
+
   // Location state
   const [gettingLocation, setGettingLocation] = useState(false);
 
   // Edit mode derived from URL param
   const isEditMode = Boolean(draftId);
 
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   // Load draft data if editing
   useEffect(() => {
-    if (draftId && draftData && !loadingDraft && !loadingCategories) { 
+    if (draftId && draftData && !loadingDraft && !loadingCategories) {
       // Populate form with draft data, safely unwrapping `{data}` layer if it exists
       const draft = draftData.data || draftData;
       const documents = draft.documents || {};
-      
+
       // Basic info
       reset({
         name: draft.business_name || '',
@@ -146,11 +148,21 @@ const AddSalonForm = () => {
         friday: documents.business_hours?.friday || '9:00 AM - 6:00 PM',
         saturday: documents.business_hours?.saturday || '9:00 AM - 6:00 PM',
         sunday: documents.business_hours?.sunday || 'Closed',
+
+        // Facilities
+        facility_air_conditioner: draft.facilities?.air_conditioner || documents.facilities?.air_conditioner || false,
+        facility_car_parking: draft.facilities?.car_parking || documents.facilities?.car_parking || false,
+        facility_free_wifi: draft.facilities?.free_wifi || documents.facilities?.free_wifi || false,
+        facility_shower_facility: draft.facilities?.shower_facility || documents.facilities?.shower_facility || false,
+        facility_steam_room: draft.facilities?.steam_room || documents.facilities?.steam_room || false,
+        facility_hygienic_environment: draft.facilities?.hygienic_environment || documents.facilities?.hygienic_environment || false,
+        facility_comfortable_seating: draft.facilities?.comfortable_seating || documents.facilities?.comfortable_seating || false,
+        facility_sanitized_tools: draft.facilities?.sanitized_tools || documents.facilities?.sanitized_tools || false,
       });
-      
+
       // Services - check both new and old format
       let loadedServices = [];
-      
+
       // FIX: Try documents.services first (most reliable)
       if (documents.services && documents.services.length > 0) {
         // Services already have category_id
@@ -164,11 +176,11 @@ const AddSalonForm = () => {
             // Find category ID by name
             const categoryObj = serviceCategories.find(cat => cat.name === categoryName);
             const categoryId = categoryObj ? categoryObj.id : null;
-            
+
             if (!categoryId) {
               console.error(`❌ Could not find category_id for category: ${categoryName}`);
             }
-            
+
             serviceList.forEach(service => {
               loadedServices.push({
                 name: service.name || '',
@@ -181,7 +193,7 @@ const AddSalonForm = () => {
           }
         });
       }
-      
+
       console.log('=== SERVICE LOADING DEBUG ===');
       console.log('Draft Services Offered:', draft.services_offered);
       console.log('Document Services:', documents.services);
@@ -190,43 +202,43 @@ const AddSalonForm = () => {
       console.log('Services WITHOUT category_id:', loadedServices.filter(s => !s.category_id).length);
       console.log('Service Categories Available:', serviceCategories.length);
       console.log('============================');
-      
+
       if (loadedServices.length > 0) {
         setServices(loadedServices);
       }
-      
+
       // Images
       if (draft.cover_image_url) {
         setCoverImage(draft.cover_image_url);
       } else if (documents.cover_image) {
         setCoverImage(documents.cover_image);
       }
-      
+
       if (documents.logo) {
         setLogo(documents.logo);
       }
-      
+
       // Load agreement document from draft
       if (draft.registration_certificate) {
         setAgreementDocument(draft.registration_certificate);
       }
-      
+
       if (draft.gallery_images && draft.gallery_images.length > 0) {
         setUploadedImages(draft.gallery_images);
       } else if (documents.images && documents.images.length > 0) {
         setUploadedImages(documents.images);
       }
-      
+
       // Business hours preset
       if (documents.business_hours) {
         setSelectedHoursPreset('custom');
       }
-      
+
       // Use saved current step from draft (defaults to step 1 if not saved)
-      const startStep = documents.current_step && typeof documents.current_step === 'number' 
+      const startStep = documents.current_step && typeof documents.current_step === 'number'
         ? Math.min(Math.max(documents.current_step, 1), 4) // Cap between 1-4
         : 1; // Default to step 1 if not saved
-      
+
       console.log('=== DRAFT LOADING DEBUG ===');
       console.log('Draft ID:', draftId);
       console.log('Saved Step:', documents.current_step);
@@ -235,11 +247,11 @@ const AddSalonForm = () => {
       console.log('Services:', loadedServices.length);
       console.log('Cover Image:', draft.cover_image_url || documents.cover_image ? 'yes' : 'no');
       console.log('==========================');
-      
+
       setCurrentStep(startStep);
       showInfoToast(`Draft loaded. Starting from Step ${startStep}...`);
     }
-  }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset]); 
+  }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset]);
 
   const handleImageUpload = async (e, type) => {
     const files = Array.from(e.target.files);
@@ -313,7 +325,7 @@ const AddSalonForm = () => {
       (position) => {
         const { latitude, longitude, accuracy, altitude, altitudeAccuracy, heading, speed } = position.coords;
         const timestamp = new Date(position.timestamp).toLocaleString();
-        
+
         // Console log all the details
         console.log('=== GEOLOCATION DATA ===');
         console.log('Latitude:', latitude);
@@ -326,18 +338,18 @@ const AddSalonForm = () => {
         console.log('Timestamp:', timestamp);
         console.log('Full Position Object:', position);
         console.log('========================');
-        
+
         // Set the latitude and longitude in the form
         setValue('latitude', latitude.toFixed(6));
         setValue('longitude', longitude.toFixed(6));
-        
+
         setGettingLocation(false);
         showSuccessToast(`Location captured! Accuracy: ${Math.round(accuracy)}m`);
       },
       (error) => {
         setGettingLocation(false);
         console.error('Geolocation error:', error);
-        
+
         let errorMessage = 'Failed to get location';
         switch (error.code) {
           case error.PERMISSION_DENIED:
@@ -352,7 +364,7 @@ const AddSalonForm = () => {
           default:
             errorMessage = 'An unknown error occurred';
         }
-        
+
         showErrorToast(errorMessage);
       },
       {
@@ -390,49 +402,49 @@ const AddSalonForm = () => {
         const workingDays = [];
         let opening_time = null;
         let closing_time = null;
-        
+
         // Helper to convert 12-hour to 24-hour format (HH:MM:SS)
         const convertTo24Hour = (time12h) => {
           if (!time12h || time12h === 'Closed') return null;
-          
+
           // Handle edge cases
           const trimmed = time12h.trim();
           if (!trimmed.includes(' ')) return null; // No AM/PM
-          
+
           const parts = trimmed.split(' ');
           if (parts.length !== 2) return null;
-          
+
           const [time, period] = parts;
           if (!time.includes(':')) return null;
-          
+
           const timeParts = time.split(':');
           if (timeParts.length < 2) return null;
-          
+
           let hours = parseInt(timeParts[0]);
           let minutes = parseInt(timeParts[1]) || 0;
-          
+
           if (isNaN(hours) || isNaN(minutes)) return null;
-          
+
           if (period.toUpperCase() === 'PM' && hours !== 12) {
             hours += 12;
           } else if (period.toUpperCase() === 'AM' && hours === 12) {
             hours = 0;
           }
-          
+
           return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
         };
-        
+
         days.forEach(day => {
           const hours = data[day];
-          
+
           if (hours && hours !== 'Closed' && hours.trim() !== '') {
             // Add to working days (capitalize first letter)
             workingDays.push(day.charAt(0).toUpperCase() + day.slice(1));
-            
+
             // Parse time range: "9:00 AM - 6:00 PM"
             if (hours.includes(' - ')) {
               const [open, close] = hours.split(' - ').map(t => t.trim());
-              
+
               // Use first non-closed day's hours as representative times
               if (!opening_time) {
                 opening_time = convertTo24Hour(open);
@@ -443,12 +455,12 @@ const AddSalonForm = () => {
             }
           }
         });
-        
+
         return { opening_time, closing_time, working_days: workingDays };
       };
-      
+
       const { opening_time, closing_time, working_days } = parseBusinessHours();
-      
+
       // Helper: Convert services to array format for documents.services
       // Backend reads from documents.services and needs category_id
       const prepareServicesArray = () => {
@@ -458,7 +470,7 @@ const AddSalonForm = () => {
         console.log('Services WITHOUT category_id:', services.filter(s => !s.category_id));
         console.log('Services filtered:', services.filter(s => s.name && s.price && s.category_id));
         console.log('=============================');
-        
+
         // FIX: Warn user if services are missing category_id
         const servicesWithoutCategory = services.filter(s => s.name && s.price && !s.category_id);
         if (servicesWithoutCategory.length > 0) {
@@ -469,7 +481,7 @@ const AddSalonForm = () => {
             `These services will NOT be visible to the vendor. Please select a category for each service.`
           );
         }
-        
+
         return services
           .filter(s => s.name && s.price && s.category_id)
           .map(s => ({
@@ -480,21 +492,21 @@ const AddSalonForm = () => {
             description: s.description || '',
           }));
       };
-      
+
       // Helper: Group services by category for services_offered JSONB column
       const groupServicesByCategory = () => {
         const servicesArray = prepareServicesArray();
         const grouped = {};
-        
+
         servicesArray.forEach(service => {
           // Find category name from serviceCategories
           const category = serviceCategories.find(cat => cat.id === service.category_id);
           const categoryName = category ? category.name : 'Uncategorized';
-          
+
           if (!grouped[categoryName]) {
             grouped[categoryName] = [];
           }
-          
+
           grouped[categoryName].push({
             name: service.name,
             price: service.price,
@@ -502,10 +514,10 @@ const AddSalonForm = () => {
             description: service.description
           });
         });
-        
+
         return Object.keys(grouped).length > 0 ? grouped : null;
       };
-      
+
       // Prepare vendor request data matching backend schema
       const vendorRequestData = {
         // Required fields
@@ -520,29 +532,29 @@ const AddSalonForm = () => {
         city: data.city,
         state: data.state,
         pincode: data.pincode,
-        
+
         // Optional location coordinates - handle empty strings and numeric values
         latitude: data.latitude && typeof data.latitude === 'string' && data.latitude.trim() !== '' ? parseFloat(data.latitude) : (data.latitude && typeof data.latitude === 'number' ? data.latitude : null),
         longitude: data.longitude && typeof data.longitude === 'string' && data.longitude.trim() !== '' ? parseFloat(data.longitude) : (data.longitude && typeof data.longitude === 'number' ? data.longitude : null),
-        
+
         // Legal
         gst_number: data.gst_number || null,
         pan_number: data.pan_number || null,
         business_license: data.business_license || null,
         registration_certificate: agreementDocument || null,  // Agreement document URL
-        
+
         // Media fields (direct columns)
         cover_image_url: coverImage || null,
         gallery_images: uploadedImages.length > 0 ? uploadedImages : null,
-        
-        // Operations fields (direct columns) - BUSINESS HOURS FIX
-        opening_time: opening_time,  // From parseBusinessHours()
-        closing_time: closing_time,  // From parseBusinessHours()
-        working_days: working_days.length > 0 ? working_days : null,  // From parseBusinessHours()
-        
+
+        // Operations fields (direct columns) - SET TO NULL AS REQUESTED (Stored in documents)
+        opening_time: null,
+        closing_time: null,
+        working_days: null,
+
         // Services - Store in BOTH places for full compatibility
         services_offered: groupServicesByCategory(),  // Grouped by category for database column
-        
+
         // Documents JSONB - Store services here for backend to read
         documents: {
           description: data.description || '',
@@ -565,7 +577,27 @@ const AddSalonForm = () => {
           current_step: currentStep,
           images: uploadedImages.length > 0 ? uploadedImages : null,
           cover_image: coverImage || null,
+          facilities: {
+            air_conditioner: !!data.facility_air_conditioner,
+            car_parking: !!data.facility_car_parking,
+            free_wifi: !!data.facility_free_wifi,
+            shower_facility: !!data.facility_shower_facility,
+            steam_room: !!data.facility_steam_room,
+            hygienic_environment: !!data.facility_hygienic_environment,
+            comfortable_seating: !!data.facility_comfortable_seating,
+            sanitized_tools: !!data.facility_sanitized_tools,
+          }
         },
+        facilities: {
+          air_conditioner: !!data.facility_air_conditioner,
+          car_parking: !!data.facility_car_parking,
+          free_wifi: !!data.facility_free_wifi,
+          shower_facility: !!data.facility_shower_facility,
+          steam_room: !!data.facility_steam_room,
+          hygienic_environment: !!data.facility_hygienic_environment,
+          comfortable_seating: !!data.facility_comfortable_seating,
+          sanitized_tools: !!data.facility_sanitized_tools,
+        }
       };
 
       // Console log the vendor request data including lat/long
@@ -580,17 +612,17 @@ const AddSalonForm = () => {
 
       // Update existing draft or create new using RTK Query mutations
       if (isEditMode && draftId) {
-        await updateVendorRequest({ 
+        await updateVendorRequest({
           requestId: draftId,
-          requestData: vendorRequestData, 
-          submitForApproval 
+          requestData: vendorRequestData,
+          submitForApproval
         }).unwrap();
-        
+
         if (submitForApproval) {
           const isRejected = draftData?.status === 'rejected';
           showSuccessToast(
-            isRejected 
-              ? '✅ Salon resubmitted successfully! Admin will review your corrections.' 
+            isRejected
+              ? '✅ Salon resubmitted successfully! Admin will review your corrections.'
               : '✅ Draft submitted for approval! You will be notified once reviewed.',
             { autoClose: 4000 }
           );
@@ -601,11 +633,11 @@ const AddSalonForm = () => {
           );
         }
       } else {
-        await submitVendorRequest({ 
-          requestData: vendorRequestData, 
-          isDraft 
+        await submitVendorRequest({
+          requestData: vendorRequestData,
+          isDraft
         }).unwrap();
-        
+
         if (isDraft) {
           showSuccessToast(
             '💾 Salon saved as draft! You can complete and submit it later.',
@@ -618,24 +650,24 @@ const AddSalonForm = () => {
           );
         }
       }
-      
+
       navigate(isEditMode ? '/hmr/drafts' : '/hmr/dashboard');
     } catch (error) {
       // Handle validation errors from backend (RTK Query error format)
       if (error.data?.detail) {
         const detail = error.data.detail;
-        
+
         // If detail is an array of validation errors
         if (Array.isArray(detail)) {
           // Find which step the error belongs to and navigate there
           const fieldToStep = {
             'business_name': 1, 'business_type': 1, 'owner_name': 1, 'owner_email': 1,
-            'owner_phone': 1, 'business_address': 1, 'address_line1': 1, 'city': 1, 
+            'owner_phone': 1, 'business_address': 1, 'address_line1': 1, 'city': 1,
             'state': 1, 'pincode': 1, 'description': 1,
             'services': 2, 'services_offered': 2,
             'cover_image_url': 3, 'cover_image': 3
           };
-          
+
           let firstErrorStep = 4;
           const errorMessages = detail.map(err => {
             const field = err.loc && err.loc.length > 0 ? err.loc[err.loc.length - 1] : 'Unknown field';
@@ -643,16 +675,16 @@ const AddSalonForm = () => {
             if (stepNum && stepNum < firstErrorStep) {
               firstErrorStep = stepNum;
             }
-            
+
             // Make error messages more user-friendly
             let message = err.msg;
             if (message.includes('at least 10')) {
               message = 'Address must be at least 10 characters. Please provide a complete street address.';
             }
-            
+
             return `• ${field}: ${message}`;
           }).join('\n');
-          
+
           // Navigate to the step with the error
           if (firstErrorStep < 4) {
             setCurrentStep(firstErrorStep);
@@ -676,7 +708,7 @@ const AddSalonForm = () => {
   const nextStep = () => {
     // Get all current form values from react-hook-form (no need for separate formData state)
     const allValues = watch();
-    
+
     // Validation for step 1
     if (currentStep === 1) {
       const requiredFields = {
@@ -694,38 +726,38 @@ const AddSalonForm = () => {
         'Pincode': allValues.pincode,
         'Description': allValues.description
       };
-      
+
       const missingFields = Object.entries(requiredFields)
         .filter(([_, value]) => !value || value.trim() === '')
         .map(([field, _]) => field);
-      
+
       if (missingFields.length > 0) {
         showErrorToast(`Please fill: ${missingFields.join(', ')}`);
         return;
       }
-      
+
       if (!agreementDocument) {
         showErrorToast('Please upload the agreement document before proceeding');
         return;
       }
-      
+
       if (allValues.description && allValues.description.length < 50) {
         showErrorToast('Description must be at least 50 characters');
         return;
       }
-      
+
       // Validate address length
       if (allValues.address_line1 && allValues.address_line1.length < 10) {
         showErrorToast('Address Line 1 must be at least 10 characters. Please provide a complete address.');
         return;
       }
     }
-    
+
     if (currentStep === 2 && services.length === 0) {
       showWarningToast('Please add at least one service before proceeding');
       return;
     }
-    
+
     // FIX: Validate that all services have category_id
     if (currentStep === 2 && services.length > 0) {
       const servicesWithoutCategory = services.filter(s => s.name && !s.category_id);
@@ -740,7 +772,7 @@ const AddSalonForm = () => {
         return;
       }
     }
-    
+
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -756,15 +788,14 @@ const AddSalonForm = () => {
 
   const renderStepIndicator = () => (
     <div className="flex items-center justify-center mb-8 px-2">
-      {[1, 2, 3, 4].map((step) => (
+      {[1, 2, 3, 4, 5].map((step) => (
         <React.Fragment key={step}>
           <div className="flex flex-col items-center flex-1 max-w-[80px]">
             <div
-              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-body font-semibold transition-all text-sm sm:text-base ${
-                currentStep >= step
+              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-body font-semibold transition-all text-sm sm:text-base ${currentStep >= step
                   ? 'bg-accent-orange text-white'
                   : 'bg-gray-200 text-gray-500'
-              }`}
+                }`}
             >
               {currentStep > step ? <FiCheck size={16} className="sm:w-5 sm:h-5" /> : step}
             </div>
@@ -772,20 +803,21 @@ const AddSalonForm = () => {
               {step === 1 && 'Basic Info'}
               {step === 2 && 'Services'}
               {step === 3 && 'Photos'}
-              {step === 4 && 'Review'}
+              {step === 4 && 'Facilities'}
+              {step === 5 && 'Review'}
             </span>
             <span className="text-xs font-body mt-1 text-gray-600 text-center sm:hidden">
               {step === 1 && 'Info'}
               {step === 2 && 'Services'}
               {step === 3 && 'Photos'}
-              {step === 4 && 'Review'}
+              {step === 4 && 'Facilities'}
+              {step === 5 && 'Review'}
             </span>
           </div>
-          {step < 4 && (
+          {step < 5 && (
             <div
-              className={`h-1 flex-1 mx-1 sm:mx-2 transition-all ${
-                currentStep > step ? 'bg-accent-orange' : 'bg-gray-200'
-              }`}
+              className={`h-1 flex-1 mx-1 sm:mx-2 transition-all ${currentStep > step ? 'bg-accent-orange' : 'bg-gray-200'
+                }`}
             />
           )}
         </React.Fragment>
@@ -849,7 +881,7 @@ const AddSalonForm = () => {
         {/* Step Indicator */}
         {renderStepIndicator()}
 
-        <form 
+        <form
           onSubmit={(e) => {
             e.preventDefault(); // Prevent default form submission
             // Only submit if on last step and explicitly triggered
@@ -916,22 +948,20 @@ const AddSalonForm = () => {
                     <button
                       type="button"
                       onClick={() => setValue('outlet', 'Company owned', { shouldValidate: true })}
-                      className={`px-4 py-2 rounded-lg font-body text-sm transition-colors ${
-                        watch('outlet') === 'Company owned' 
-                          ? 'bg-[#8ba0af] text-white border border-[#8ba0af]' 
+                      className={`px-4 py-2 rounded-lg font-body text-sm transition-colors ${watch('outlet') === 'Company owned'
+                          ? 'bg-[#8ba0af] text-white border border-[#8ba0af]'
                           : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       Company Owned
                     </button>
                     <button
                       type="button"
                       onClick={() => setValue('outlet', 'franchisee', { shouldValidate: true })}
-                      className={`px-4 py-2 rounded-lg font-body text-sm transition-colors flex-1 ${
-                        watch('outlet') === 'franchisee' 
-                          ? 'bg-[#8ba0af] text-white border border-[#8ba0af]' 
+                      className={`px-4 py-2 rounded-lg font-body text-sm transition-colors flex-1 ${watch('outlet') === 'franchisee'
+                          ? 'bg-[#8ba0af] text-white border border-[#8ba0af]'
                           : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       Franchisee
                     </button>
@@ -950,22 +980,20 @@ const AddSalonForm = () => {
                     <button
                       type="button"
                       onClick={() => setValue('is_gst', true, { shouldValidate: true })}
-                      className={`px-6 py-2 rounded-lg font-body text-sm transition-colors ${
-                        watch('is_gst') === true 
-                          ? 'bg-white text-gray-900 border border-gray-300 shadow-sm' 
+                      className={`px-6 py-2 rounded-lg font-body text-sm transition-colors ${watch('is_gst') === true
+                          ? 'bg-white text-gray-900 border border-gray-300 shadow-sm'
                           : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       yes
                     </button>
                     <button
                       type="button"
                       onClick={() => setValue('is_gst', false, { shouldValidate: true })}
-                      className={`px-6 py-2 rounded-lg font-body text-sm transition-colors ${
-                        watch('is_gst') === false 
-                          ? 'bg-white text-gray-900 border border-gray-300 shadow-sm' 
+                      className={`px-6 py-2 rounded-lg font-body text-sm transition-colors ${watch('is_gst') === false
+                          ? 'bg-white text-gray-900 border border-gray-300 shadow-sm'
                           : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'
-                      }`}
+                        }`}
                     >
                       no
                     </button>
@@ -984,7 +1012,7 @@ const AddSalonForm = () => {
                 <InputField
                   label="Owner Email"
                   type="email"
-                  {...register('owner_email', { 
+                  {...register('owner_email', {
                     required: 'Owner email is required',
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -999,7 +1027,7 @@ const AddSalonForm = () => {
                 <InputField
                   label="Owner Phone"
                   type="tel"
-                  {...register('owner_phone', { 
+                  {...register('owner_phone', {
                     required: 'Owner phone is required',
                     pattern: {
                       value: /^[6-9]\d{9}$/,
@@ -1014,7 +1042,7 @@ const AddSalonForm = () => {
                 <InputField
                   label="Salon Email"
                   type="email"
-                  {...register('email', { 
+                  {...register('email', {
                     required: 'Email is required',
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
@@ -1030,7 +1058,7 @@ const AddSalonForm = () => {
                 <InputField
                   label="Salon Phone"
                   type="tel"
-                  {...register('phone', { 
+                  {...register('phone', {
                     required: 'Phone is required',
                     pattern: {
                       value: /^[6-9]\d{9}$/,
@@ -1070,7 +1098,7 @@ const AddSalonForm = () => {
 
                 <InputField
                   label="Pincode"
-                  {...register('pincode', { 
+                  {...register('pincode', {
                     required: 'Pincode is required',
                     pattern: {
                       value: /^\d{6}$/,
@@ -1091,7 +1119,7 @@ const AddSalonForm = () => {
                       <FiMapPin />
                     </div>
                     <input
-                      {...register('address_line1', { 
+                      {...register('address_line1', {
                         required: 'Address is required',
                         minLength: {
                           value: 10,
@@ -1106,9 +1134,8 @@ const AddSalonForm = () => {
                     {errors.address_line1 && (
                       <p className="text-sm text-red-600 font-body">{errors.address_line1.message}</p>
                     )}
-                    <p className={`text-xs ml-auto ${
-                      (watch('address_line1')?.length || 0) < 10 ? 'text-orange-600' : 'text-green-600'
-                    }`}>
+                    <p className={`text-xs ml-auto ${(watch('address_line1')?.length || 0) < 10 ? 'text-orange-600' : 'text-green-600'
+                      }`}>
                       {watch('address_line1')?.length || 0}/10 characters
                     </p>
                   </div>
@@ -1151,7 +1178,7 @@ const AddSalonForm = () => {
                         )}
                       </Button>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <InputField
                         label="Latitude"
@@ -1166,7 +1193,7 @@ const AddSalonForm = () => {
                         placeholder="e.g., 19.076090"
                         helperText="Range: -90 to 90"
                       />
-                      
+
                       <InputField
                         label="Longitude"
                         type="text"
@@ -1181,12 +1208,12 @@ const AddSalonForm = () => {
                         helperText="Range: -180 to 180"
                       />
                     </div>
-                    
+
                     <div className="mt-3 text-xs text-gray-600 bg-white p-3 rounded border border-blue-100">
                       <p className="flex items-start">
                         <FiInfo className="mr-2 mt-0.5 flex-shrink-0 text-blue-600" size={14} />
                         <span>
-                          Click "Use My Location" to automatically capture your current coordinates, 
+                          Click "Use My Location" to automatically capture your current coordinates,
                           or enter them manually. Check browser console for detailed location data.
                         </span>
                       </p>
@@ -1199,7 +1226,7 @@ const AddSalonForm = () => {
                     Description <span className="text-red-500">*</span>
                   </label>
                   <textarea
-                    {...register('description', { 
+                    {...register('description', {
                       required: 'Description is required',
                       minLength: {
                         value: 50,
@@ -1232,7 +1259,7 @@ const AddSalonForm = () => {
                         <p>Accepted formats: PDF, JPEG, PNG, WebP (Max 10MB)</p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                       <input
                         type="file"
@@ -1242,12 +1269,11 @@ const AddSalonForm = () => {
                         onChange={(e) => handleImageUpload(e, 'agreement')}
                         disabled={uploading === 'agreement'}
                       />
-                      
+
                       <label
                         htmlFor="agreement-upload"
-                        className={`flex items-center px-4 py-2 bg-white border border-purple-300 rounded-lg font-body text-sm cursor-pointer hover:bg-purple-50 transition-colors ${
-                          uploading === 'agreement' ? 'opacity-50 cursor-not-allowed' : ''
-                        }`}
+                        className={`flex items-center px-4 py-2 bg-white border border-purple-300 rounded-lg font-body text-sm cursor-pointer hover:bg-purple-50 transition-colors ${uploading === 'agreement' ? 'opacity-50 cursor-not-allowed' : ''
+                          }`}
                       >
                         {uploading === 'agreement' ? (
                           <>
@@ -1261,7 +1287,7 @@ const AddSalonForm = () => {
                           </>
                         )}
                       </label>
-                      
+
                       {agreementDocument && (
                         <div className="flex items-center gap-2 flex-1 min-w-0">
                           <a
@@ -1299,7 +1325,7 @@ const AddSalonForm = () => {
 
                 <div className="md:col-span-2">
                   <h3 className="text-lg font-display font-semibold text-gray-900 mb-3">Business Hours</h3>
-                  
+
                   {/* Preset Selection */}
                   <div className="mb-4">
                     <label className="block text-sm font-body font-medium text-gray-700 mb-2">
@@ -1310,7 +1336,7 @@ const AddSalonForm = () => {
                       onChange={(e) => {
                         const preset = e.target.value;
                         setSelectedHoursPreset(preset);
-                        
+
                         // Auto-fill hours if not custom
                         if (preset !== 'custom' && BUSINESS_HOURS_PRESETS[preset].hours) {
                           Object.entries(BUSINESS_HOURS_PRESETS[preset].hours).forEach(([day, hours]) => {
@@ -1326,7 +1352,7 @@ const AddSalonForm = () => {
                       ))}
                     </select>
                   </div>
-                  
+
                   {/* Manual Hours (show if custom selected) */}
                   {selectedHoursPreset === 'custom' && (
                     <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
@@ -1337,30 +1363,30 @@ const AddSalonForm = () => {
                         {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
                           const dayValue = watch(day) || '';
                           const isClosed = dayValue.toLowerCase() === 'closed' || dayValue === '';
-                          
+
                           // Parse existing value if it exists (e.g., "9:00 AM - 8:00 PM")
                           let openTime = '09:00';
                           let closeTime = '18:00';
-                          
+
                           if (dayValue && !isClosed) {
                             const match = dayValue.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
                             if (match) {
                               let [, openHour, openMin, openAmPm, closeHour, closeMin, closeAmPm] = match;
-                              
+
                               // Convert to 24-hour format
                               openHour = parseInt(openHour);
                               closeHour = parseInt(closeHour);
-                              
+
                               if (openAmPm && openAmPm.toUpperCase() === 'PM' && openHour !== 12) openHour += 12;
                               if (openAmPm && openAmPm.toUpperCase() === 'AM' && openHour === 12) openHour = 0;
                               if (closeAmPm && closeAmPm.toUpperCase() === 'PM' && closeHour !== 12) closeHour += 12;
                               if (closeAmPm && closeAmPm.toUpperCase() === 'AM' && closeHour === 12) closeHour = 0;
-                              
+
                               openTime = `${String(openHour).padStart(2, '0')}:${openMin}`;
                               closeTime = `${String(closeHour).padStart(2, '0')}:${closeMin}`;
                             }
                           }
-                          
+
                           const updateDayHours = (open, close, closed) => {
                             if (closed) {
                               setValue(day, 'Closed');
@@ -1372,15 +1398,15 @@ const AddSalonForm = () => {
                                 const hours12 = hours % 12 || 12;
                                 return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
                               };
-                              
+
                               setValue(day, `${formatTime(open)} - ${formatTime(close)}`);
                             }
                           };
-                          
+
                           return (
                             <div key={day} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
                               <span className="text-sm font-body font-semibold text-gray-700 capitalize w-24">{day}</span>
-                              
+
                               {!isClosed ? (
                                 <>
                                   <div className="flex items-center gap-2 flex-1">
@@ -1424,7 +1450,7 @@ const AddSalonForm = () => {
                       </div>
                     </div>
                   )}
-                  
+
                   {/* Preview of selected hours */}
                   {selectedHoursPreset !== 'custom' && (
                     <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
@@ -1493,7 +1519,7 @@ const AddSalonForm = () => {
                             <FiTrash2 size={16} />
                           </button>
                         </div>
-                        
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-body font-medium text-gray-700 mb-1">
@@ -1507,7 +1533,7 @@ const AddSalonForm = () => {
                               className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
                             />
                           </div>
-                          
+
                           <div>
                             <label className="block text-xs font-body font-medium text-gray-700 mb-1">
                               Category <span className="text-red-500">*</span>
@@ -1515,9 +1541,8 @@ const AddSalonForm = () => {
                             <select
                               value={service.category_id || ''}
                               onChange={(e) => updateService(index, 'category_id', e.target.value)}
-                              className={`w-full px-3 py-2 border rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange ${
-                                !service.category_id ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                              }`}
+                              className={`w-full px-3 py-2 border rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange ${!service.category_id ? 'border-red-300 bg-red-50' : 'border-gray-200'
+                                }`}
                             >
                               <option value="">Select category</option>
                               {serviceCategories.map(cat => (
@@ -1538,7 +1563,7 @@ const AddSalonForm = () => {
                               min="0"
                             />
                           </div>
-                          
+
                           <div>
                             <label className="block text-xs font-body font-medium text-gray-700 mb-1">
                               Duration (minutes) <span className="text-red-500">*</span>
@@ -1604,10 +1629,10 @@ const AddSalonForm = () => {
                   <div className="border-2 border-dashed border-gray-300 rounded-xl overflow-hidden hover:border-accent-orange transition-all">
                     {coverImage ? (
                       <div className="relative group">
-                        <img 
-                          src={coverImage} 
-                          alt="Cover" 
-                          className="w-full h-64 object-cover" 
+                        <img
+                          src={coverImage}
+                          alt="Cover"
+                          className="w-full h-64 object-cover"
                         />
                         <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-40 transition-all flex items-center justify-center">
                           <button
@@ -1641,9 +1666,9 @@ const AddSalonForm = () => {
                           disabled={uploading}
                         />
                         <label htmlFor="cover-upload">
-                          <Button 
-                            type="button" 
-                            variant="primary" 
+                          <Button
+                            type="button"
+                            variant="primary"
                             onClick={() => document.getElementById('cover-upload').click()}
                             disabled={uploading}
                           >
@@ -1664,10 +1689,10 @@ const AddSalonForm = () => {
                   <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-accent-orange transition-all">
                     {logo ? (
                       <div className="relative inline-block group">
-                        <img 
-                          src={logo} 
-                          alt="Logo" 
-                          className="w-40 h-40 object-contain rounded-lg border-2 border-gray-200" 
+                        <img
+                          src={logo}
+                          alt="Logo"
+                          className="w-40 h-40 object-contain rounded-lg border-2 border-gray-200"
                         />
                         <button
                           type="button"
@@ -1693,9 +1718,9 @@ const AddSalonForm = () => {
                           disabled={uploading}
                         />
                         <label htmlFor="logo-upload">
-                          <Button 
-                            type="button" 
-                            variant="outline" 
+                          <Button
+                            type="button"
+                            variant="outline"
                             onClick={() => document.getElementById('logo-upload').click()}
                             disabled={uploading}
                           >
@@ -1718,10 +1743,10 @@ const AddSalonForm = () => {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                         {uploadedImages.map((url, index) => (
                           <div key={index} className="relative group">
-                            <img 
-                              src={url} 
-                              alt={`Gallery ${index + 1}`} 
-                              className="w-full h-32 object-cover rounded-lg border-2 border-gray-200" 
+                            <img
+                              src={url}
+                              alt={`Gallery ${index + 1}`}
+                              className="w-full h-32 object-cover rounded-lg border-2 border-gray-200"
                             />
                             <button
                               type="button"
@@ -1737,7 +1762,7 @@ const AddSalonForm = () => {
                         ))}
                       </div>
                     )}
-                    
+
                     <div className="text-center">
                       {uploadedImages.length === 0 ? (
                         <>
@@ -1761,10 +1786,10 @@ const AddSalonForm = () => {
                         disabled={uploading}
                       />
                       <label htmlFor="gallery-upload">
-                        <Button 
-                          type="button" 
-                          variant="outline" 
-                          className="w-full md:w-auto" 
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full md:w-auto"
                           onClick={() => document.getElementById('gallery-upload').click()}
                           disabled={uploading}
                         >
@@ -1782,8 +1807,47 @@ const AddSalonForm = () => {
             </Card>
           )}
 
-          {/* Step 4: Review */}
+          {/* Step 4: Facilities */}
           {currentStep === 4 && (
+            <Card title="Salon Facilities">
+              <div className="mb-4 p-4 bg-teal-50 border-l-4 border-teal-500 rounded">
+                <div className="flex items-start">
+                  <FiInfo className="text-teal-500 mt-1 mr-3 flex-shrink-0" size={20} />
+                  <div className="text-sm text-teal-800 font-body">
+                    <p className="font-semibold mb-1">Available Facilities</p>
+                    <p className="text-xs">Select all the facilities that are available at the salon.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {[
+                  { id: 'facility_air_conditioner', label: 'Air Conditioner' },
+                  { id: 'facility_car_parking', label: 'Car Parking' },
+                  { id: 'facility_free_wifi', label: 'Free WiFi' },
+                  { id: 'facility_shower_facility', label: 'Shower Facility' },
+                  { id: 'facility_steam_room', label: 'Steam Room' },
+                  { id: 'facility_hygienic_environment', label: 'Hygienic environment' },
+                  { id: 'facility_comfortable_seating', label: 'Comfortable seating' },
+                  { id: 'facility_sanitized_tools', label: 'Sanitized Tools' }
+                ].map(facility => (
+                  <div key={facility.id} className="flex items-center p-3 border border-gray-200 rounded-lg bg-gray-50 hover:bg-teal-50 transition-colors">
+                    <input
+                      type="checkbox"
+                      id={facility.id}
+                      {...register(facility.id)}
+                      className="w-5 h-5 text-teal-600 bg-gray-100 border-gray-300 rounded focus:ring-teal-500"
+                    />
+                    <label htmlFor={facility.id} className="ml-3 text-sm font-medium text-gray-700 cursor-pointer w-full">
+                      {facility.label}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Step 5: Review */}
+          {currentStep === 5 && (
             <Card title="Review & Submit">
               <div className="mb-6 p-4 bg-green-50 border-l-4 border-green-500 rounded">
                 <div className="flex items-start">
@@ -1818,8 +1882,8 @@ const AddSalonForm = () => {
                         <p className="text-gray-600 text-xs mb-1">Outlet Type</p>
                         <p className="font-semibold text-gray-900">
                           {watch('outlet') === 'company' ? 'Company Owned' :
-                           watch('outlet') === 'franchisee' ? 'Franchisee' : 
-                           watch('outlet') || '-'}
+                            watch('outlet') === 'franchisee' ? 'Franchisee' :
+                              watch('outlet') || '-'}
                         </p>
                       </div>
                       <div>
@@ -1973,7 +2037,7 @@ const AddSalonForm = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
                         {logo ? (
                           <div>
@@ -1989,7 +2053,7 @@ const AddSalonForm = () => {
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="text-center p-3 bg-white rounded-lg border border-gray-200">
                         <FiImage className={`mx-auto mb-2 ${uploadedImages.length > 0 ? 'text-green-500' : 'text-gray-400'}`} size={24} />
                         <p className={`font-semibold ${uploadedImages.length > 0 ? 'text-green-600' : 'text-gray-600'}`}>
@@ -2015,16 +2079,51 @@ const AddSalonForm = () => {
                             </div>
                           )}
                           {uploadedImages.slice(0, 7).map((url, idx) => (
-                            <img 
-                              key={idx} 
-                              src={url} 
-                              alt={`Gallery ${idx + 1}`} 
-                              className="w-full h-20 object-cover rounded-lg border border-gray-200" 
+                            <img
+                              key={idx}
+                              src={url}
+                              alt={`Gallery ${idx + 1}`}
+                              className="w-full h-20 object-cover rounded-lg border border-gray-200"
                             />
                           ))}
                         </div>
                       </div>
                     )}
+                  </div>
+                </div>
+
+                {/* Facilities Review */}
+                <div className="border-l-4 border-teal-500 pl-4">
+                  <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
+                    <span className="bg-teal-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">4</span>
+                    Facilities
+                  </h3>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <div className="flex flex-wrap gap-2 text-sm font-body">
+                      {[
+                        { id: 'facility_air_conditioner', label: 'Air Conditioner' },
+                        { id: 'facility_car_parking', label: 'Car Parking' },
+                        { id: 'facility_free_wifi', label: 'Free WiFi' },
+                        { id: 'facility_shower_facility', label: 'Shower Facility' },
+                        { id: 'facility_steam_room', label: 'Steam Room' },
+                        { id: 'facility_hygienic_environment', label: 'Hygienic environment' },
+                        { id: 'facility_comfortable_seating', label: 'Comfortable seating' },
+                        { id: 'facility_sanitized_tools', label: 'Sanitized Tools' }
+                      ].map(facility =>
+                        watch(facility.id) ? (
+                          <span key={facility.id} className="bg-teal-100 text-teal-800 px-3 py-1 rounded-full border border-teal-200">
+                            ✓ {facility.label}
+                          </span>
+                        ) : null
+                      )}
+                      {[
+                        'facility_air_conditioner', 'facility_car_parking', 'facility_free_wifi',
+                        'facility_shower_facility', 'facility_steam_room', 'facility_hygienic_environment',
+                        'facility_comfortable_seating', 'facility_sanitized_tools'
+                      ].every(id => !watch(id)) && (
+                          <span className="text-gray-500 italic">No facilities selected</span>
+                        )}
+                    </div>
                   </div>
                 </div>
 
@@ -2149,7 +2248,7 @@ const AddSalonForm = () => {
               >
                 💾 {isEditMode ? 'Update Draft' : 'Save as Draft'}
               </Button>
-              
+
               {currentStep < totalSteps ? (
                 <Button type="button" variant="primary" onClick={nextStep} className="w-full sm:w-auto justify-center">
                   Next Step
