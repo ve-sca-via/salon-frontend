@@ -903,6 +903,32 @@ export default function SalonDetail() {
                         </div>
                       </div>
                     )}
+
+                    {salon.facilities && Object.entries(salon.facilities).filter(([_, isAvailable]) => isAvailable).length > 0 && (
+                      <div className="pt-2">
+                        <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-4 flex items-center gap-2">
+                          <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Facilities & Amenities
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {Object.entries(salon.facilities)
+                            .filter(([_, isAvailable]) => isAvailable)
+                            .map(([key]) => {
+                              const label = key.replace('facility_', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                              return (
+                                <div key={key} className="flex items-center gap-2 text-neutral-gray-700 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                                  <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="font-body text-[14px] font-medium">{label}</span>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
