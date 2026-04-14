@@ -873,12 +873,42 @@ export default function SalonDetail() {
                           {Object.entries(salon.facilities)
                             .filter(([_, isAvailable]) => isAvailable)
                             .map(([key]) => {
-                              const label = key.replace('facility_', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                              const cleanKey = key.replace('facility_', '');
+                              const label = cleanKey.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                              
+                              let IconSVG;
+                              switch (cleanKey) {
+                                case 'air_conditioner':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" /></svg>;
+                                  break;
+                                case 'car_parking':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7h4a3 3 0 010 6H8V7zM8 17v-4m-3 0h14M5 10l2-4h10l2 4M3 13h18M5 13v7a1 1 0 001 1h2a1 1 0 001-1v-2h6v2a1 1 0 001 1h2a1 1 0 001-1v-7m-11 5h-2m8 0h-2" /></svg>;
+                                  break;
+                                case 'free_wifi':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.14 0M4.222 9.383c5.44-5.44 14.116-5.44 19.556 0" /></svg>;
+                                  break;
+                                case 'shower_facility':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 2v10m-3-3l3 3 3-3m-9 9a9 9 0 1118 0" /></svg>;
+                                  break;
+                                case 'steam_room':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>;
+                                  break;
+                                case 'hygienic_environment':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>;
+                                  break;
+                                case 'comfortable_seating':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>;
+                                  break;
+                                case 'sanitized_tools':
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>;
+                                  break;
+                                default:
+                                  IconSVG = <svg className="w-4 h-4 text-accent-orange flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>;
+                              }
+
                               return (
                                 <div key={key} className="flex items-center gap-2 text-neutral-gray-700 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-                                  <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
+                                  {IconSVG}
                                   <span className="font-body text-[14px] font-medium">{label}</span>
                                 </div>
                               );
