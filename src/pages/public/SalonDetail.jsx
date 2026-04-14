@@ -859,6 +859,33 @@ export default function SalonDetail() {
                         </p>
                       </div>
                     )}
+
+                    {/* Facilities below services */}
+                    {salon.facilities && Object.entries(salon.facilities).filter(([_, isAvailable]) => isAvailable).length > 0 && (
+                      <div className="pt-8 mt-8 border-t border-gray-100">
+                        <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-4 flex items-center gap-2">
+                          <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Facilities & Amenities
+                        </h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                          {Object.entries(salon.facilities)
+                            .filter(([_, isAvailable]) => isAvailable)
+                            .map(([key]) => {
+                              const label = key.replace('facility_', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                              return (
+                                <div key={key} className="flex items-center gap-2 text-neutral-gray-700 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                                  <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                  <span className="font-body text-[14px] font-medium">{label}</span>
+                                </div>
+                              );
+                            })}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -904,39 +931,89 @@ export default function SalonDetail() {
                       </div>
                     )}
 
-                    {salon.facilities && Object.entries(salon.facilities).filter(([_, isAvailable]) => isAvailable).length > 0 && (
-                      <div className="pt-2">
-                        <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-4 flex items-center gap-2">
-                          <svg className="w-5 h-5 text-accent-orange" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Facilities & Amenities
-                        </h3>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                          {Object.entries(salon.facilities)
-                            .filter(([_, isAvailable]) => isAvailable)
-                            .map(([key]) => {
-                              const label = key.replace('facility_', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-                              return (
-                                <div key={key} className="flex items-center gap-2 text-neutral-gray-700 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
-                                  <svg className="w-4 h-4 text-green-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                  <span className="font-body text-[14px] font-medium">{label}</span>
+                    {/* Contact & Hours Details */}
+                    <div className="pt-6 mt-6 border-t border-gray-200">
+                      <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-4">
+                        Contact & Location
+                      </h3>
+                      <div className="space-y-4">
+                        {/* Email */}
+                        {salon.email && (
+                          <div className="flex items-center gap-3">
+                            <FiMail className="w-5 h-5 text-accent-orange flex-shrink-0" />
+                            <span className="font-body text-[15px] text-neutral-black font-medium break-all">
+                              {salon.email}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Working Hours Dropdown */}
+                        <div className="border border-neutral-gray-300 rounded-lg max-w-md">
+                          <button
+                            onClick={() =>
+                              document
+                                .getElementById("about-working-hours")
+                                .classList.toggle("hidden")
+                            }
+                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-neutral-gray-100 transition-colors rounded-lg"
+                          >
+                            <div className="flex items-center gap-3">
+                              <FiClock className="w-5 h-5 text-accent-orange" />
+                              <span className="font-body text-[15px] text-neutral-black font-medium">
+                                View Hours
+                              </span>
+                            </div>
+                            <svg
+                              className="w-5 h-5 text-neutral-gray-600"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          <div id="about-working-hours" className="hidden px-4 pb-3">
+                            <div className="space-y-2 pt-2 border-t border-neutral-gray-300">
+                              {getBusinessHours().map(([day, hours]) => (
+                                <div key={day} className="flex justify-between items-center">
+                                  <span className="font-body text-[14px] text-neutral-gray-700">{day}</span>
+                                  <span className="font-body text-[14px] text-neutral-black font-medium">{hours}</span>
                                 </div>
-                              );
-                            })}
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Address */}
+                        <div className="flex items-start gap-3">
+                          <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5 flex-shrink-0" />
+                          <div className="flex flex-col gap-2 w-full max-w-md">
+                            <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
+                              {salon.address || `${salon.city}, ${salon.state}`}
+                            </span>
+                            <a
+                              href={getMapDirectionUrl()}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full inline-flex items-center justify-center gap-2 border border-orange-200 text-accent-orange bg-orange-50 hover:bg-orange-100 font-body font-medium text-[13px] py-1.5 px-3 rounded-md transition-colors text-center"
+                            >
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                              </svg>
+                              Get Directions
+                            </a>
+                          </div>
                         </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Right Column - Booking Card */}
-          <div className="lg:col-span-1">
+          {/* Right Column - Booking Card (Hidden on mobile) */}
+          <div className="hidden lg:block lg:col-span-1">
             <div className="bg-transparent lg:bg-white rounded-xl p-3 sm:p-6 shadow-lg lg:sticky lg:top-20">
               {/* Salon Name */}
               <h3 className="font-display font-bold text-[18px] sm:text-[22px] text-neutral-black mb-4 break-words">
