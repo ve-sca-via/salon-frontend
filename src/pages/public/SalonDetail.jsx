@@ -719,76 +719,72 @@ export default function SalonDetail() {
                       </span>
                     </div>
 
-                    {/* Mobile Directions Button - Mobile only */}
-                    <div className="lg:hidden w-full mt-1">
+                    {/* Mobile Action Buttons - Get Directions & Contact */}
+                    <div className="lg:hidden w-full flex items-center gap-3 mt-3">
                       <a
                         href={getMapDirectionUrl()}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 text-accent-orange hover:text-orange-600 font-body font-medium text-[14px]"
+                        className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 pl-4 pr-3 rounded-xl transition-colors"
                       >
-                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                        {/* Diamond/compass navigation icon */}
+                        <svg className="w-[22px] h-[22px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                          <rect x="12" y="2" width="14" height="14" rx="2" transform="rotate(45 12 2)" strokeLinejoin="round" />
+                          <path d="M12 8l-2 6 6-2-4-4z" fill="currentColor" stroke="none" />
                         </svg>
-                        Get Directions
+                        <span>Get Directions</span>
+                        <svg className="w-4 h-4 text-[#666] flex-shrink-0 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                        </svg>
                       </a>
-                    </div>
-
-                    {/* Call button - Mobile only, side by side */}
-                    {salon.phone && (
-                      <div className="lg:hidden flex items-center gap-2">
-                        <FiPhone className="w-5 h-5 text-gray-500 flex-shrink-0" />
+                      {salon.phone && (
                         <a
                           href={`tel:${salon.phone}`}
-                          className="font-body text-[15px] text-gray-600 hover:text-accent-orange transition-colors underline"
+                          className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 px-5 rounded-xl transition-colors"
                         >
-                          {salon.phone}
+                          {/* Phone receiver icon */}
+                          <svg className="w-[20px] h-[20px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                          </svg>
+                          <span>Contact</span>
                         </a>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
-                {/* Call and Share buttons - Desktop only */}
-                <div className="hidden lg:flex items-center gap-2 sm:gap-3">
+                {/* Get Directions & Contact buttons - Desktop only */}
+                <div className="hidden lg:flex items-center gap-3">
                   {/* Get Directions - Desktop */}
                   <a
                     href={getMapDirectionUrl()}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-orange-200 text-accent-orange bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
+                    className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 pl-4 pr-3 rounded-xl transition-colors"
                     aria-label={`Get directions to ${salon.business_name || salon.name}`}
                   >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    {/* Diamond/compass navigation icon */}
+                    <svg className="w-[22px] h-[22px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
+                      <rect x="12" y="2" width="14" height="14" rx="2" transform="rotate(45 12 2)" strokeLinejoin="round" />
+                      <path d="M12 8l-2 6 6-2-4-4z" fill="currentColor" stroke="none" />
                     </svg>
-                    <span className="font-body font-medium text-sm sm:text-base">Directions</span>
+                    <span>Get Directions</span>
+                    <svg className="w-4 h-4 text-[#666] flex-shrink-0 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                    </svg>
                   </a>
                   {salon.phone && (
                     <a
                       href={`tel:${salon.phone}`}
-                      className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors"
+                      className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 px-5 rounded-xl transition-colors"
                       aria-label={`Call ${salon.business_name || salon.name}`}
                     >
-                      <FiPhone className="w-5 h-5" />
-                      <span className="font-body font-medium text-sm sm:text-base">Call</span>
+                      {/* Phone receiver icon */}
+                      <svg className="w-[20px] h-[20px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                      </svg>
+                      <span>Contact</span>
                     </a>
                   )}
-                  <button className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition-colors">
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                      />
-                    </svg>
-                    <span className="font-body font-medium text-sm sm:text-base">Share</span>
-                  </button>
                 </div>
               </div>
             </div>
