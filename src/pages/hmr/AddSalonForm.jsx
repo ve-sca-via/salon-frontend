@@ -2017,6 +2017,13 @@ const AddSalonForm = () => {
                                 <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
                                   {service.category}
                                 </span>
+                                {service.gender_category && service.gender_category !== 'both' && (
+                                  <span className={`inline-block px-2 py-1 text-[10px] rounded-full uppercase tracking-wider font-semibold ${
+                                    service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
+                                  }`}>
+                                    {service.gender_category}
+                                  </span>
+                                )}
                               </div>
                               {service.description && (
                                 <p className="text-xs text-gray-600 mb-2">{service.description}</p>
