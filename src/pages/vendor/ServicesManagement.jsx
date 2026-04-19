@@ -406,13 +406,14 @@ const ServicesManagement = () => {
                           {service.category}
                         </span>
                       )}
-                      {service.gender_category && service.gender_category !== 'both' && (
-                        <span className={`inline-block px-2 py-1 mt-1 text-[10px] rounded-full uppercase tracking-wider font-semibold font-body ${
-                          service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
-                        }`}>
-                          {service.gender_category}
-                        </span>
-                      )}
+                      {/* Gender Category Badge */}
+                      <span className={`inline-block px-2 py-1 mt-1 text-[10px] rounded-full uppercase tracking-wider font-semibold font-body ${
+                        (!service.gender_category || service.gender_category === 'both') ? 'bg-gray-100 text-gray-700' : 
+                        service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 
+                        'bg-pink-100 text-pink-700'
+                      }`}>
+                        {service.gender_category || 'both'}
+                      </span>
                     </div>
                     <button
                       onClick={() => handleToggleActive(service)}
