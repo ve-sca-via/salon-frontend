@@ -91,6 +91,7 @@ const ServicesManagement = () => {
     discount_percentage: '',
     duration: '',
     category_id: '',
+    gender_category: 'both',
     is_active: true,
   });
 
@@ -113,6 +114,7 @@ const ServicesManagement = () => {
         // Handle API inconsistency: duration_minutes is canonical, but may receive 'duration'
         duration: service.duration_minutes || service.duration || '',
         category_id: service.category_id || (categories.length > 0 ? categories[0].id : ''),
+        gender_category: service.gender_category || 'both',
         is_active: service.is_active !== undefined ? service.is_active : true,
       });
     } else {
@@ -125,6 +127,7 @@ const ServicesManagement = () => {
         discount_percentage: '',
         duration: '',
         category_id: categories.length > 0 ? categories[0].id : '',
+        gender_category: 'both',
         is_active: true,
       });
     }
@@ -144,6 +147,7 @@ const ServicesManagement = () => {
       discount_percentage: '',
       duration: '',
       category_id: categories.length > 0 ? categories[0].id : '',
+      gender_category: 'both',
       is_active: true,
     });
   };
@@ -209,6 +213,7 @@ const ServicesManagement = () => {
             : parseFloat(formData.discount_percentage),
         duration_minutes: parseInt(formData.duration),
         category_id: formData.category_id || null,
+        gender_category: formData.gender_category,
         is_active: formData.is_active,
       };
 
@@ -240,6 +245,7 @@ const ServicesManagement = () => {
         // Handle API inconsistency: duration_minutes is canonical
         duration_minutes: service.duration_minutes || service.duration,
         category_id: service.category_id,
+        gender_category: service.gender_category,
         is_active: !service.is_active,
       }).unwrap();
       showSuccessToast(`Service ${!service.is_active ? 'activated' : 'deactivated'}`);
@@ -396,8 +402,15 @@ const ServicesManagement = () => {
                         {service.name}
                       </h3>
                       {service.category && (
-                        <span className="inline-block px-2 py-1 mt-1 text-xs text-orange-700 bg-orange-100 rounded-full font-body">
+                        <span className="inline-block px-2 py-1 mt-1 mr-2 text-xs text-orange-700 bg-orange-100 rounded-full font-body">
                           {service.category}
+                        </span>
+                      )}
+                      {service.gender_category && service.gender_category !== 'both' && (
+                        <span className={`inline-block px-2 py-1 mt-1 text-[10px] rounded-full uppercase tracking-wider font-semibold font-body ${
+                          service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
+                        }`}>
+                          {service.gender_category}
                         </span>
                       )}
                     </div>
@@ -505,29 +518,47 @@ const ServicesManagement = () => {
             disabled={isCreating || isUpdating}
           />
 
-          <div>
-            <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
-              Category
-            </label>
-            <select
-              name="category_id"
-              value={formData.category_id}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
-              disabled={categoriesLoading || isCreating || isUpdating}
-            >
-              {categoriesLoading ? (
-                <option>Loading categories...</option>
-              ) : categories.length === 0 ? (
-                <option>No categories available</option>
-              ) : (
-                categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </option>
-                ))
-              )}
-            </select>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
+                Category
+              </label>
+              <select
+                name="category_id"
+                value={formData.category_id}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
+                disabled={categoriesLoading || isCreating || isUpdating}
+              >
+                {categoriesLoading ? (
+                  <option>Loading categories...</option>
+                ) : categories.length === 0 ? (
+                  <option>No categories available</option>
+                ) : (
+                  categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+            <div>
+              <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
+                Available For (Gender)
+              </label>
+              <select
+                name="gender_category"
+                value={formData.gender_category}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
+                disabled={isCreating || isUpdating}
+              >
+                <option value="both">Both (Unisex)</option>
+                <option value="male">Male Only</option>
+                <option value="female">Female Only</option>
+              </select>
+            </div>
           </div>
 
           <div>

@@ -76,7 +76,7 @@ const AddSalonForm = () => {
   // React Hook Form setup
   const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm({
     defaultValues: {
-      services: [{ name: '', category_id: '', price: '', duration_minutes: '' }],
+      services: [{ name: '', category_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
       // Initialize with default business hours preset
       ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
     }
@@ -187,7 +187,8 @@ const AddSalonForm = () => {
                 category_id: categoryId, // Use category_id, not category
                 price: service.price || '',
                 duration_minutes: service.duration_minutes || 30,
-                description: service.description || ''
+                description: service.description || '',
+                gender_category: service.gender_category || 'both'
               });
             });
           }
@@ -293,7 +294,7 @@ const AddSalonForm = () => {
   };
 
   const addService = () => {
-    setServices([...services, { name: '', category_id: '', price: '', duration_minutes: '', description: '' }]);
+    setServices([...services, { name: '', category_id: '', price: '', duration_minutes: '', description: '', gender_category: 'both' }]);
   };
 
   const removeService = (index) => {
@@ -490,6 +491,7 @@ const AddSalonForm = () => {
             price: parseFloat(s.price),
             duration_minutes: parseInt(s.duration_minutes) || 30,
             description: s.description || '',
+            gender_category: s.gender_category || 'both',
           }));
       };
 
@@ -511,7 +513,8 @@ const AddSalonForm = () => {
             name: service.name,
             price: service.price,
             duration_minutes: service.duration_minutes,
-            description: service.description
+            description: service.description,
+            gender_category: service.gender_category || 'both'
           });
         });
 
@@ -1579,17 +1582,33 @@ const AddSalonForm = () => {
                             />
                           </div>
 
-                          <div className="md:col-span-2">
-                            <label className="block text-xs font-body font-medium text-gray-700 mb-1">
-                              Description (Optional)
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="Brief description of the service"
-                              value={service.description || ''}
-                              onChange={(e) => updateService(index, 'description', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                            />
+                          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                              <label className="block text-xs font-body font-medium text-gray-700 mb-1">
+                                Available For (Gender) <span className="text-red-500">*</span>
+                              </label>
+                              <select
+                                value={service.gender_category || 'both'}
+                                onChange={(e) => updateService(index, 'gender_category', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                              >
+                                <option value="both">Both (Unisex)</option>
+                                <option value="male">Male Only</option>
+                                <option value="female">Female Only</option>
+                              </select>
+                            </div>
+                            <div>
+                              <label className="block text-xs font-body font-medium text-gray-700 mb-1">
+                                Description (Optional)
+                              </label>
+                              <input
+                                type="text"
+                                placeholder="Brief description of the service"
+                                value={service.description || ''}
+                                onChange={(e) => updateService(index, 'description', e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
