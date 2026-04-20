@@ -335,9 +335,18 @@ const SubmissionHistory = () => {
                           {Array.isArray(services) && services.map((service, idx) => (
                             <div key={idx} className="flex justify-between items-center bg-white p-2 rounded text-sm">
                               <div>
-                                <span className="font-medium">{service.name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">{service.name}</span>
+                                  {service.gender_category && service.gender_category !== 'both' && (
+                                    <span className={`inline-block px-1.5 py-0.5 text-[9px] rounded-full uppercase tracking-wider font-semibold ${
+                                      service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
+                                    }`}>
+                                      {service.gender_category}
+                                    </span>
+                                  )}
+                                </div>
                                 {service.description && (
-                                  <p className="text-xs text-gray-600">{service.description}</p>
+                                  <p className="text-xs text-gray-600 mt-0.5">{service.description}</p>
                                 )}
                               </div>
                               <div className="text-right">
