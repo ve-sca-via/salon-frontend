@@ -37,6 +37,7 @@ import { FiStar, FiMapPin, FiPhone, FiMail, FiClock } from "react-icons/fi";
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
 import { NotFound } from "../../components/shared/ErrorFallback";
 import ShareModal from "../../components/shared/ShareModal";
+import OffersSection from "../../components/shared/OffersSection";
 
 /**
  * getCategoryImage - Returns category-specific image URL
@@ -345,6 +346,16 @@ export default function SalonDetail() {
       setServiceCategories(categoriesArray);
     }
   }, [services]); // Re-run when services change
+
+  // Calculate max discount percentage
+  const maxDiscount = React.useMemo(() => {
+    if (!services || services.length === 0) return 10;
+    const max = services.reduce((acc, curr) => {
+      const discount = curr.discount_percentage ? Number(curr.discount_percentage) : 0;
+      return discount > acc ? discount : acc;
+    }, 0);
+    return max > 0 ? max : 10;
+  }, [services]);
 
   const handleBookService = (service) => {
     navigate(`/salons/${id}/book`, { state: { selectedService: service } });
@@ -790,6 +801,11 @@ export default function SalonDetail() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Offers available for you */}
+            <div className="sm:bg-transparent sm:rounded-xl mb-3 sm:mb-6 mt-1 sm:mt-4">
+              <OffersSection maxDiscount={maxDiscount} />
             </div>
 
             {/* Tabs */}
