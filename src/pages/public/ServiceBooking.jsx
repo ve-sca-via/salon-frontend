@@ -140,6 +140,7 @@ export default function ServiceBooking() {
   
   // Local UI state
   const [selectedCategory, setSelectedCategory] = useState(location.state?.selectedCategory || null);
+  const [filterGender, setFilterGender] = useState('all');
   const [expandedPlan, setExpandedPlan] = useState(null);
   const categoryScrollRef = useRef(null);
 
@@ -412,8 +413,15 @@ export default function ServiceBooking() {
     );
   }
 
-  // Filter services for currently selected category
-  const currentServices = selectedCategory ? (groupedServices[selectedCategory] || []) : [];
+  // Filter services for currently selected category and selected gender
+  const currentServices = (selectedCategory ? (groupedServices[selectedCategory] || []) : [])
+    .filter(service => {
+      if (filterGender === 'all') return true;
+      const cat = service.gender_category || 'both';
+      if (filterGender === 'male') return cat === 'male' || cat === 'both';
+      if (filterGender === 'female') return cat === 'female' || cat === 'both';
+      return true;
+    });
 
   return (
     <div className="min-h-screen bg-bg-secondary">
@@ -449,9 +457,26 @@ export default function ServiceBooking() {
           <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black mb-1">
             Select Services
           </h1>
-          <p className="font-body text-[13px] sm:text-[15px] text-neutral-gray-500">
+          <p className="font-body text-[13px] sm:text-[15px] text-neutral-gray-500 mb-4">
             Choose from our wide range of services at {salon.name}
           </p>
+
+          {/* Gender Filter Tabs */}
+          <div className="flex bg-neutral-gray-100 p-1 rounded-lg w-full max-w-[400px]">
+             {['all', 'male', 'female'].map(gender => (
+               <button
+                 key={gender}
+                 onClick={() => setFilterGender(gender)}
+                 className={`flex-1 py-1.5 sm:py-2 px-3 rounded-md font-body text-[13px] sm:text-[14px] font-medium capitalize transition-all ${
+                   filterGender === gender 
+                     ? 'bg-white text-neutral-black shadow-sm' 
+                     : 'text-neutral-gray-500 hover:text-neutral-black'
+                 }`}
+               >
+                 {gender === 'all' ? 'All Genders' : gender}
+               </button>
+             ))}
+          </div>
         </div>
 
         {/* Service Categories with Navigation Arrows */}
@@ -553,13 +578,22 @@ export default function ServiceBooking() {
                       {service.name}
                     </h3>
                     
-                    <div className="flex items-center gap-1 text-neutral-gray-500">
-                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span className="font-body text-[12px] whitespace-nowrap">
-                        {service.duration_minutes}m
-                      </span>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <div className="flex items-center gap-1 text-neutral-gray-500">
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="font-body text-[12px] whitespace-nowrap">
+                          {service.duration_minutes}m
+                        </span>
+                      </div>
+                      {service.gender_category && service.gender_category !== 'both' && (
+                        <span className={`px-1.5 py-0.5 text-[9px] rounded-sm uppercase tracking-wider font-semibold ${
+                          service.gender_category === 'male' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-pink-50 text-pink-600 border border-pink-200'
+                        }`}>
+                          {service.gender_category}
+                        </span>
+                      )}
                     </div>
                   </div>
 

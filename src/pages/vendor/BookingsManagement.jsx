@@ -366,8 +366,8 @@ const BookingsManagement = () => {
           </Card>
           <Card className="hover:shadow-md transition-shadow">
             <div className="text-center">
-              <p className="text-sm text-gray-600 font-body mb-1">Pending</p>
-              <p className="text-2xl font-display font-bold text-yellow-600">{stats.pending}</p>
+              <p className="text-sm text-gray-600 font-body mb-1">Cancelled</p>
+              <p className="text-2xl font-display font-bold text-red-600">{stats.cancelled}</p>
             </div>
           </Card>
           <Card className="hover:shadow-md transition-shadow">
@@ -425,11 +425,11 @@ const BookingsManagement = () => {
                     All
                   </Button>
                   <Button
-                    variant={statusFilter === 'pending' ? 'primary' : 'outline'}
+                    variant={statusFilter === 'cancelled' ? 'primary' : 'outline'}
                     size="sm"
-                    onClick={() => setStatusFilter('pending')}
+                    onClick={() => setStatusFilter('cancelled')}
                   >
-                    Pending
+                    Cancelled
                   </Button>
                   <Button
                     variant={statusFilter === 'confirmed' ? 'primary' : 'outline'}
@@ -792,20 +792,7 @@ const BookingsManagement = () => {
             </div>
 
             {/* Status Update Actions */}
-            {selectedBooking.status === 'pending' && (
-              <div className="pt-4 border-t">
-                <p className="text-xs text-gray-600 font-body mb-3">Update booking status:</p>
-                <Button
-                  variant="primary"
-                  className="w-full bg-blue-600 hover:bg-blue-700"
-                  onClick={() => handleStatusUpdate(selectedBooking.id, 'confirmed')}
-                  disabled={isUpdating}
-                >
-                  <FiCheckCircle className="mr-2" />
-                  {isUpdating ? 'Processing...' : 'Confirm Booking'}
-                </Button>
-              </div>
-            )}
+
 
             {selectedBooking.status === 'confirmed' && (
               <div className="pt-4 border-t">
