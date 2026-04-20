@@ -34,6 +34,7 @@ import FeaturedSaloons from "../../components/shared/FeaturedSaloons";
 import PopularLocations from "../../components/shared/PopularLocations";
 import WhyChooseUs from "../../components/shared/WhyChooseUs";
 import ClientTestimonials from "../../components/shared/ClientTestimonials";
+import InstagramFeed from "../../components/shared/InstagramFeed";
 import UserQuickDashboard from "../../components/shared/UserQuickDashboard";
 // Carousel items
 import carouselImg1 from "../../assets/images/website pic 1.png";
@@ -320,6 +321,9 @@ const Home = () => {
 
       {/* Benefits section */}
       <WhyChooseUs />
+
+      {/* Instagram Feed */}
+      <InstagramFeed />
 
       {/* Customer reviews */}
       <ClientTestimonials />
