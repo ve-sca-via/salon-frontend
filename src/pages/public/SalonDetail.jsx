@@ -36,6 +36,7 @@ import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/a
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock } from "react-icons/fi";
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
 import { NotFound } from "../../components/shared/ErrorFallback";
+import ShareModal from "../../components/shared/ShareModal";
 
 /**
  * getCategoryImage - Returns category-specific image URL
@@ -271,6 +272,7 @@ export default function SalonDetail() {
   const [activeTab, setActiveTab] = useState("services");
   const [selectedImage, setSelectedImage] = useState(0);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [serviceCategories, setServiceCategories] = useState([]);
   const intervalRef = useRef(null);
 
@@ -677,9 +679,10 @@ export default function SalonDetail() {
                     <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black break-words flex-1">
                       {salon.business_name || salon.name}
                     </h1>
-                    {/* Share icon - Mobile only, far right */}
+                    {/* Share icon */}
                     <button
-                      className="lg:hidden p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors flex-shrink-0"
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors flex-shrink-0"
                       aria-label="Share salon"
                     >
                       <svg
@@ -1156,6 +1159,13 @@ export default function SalonDetail() {
           {!salon.is_active || !salon.accepting_bookings ? 'Bookings Not Available' : 'Book Services'}
         </button>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        shareUrl={window.location.href}
+      />
     </div>
   );
 }
