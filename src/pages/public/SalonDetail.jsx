@@ -31,13 +31,16 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
+import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
-import { FiStar, FiMapPin, FiPhone, FiMail, FiClock } from "react-icons/fi";
+import { FiStar, FiMapPin, FiPhone, FiMail, FiClock, FiHeart } from "react-icons/fi";
+import { useAddFavoriteMutation, useGetFavoritesQuery, useRemoveFavoriteMutation } from "../../services/api/favoriteApi";
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
 import { NotFound } from "../../components/shared/ErrorFallback";
 import ShareModal from "../../components/shared/ShareModal";
 import OffersSection from "../../components/shared/OffersSection";
+import { showErrorToast, showInfoToast, showSuccessToast } from "../../utils/toastConfig";
 
 /**
  * getCategoryImage - Returns category-specific image URL
@@ -236,14 +239,24 @@ function ReviewCard({ review }) {
 export default function SalonDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
   
   // RTK Query hooks - automatic caching!
   const { data: salonData, isLoading: loading, error } = useGetSalonByIdQuery(id);
   const { data: servicesData, isLoading: servicesLoading } = useGetSalonServicesQuery(id);
+  const isCustomer = user?.role === "customer";
+  const { data: favoritesData } = useGetFavoritesQuery(undefined, {
+    skip: !isAuthenticated || !isCustomer,
+  });
+  const [addFavorite, { isLoading: isAddingFavorite }] = useAddFavoriteMutation();
+  const [removeFavorite, { isLoading: isRemovingFavorite }] = useRemoveFavoriteMutation();
   
   // Extract data from responses
   const salon = salonData?.salon || salonData;
   const services = servicesData?.services || [];
+  const isFavorited = (favoritesData?.favorites || []).some(
+    (favorite) => String(favorite.id ?? favorite.salon_id) === String(id)
+  );
 
   // Parse salon images from database - use cover_images array
   const salonImages = React.useMemo(() => {
@@ -359,6 +372,31 @@ export default function SalonDetail() {
 
   const handleBookService = (service) => {
     navigate(`/salons/${id}/book`, { state: { selectedService: service } });
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!isAuthenticated) {
+      showInfoToast("Please log in to save salons to your favorites");
+      return;
+    }
+
+    if (!isCustomer) {
+      showInfoToast("Favorites are available for customer accounts");
+      return;
+    }
+
+    try {
+      if (isFavorited) {
+        await removeFavorite(id).unwrap();
+        showSuccessToast("Removed from favorites");
+        return;
+      }
+
+      await addFavorite(id).unwrap();
+      showSuccessToast("Added to favorites");
+    } catch (favoriteError) {
+      showErrorToast(favoriteError?.message || "Failed to update favorites");
+    }
   };
 
   if (loading) {
@@ -690,26 +728,41 @@ export default function SalonDetail() {
                     <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black break-words flex-1">
                       {salon.business_name || salon.name}
                     </h1>
-                    {/* Share icon */}
-                    <button
-                      onClick={() => setIsShareModalOpen(true)}
-                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors flex-shrink-0"
-                      aria-label="Share salon"
-                    >
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {(!isAuthenticated || isCustomer) && (
+                        <button
+                          onClick={handleToggleFavorite}
+                          disabled={isAddingFavorite || isRemovingFavorite}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isFavorited
+                              ? "bg-red-500 text-white hover:bg-red-600"
+                              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
+                          } disabled:opacity-60`}
+                          aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                        >
+                          <FiHeart className={`w-5 h-5 ${isFavorited ? "fill-current" : ""}`} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => setIsShareModalOpen(true)}
+                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors flex-shrink-0"
+                        aria-label="Share salon"
                       >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                        />
-                      </svg>
-                    </button>
+                        <svg
+                          className="w-5 h-5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                          />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                   {/* COMMENTED OUT - Star rating and reviews not yet implemented
                   <div className="flex items-center gap-2 mb-2">
