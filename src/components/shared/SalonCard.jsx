@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiStar, FiMapPin, FiClock, FiCalendar, FiChevronDown, FiChevronUp } from "react-icons/fi";
+import { FiStar, FiMapPin, FiClock, FiCalendar, FiChevronDown, FiChevronUp, FiHeart } from "react-icons/fi";
 
 // Helper formula to calculate distance
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
@@ -17,7 +17,7 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 };
 
 // ─── DESKTOP CARD ──────────────────────────────────────────────────────────
-export function SalonCard({ salon, userLocation }) {
+export function SalonCard({ salon, userLocation, isFavorited = false, onToggleFavorite, favoriteLoading = false, showFavoriteAction = false }) {
   const navigate = useNavigate();
 
   const handleViewSalon = () => {
@@ -62,6 +62,24 @@ export function SalonCard({ salon, userLocation }) {
           <div className="w-full h-full bg-gradient-to-br from-orange-400 via-orange-500 to-orange-600"></div>
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent"></div>
+        {showFavoriteAction && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFavorite?.(salon.id);
+            }}
+            disabled={favoriteLoading}
+            className={`absolute top-3 right-3 z-10 p-2.5 rounded-full backdrop-blur-sm transition-colors ${
+              isFavorited
+                ? "bg-red-500 text-white"
+                : "bg-white/90 text-neutral-black hover:bg-white"
+            } disabled:opacity-60`}
+            aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+          >
+            <FiHeart className={`w-5 h-5 ${isFavorited ? "fill-current" : ""}`} />
+          </button>
+        )}
       </div>
 
       {/* Content */}
@@ -124,7 +142,7 @@ export function SalonCard({ salon, userLocation }) {
 }
 
 // ─── MOBILE CARD ────────────────────────────────────────────────────────────
-export function MobileSalonCard({ salon, userLocation }) {
+export function MobileSalonCard({ salon, userLocation, isFavorited = false, onToggleFavorite, favoriteLoading = false, showFavoriteAction = false }) {
   const navigate = useNavigate();
   const [isClicked, setIsClicked] = useState(false);
   const [addressExpanded, setAddressExpanded] = useState(false);
@@ -183,10 +201,29 @@ export function MobileSalonCard({ salon, userLocation }) {
           <span className="bg-white/95 text-neutral-black text-[9px] font-bold uppercase px-2 py-0.5 rounded shadow-sm flex items-center h-[18px] pointer-events-auto">
             {salonType}
           </span>
-
-          <span className="bg-[#FFD700] text-neutral-black text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5 h-[18px] pointer-events-auto">
-            <FiStar size={8} className="fill-current" /> Featured
-          </span>
+          <div className="flex items-center gap-2 pointer-events-auto">
+            {showFavoriteAction && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFavorite?.(salon.id);
+                }}
+                disabled={favoriteLoading}
+                className={`rounded-full p-1.5 shadow-sm transition-colors ${
+                  isFavorited
+                    ? "bg-red-500 text-white"
+                    : "bg-white/95 text-neutral-black"
+                } disabled:opacity-60`}
+                aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+              >
+                <FiHeart size={12} className={isFavorited ? "fill-current" : ""} />
+              </button>
+            )}
+            <span className="bg-[#FFD700] text-neutral-black text-[9px] font-bold uppercase px-1.5 py-0.5 rounded shadow-sm flex items-center gap-0.5 h-[18px]">
+              <FiStar size={8} className="fill-current" /> Featured
+            </span>
+          </div>
         </div>
 
         {salon.has_discounted_services && (

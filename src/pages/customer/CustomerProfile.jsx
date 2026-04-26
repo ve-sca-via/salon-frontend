@@ -261,6 +261,13 @@ export default function CustomerProfile() {
                 {!isEditing && (
                   <div className="space-y-2">
                     <button
+                      onClick={() => navigate("/favorites")}
+                      className="w-full flex items-center justify-center gap-2 bg-neutral-black hover:opacity-90 text-primary-white font-body font-medium text-[14px] py-2.5 rounded-lg transition-opacity"
+                    >
+                      <FiHeart className="w-4 h-4" />
+                      My Favorites
+                    </button>
+                    <button
                       onClick={() => navigate("/my-bookings")}
                       className="w-full flex items-center justify-center gap-2 bg-accent-orange hover:opacity-90 text-primary-white font-body font-medium text-[14px] py-2.5 rounded-lg transition-opacity"
                     >
