@@ -32,12 +32,14 @@ export const favoriteApi = createApi({
       }),
       // Optimistic update
       async onQueryStarted(salonId, { dispatch, queryFulfilled }) {
+        const normalizedSalonId = String(salonId);
         const patchResult = dispatch(
           favoriteApi.util.updateQueryData('getFavorites', undefined, (draft) => {
-            if (draft.favorites) {
+            if (draft.favorites && !draft.favorites.some((fav) => String(fav.id ?? fav.salon_id) === normalizedSalonId)) {
               draft.favorites.push({
+                id: salonId,
                 salon_id: salonId,
-                id: `temp-${Date.now()}`,
+                _optimistic: true,
               });
             }
           })
@@ -59,11 +61,12 @@ export const favoriteApi = createApi({
       }),
       // Optimistic update
       async onQueryStarted(salonId, { dispatch, queryFulfilled }) {
+        const normalizedSalonId = String(salonId);
         const patchResult = dispatch(
           favoriteApi.util.updateQueryData('getFavorites', undefined, (draft) => {
             if (draft.favorites) {
               draft.favorites = draft.favorites.filter(
-                (fav) => fav.salon_id !== salonId
+                (fav) => String(fav.salon_id ?? fav.id) !== normalizedSalonId
               );
             }
           })

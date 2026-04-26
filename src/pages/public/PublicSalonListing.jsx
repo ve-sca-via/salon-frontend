@@ -5,9 +5,11 @@ import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import { useGetSalonsQuery, useSearchSalonsQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiClock, FiCalendar, FiNavigation, FiX } from "react-icons/fi";
+import { useAddFavoriteMutation, useGetFavoritesQuery, useRemoveFavoriteMutation } from "../../services/api/favoriteApi";
 import { getUserLocation, clearLocation as clearLocationAction } from "../../store/slices/locationSlice";
 import { SkeletonSalonCard } from "../../components/shared/Skeleton";
 import { SalonCard, MobileSalonCard } from "../../components/shared/SalonCard";
+import { showErrorToast, showInfoToast, showSuccessToast } from "../../utils/toastConfig";
 
 
 // Hero Section Component
@@ -54,6 +56,7 @@ function HeroSection() {
 const PublicSalonListing = () => {
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
   
   // Get location from Redux store
   const { userLocation, locationName, locationError, locationLoading } = useSelector((state) => state.location);
@@ -79,6 +82,12 @@ const PublicSalonListing = () => {
     apiSearchParams,
     { skip: !isSearching || !apiSearchParams } // Only run when actively searching
   );
+  const isCustomer = user?.role === "customer";
+  const { data: favoritesData } = useGetFavoritesQuery(undefined, {
+    skip: !isAuthenticated || !isCustomer,
+  });
+  const [addFavorite, { isLoading: isAddingFavorite }] = useAddFavoriteMutation();
+  const [removeFavorite, { isLoading: isRemovingFavorite }] = useRemoveFavoriteMutation();
 
   /**
    * clearLocation - Clear user location and return to showing all salons
@@ -146,6 +155,36 @@ const PublicSalonListing = () => {
       return matchesCity;
     })
   , [displaySalons, selectedCity]);
+  const favoriteIds = useMemo(
+    () => new Set((favoritesData?.favorites || []).map((favorite) => String(favorite.id ?? favorite.salon_id))),
+    [favoritesData]
+  );
+  const favoriteMutationInFlight = isAddingFavorite || isRemovingFavorite;
+
+  const handleToggleFavorite = async (salonId) => {
+    if (!isAuthenticated) {
+      showInfoToast("Please log in to save salons to your favorites");
+      return;
+    }
+
+    if (!isCustomer) {
+      showInfoToast("Favorites are available for customer accounts");
+      return;
+    }
+
+    try {
+      if (favoriteIds.has(String(salonId))) {
+        await removeFavorite(salonId).unwrap();
+        showSuccessToast("Removed from favorites");
+        return;
+      }
+
+      await addFavorite(salonId).unwrap();
+      showSuccessToast("Added to favorites");
+    } catch (favoriteError) {
+      showErrorToast(favoriteError?.message || "Failed to update favorites");
+    }
+  };
 
   /**
    * Update selectedCity when URL changes
@@ -330,14 +369,30 @@ const PublicSalonListing = () => {
               {/* Desktop View */}
               <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredSalons.map((salon) => (
-                  <SalonCard key={salon.id} salon={salon} userLocation={userLocation} />
+                  <SalonCard
+                    key={salon.id}
+                    salon={salon}
+                    userLocation={userLocation}
+                    isFavorited={favoriteIds.has(String(salon.id))}
+                    onToggleFavorite={handleToggleFavorite}
+                    favoriteLoading={favoriteMutationInFlight}
+                    showFavoriteAction={!isAuthenticated || isCustomer}
+                  />
                 ))}
               </div>
 
               {/* Mobile View */}
               <div className="grid grid-cols-1 gap-4 md:hidden px-2">
                 {filteredSalons.map((salon) => (
-                  <MobileSalonCard key={salon.id} salon={salon} userLocation={userLocation} />
+                  <MobileSalonCard
+                    key={salon.id}
+                    salon={salon}
+                    userLocation={userLocation}
+                    isFavorited={favoriteIds.has(String(salon.id))}
+                    onToggleFavorite={handleToggleFavorite}
+                    favoriteLoading={favoriteMutationInFlight}
+                    showFavoriteAction={!isAuthenticated || isCustomer}
+                  />
                 ))}
               </div>
             </>

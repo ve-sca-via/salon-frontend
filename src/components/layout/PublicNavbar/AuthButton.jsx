@@ -106,6 +106,10 @@ export function AuthButton() {
             onClick: () => navigate("/customer/profile")
           },
           {
+            label: 'My Favorites',
+            onClick: () => navigate("/favorites")
+          },
+          {
             label: 'My Bookings',
             onClick: () => navigate("/my-bookings")
           },
