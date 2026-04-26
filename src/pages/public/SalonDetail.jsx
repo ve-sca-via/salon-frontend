@@ -36,6 +36,8 @@ import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/a
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock } from "react-icons/fi";
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
 import { NotFound } from "../../components/shared/ErrorFallback";
+import ShareModal from "../../components/shared/ShareModal";
+import OffersSection from "../../components/shared/OffersSection";
 
 /**
  * getCategoryImage - Returns category-specific image URL
@@ -271,6 +273,7 @@ export default function SalonDetail() {
   const [activeTab, setActiveTab] = useState("services");
   const [selectedImage, setSelectedImage] = useState(0);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [serviceCategories, setServiceCategories] = useState([]);
   const intervalRef = useRef(null);
 
@@ -343,6 +346,16 @@ export default function SalonDetail() {
       setServiceCategories(categoriesArray);
     }
   }, [services]); // Re-run when services change
+
+  // Calculate max discount percentage
+  const maxDiscount = React.useMemo(() => {
+    if (!services || services.length === 0) return 10;
+    const max = services.reduce((acc, curr) => {
+      const discount = curr.discount_percentage ? Number(curr.discount_percentage) : 0;
+      return discount > acc ? discount : acc;
+    }, 0);
+    return max > 0 ? max : 10;
+  }, [services]);
 
   const handleBookService = (service) => {
     navigate(`/salons/${id}/book`, { state: { selectedService: service } });
@@ -677,9 +690,10 @@ export default function SalonDetail() {
                     <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black break-words flex-1">
                       {salon.business_name || salon.name}
                     </h1>
-                    {/* Share icon - Mobile only, far right */}
+                    {/* Share icon */}
                     <button
-                      className="lg:hidden p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors flex-shrink-0"
+                      onClick={() => setIsShareModalOpen(true)}
+                      className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors flex-shrink-0"
                       aria-label="Share salon"
                     >
                       <svg
@@ -787,6 +801,11 @@ export default function SalonDetail() {
                   )}
                 </div>
               </div>
+            </div>
+
+            {/* Offers available for you */}
+            <div className="sm:bg-transparent sm:rounded-xl mb-3 sm:mb-6 mt-1 sm:mt-4">
+              <OffersSection maxDiscount={maxDiscount} />
             </div>
 
             {/* Tabs */}
@@ -1156,6 +1175,13 @@ export default function SalonDetail() {
           {!salon.is_active || !salon.accepting_bookings ? 'Bookings Not Available' : 'Book Services'}
         </button>
       </div>
+
+      {/* Share Modal */}
+      <ShareModal 
+        isOpen={isShareModalOpen} 
+        onClose={() => setIsShareModalOpen(false)} 
+        shareUrl={window.location.href}
+      />
     </div>
   );
 }
