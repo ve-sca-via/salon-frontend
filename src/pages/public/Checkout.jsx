@@ -206,7 +206,7 @@ export default function Checkout() {
         amount: orderData.amount_paise,
         currency: 'INR',
         order_id: orderData.order_id,
-        name: 'Salon Platform',
+        name: 'Lubist',
         description: 'Booking Convenience Fee',
         handler: async function (response) {
           try {
