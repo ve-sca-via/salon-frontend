@@ -284,7 +284,7 @@ export default function MyReviews() {
   const { data: reviewsData, isLoading, error } = useGetMyReviewsQuery();
   const [updateReview] = useUpdateReviewMutation();
   
-  const myReviews = reviewsData?.data || [];
+  const myReviews = reviewsData?.reviews || reviewsData?.data || [];
 
   // Local state
   const [editingReview, setEditingReview] = useState(null);

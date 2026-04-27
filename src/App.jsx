@@ -50,7 +50,6 @@ import PaymentProtectionWrapper from './components/vendor/PaymentProtectionWrapp
 const Login = lazy(() => import('./pages/auth/Login'));
 const RMLogin = lazy(() => import('./pages/auth/RMLogin'));
 const VendorLogin = lazy(() => import('./pages/auth/VendorLogin'));
-const Signup = lazy(() => import('./pages/auth/Signup'));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 
@@ -58,6 +57,7 @@ const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 const Home = lazy(() => import('./pages/public/Home'));
 const PublicSalonListing = lazy(() => import('./pages/public/PublicSalonListing'));
 const SalonDetail = lazy(() => import('./pages/public/SalonDetail'));
+const SalonFeedback = lazy(() => import('./pages/public/SalonFeedback'));
 const ServiceBooking = lazy(() => import('./pages/public/ServiceBooking'));
 const Cart = lazy(() => import('./pages/public/Cart'));
 const Checkout = lazy(() => import('./pages/public/Checkout'));
@@ -164,6 +164,11 @@ function App() {
                   <SalonDetail />
                 </ErrorBoundary>
               } />
+              <Route path="/salons/:id/feedback" element={
+                <ErrorBoundary fallback="page">
+                  <SalonFeedback />
+                </ErrorBoundary>
+              } />
               <Route path="/salons/:id/book" element={
                 <ErrorBoundary fallback="page">
                   <ServiceBooking />
@@ -192,7 +197,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/rm-login" element={<RMLogin />} />
               <Route path="/vendor-login" element={<VendorLogin />} />
-              <Route path="/signup" element={<Signup />} />
+              <Route path="/signup" element={<Navigate to="/login" replace />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               

@@ -34,6 +34,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
+import { useGetSalonReviewsQuery } from "../../services/api/reviewApi";
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock, FiHeart } from "react-icons/fi";
 import { useAddFavoriteMutation, useGetFavoritesQuery, useRemoveFavoriteMutation } from "../../services/api/favoriteApi";
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
@@ -201,29 +202,25 @@ function CategoryCard({ category, onClick }) {
   );
 }
 
-/**
- * ReviewCard - Customer review display card
- * Shows customer avatar, name, rating, date, and comment
- * COMMENTED OUT - Review functionality not yet implemented
- */
-/*
 function ReviewCard({ review }) {
   return (
     <div className="bg-white border border-neutral-gray-300 rounded-xl p-5">
       <div className="flex items-center gap-3 mb-3">
-        <img
-          src={review.avatar}
-          alt={review.name}
-          className="w-12 h-12 rounded-full object-cover"
-        />
+        <div className="w-12 h-12 rounded-full bg-orange-100 text-accent-orange flex items-center justify-center font-semibold text-lg">
+          {(review.customer_name || "C").charAt(0).toUpperCase()}
+        </div>
         <div className="flex-1">
           <h4 className="font-body font-semibold text-[16px] text-neutral-black">
-            {review.name}
+            {review.customer_name}
           </h4>
           <div className="flex items-center gap-2">
             <StarRating rating={review.rating} />
             <span className="font-body text-[12px] text-neutral-gray-600">
-              {review.date}
+              {new Date(review.created_at).toLocaleDateString("en-US", {
+                month: "short",
+                day: "numeric",
+                year: "numeric",
+              })}
             </span>
           </div>
         </div>
@@ -231,10 +228,14 @@ function ReviewCard({ review }) {
       <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed">
         {review.comment}
       </p>
+      {review.service_name && (
+        <p className="font-body text-[13px] text-neutral-gray-500 mt-3">
+          Service: {review.service_name}
+        </p>
+      )}
     </div>
   );
 }
-*/
 
 export default function SalonDetail() {
   const { id } = useParams();
@@ -244,6 +245,7 @@ export default function SalonDetail() {
   // RTK Query hooks - automatic caching!
   const { data: salonData, isLoading: loading, error } = useGetSalonByIdQuery(id);
   const { data: servicesData, isLoading: servicesLoading } = useGetSalonServicesQuery(id);
+  const { data: reviewsData, isLoading: reviewsLoading } = useGetSalonReviewsQuery(id);
   const isCustomer = user?.role === "customer";
   const { data: favoritesData } = useGetFavoritesQuery(undefined, {
     skip: !isAuthenticated || !isCustomer,
@@ -254,6 +256,7 @@ export default function SalonDetail() {
   // Extract data from responses
   const salon = salonData?.salon || salonData;
   const services = servicesData?.services || [];
+  const displayReviews = reviewsData?.reviews || [];
   const isFavorited = (favoritesData?.favorites || []).some(
     (favorite) => String(favorite.id ?? favorite.salon_id) === String(id)
   );
@@ -764,20 +767,18 @@ export default function SalonDetail() {
                       </button>
                     </div>
                   </div>
-                  {/* COMMENTED OUT - Star rating and reviews not yet implemented
                   <div className="flex items-center gap-2 mb-2">
                     <StarRating
-                      rating={Math.floor(salon.average_rating || 4.5)}
+                      rating={Math.round(Number(salon.average_rating || 0))}
                       size="large"
                     />
                     <span className="font-body font-semibold text-[16px] text-neutral-black">
-                      {salon.average_rating || '4.5'}
+                      {Number(salon.average_rating || 0).toFixed(1)}
                     </span>
                     <span className="font-body text-[14px] text-neutral-gray-600">
-                      ({salon.review_count || '45'} reviews)
+                      ({salon.total_reviews || displayReviews.length || 0} reviews)
                     </span>
                   </div>
-                  */}
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-neutral-gray-700">
                     <div className="flex items-center gap-2">
                       <FiMapPin className="w-5 h-5 text-accent-orange flex-shrink-0" />
@@ -874,10 +875,9 @@ export default function SalonDetail() {
                 >
                   Services
                 </button>
-                {/* COMMENTED OUT - Reviews tab not yet implemented
                 <button
                   onClick={() => setActiveTab("reviews")}
-                  className={`flex-1 px-6 py-4 font-body font-semibold text-[16px] transition-colors ${
+                  className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-body font-semibold text-[14px] sm:text-[16px] transition-colors whitespace-nowrap ${
                     activeTab === "reviews"
                       ? "text-accent-orange border-b-2 border-accent-orange"
                       : "text-neutral-gray-600 hover:text-neutral-black"
@@ -885,7 +885,6 @@ export default function SalonDetail() {
                 >
                   Reviews
                 </button>
-                */}
                 <button
                   onClick={() => setActiveTab("about")}
                   className={`flex-1 px-4 sm:px-6 py-3 sm:py-4 font-body font-semibold text-[14px] sm:text-[16px] transition-colors whitespace-nowrap ${
@@ -987,18 +986,30 @@ export default function SalonDetail() {
                   </div>
                 )}
 
-                {/* COMMENTED OUT - Reviews tab content not yet implemented
                 {activeTab === "reviews" && (
                   <div className="space-y-4">
                     <h3 className="font-display font-bold text-[24px] text-neutral-black mb-6">
                       Customer Reviews
                     </h3>
-                    {displayReviews.map((review) => (
-                      <ReviewCard key={review.id} review={review} />
-                    ))}
+                    {reviewsLoading ? (
+                      <div className="space-y-4">
+                        {[1, 2, 3].map((item) => (
+                          <div key={item} className="animate-pulse bg-gray-100 rounded-xl h-32" />
+                        ))}
+                      </div>
+                    ) : displayReviews.length > 0 ? (
+                      displayReviews.map((review) => (
+                        <ReviewCard key={review.id} review={review} />
+                      ))
+                    ) : (
+                      <div className="bg-neutral-gray-100 rounded-xl p-8 text-center">
+                        <p className="font-body text-[15px] text-neutral-gray-600">
+                          No reviews yet for this salon.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
-                */}
 
                 {activeTab === "about" && (
                   <div className="space-y-6">
