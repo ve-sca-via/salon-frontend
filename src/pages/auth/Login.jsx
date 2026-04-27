@@ -46,8 +46,11 @@ import { useDispatch } from "react-redux";
 import { setUser } from "../../store/slices/authSlice";
 import {
   useLoginMutation,
+  useSignupMutation,
   useSendPhoneOTPMutation,
-  useVerifyPhoneOTPMutation
+  useVerifyPhoneOTPMutation,
+  useSendPhoneSignupOTPMutation,
+  useVerifyPhoneSignupOTPMutation
 } from "../../services/api/authApi";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import Button from "../../components/shared/Button";
@@ -78,6 +81,18 @@ const Login = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpExpiry, setOtpExpiry] = useState(null);
   const [countdown, setCountdown] = useState(0);
+  const [phoneAuthMode, setPhoneAuthMode] = useState(null); // login | signup
+  const [verificationToken, setVerificationToken] = useState("");
+  const [customerName, setCustomerName] = useState("");
+
+  // New customer account details (collected only when phone is not registered)
+  const [profileData, setProfileData] = useState({
+    name: "",
+    email: "",
+    age: "",
+    gender: "",
+  });
+  const [profileErrors, setProfileErrors] = useState({});
 
   const [showPassword, setShowPassword] = useState(false);
 
@@ -86,8 +101,11 @@ const Login = () => {
 
   // RTK Query mutation hooks
   const [login, { isLoading: isEmailLoginLoading }] = useLoginMutation();
+  const [signup, { isLoading: isSignupLoading }] = useSignupMutation();
   const [sendPhoneOTP, { isLoading: isSendingOTP }] = useSendPhoneOTPMutation();
   const [verifyPhoneOTP, { isLoading: isVerifyingOTP }] = useVerifyPhoneOTPMutation();
+  const [sendPhoneSignupOTP] = useSendPhoneSignupOTPMutation();
+  const [verifyPhoneSignupOTP] = useVerifyPhoneSignupOTPMutation();
 
   /**
    * Load saved email from localStorage if "Remember me" was checked
@@ -144,6 +162,45 @@ const Login = () => {
   const handlePhoneChange = (e) => {
     const { name, value } = e.target;
     setPhoneData({ ...phoneData, [name]: value });
+  };
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfileData((prev) => ({ ...prev, [name]: value }));
+
+    if (profileErrors[name]) {
+      setProfileErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+  };
+
+  const validateProfileData = () => {
+    const newErrors = {};
+
+    if (!profileData.name.trim()) {
+      newErrors.name = "Name is required";
+    }
+
+    if (!profileData.email.trim()) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(profileData.email)) {
+      newErrors.email = "Email is invalid";
+    }
+
+    if (!profileData.age || !profileData.age.trim()) {
+      newErrors.age = "Age is required";
+    } else {
+      const ageNum = parseInt(profileData.age, 10);
+      if (isNaN(ageNum) || ageNum < 13 || ageNum > 120) {
+        newErrors.age = "Age must be between 13 and 120";
+      }
+    }
+
+    if (!profileData.gender) {
+      newErrors.gender = "Gender is required";
+    }
+
+    setProfileErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
   /**
@@ -251,6 +308,9 @@ const Login = () => {
       }).unwrap();
 
       if (response.success) {
+        setPhoneAuthMode('login');
+        setVerificationToken('');
+        setCustomerName(response.customer_name || '');
         setPhoneData(prev => ({
           ...prev,
           verificationId: response.verification_id
@@ -263,11 +323,39 @@ const Login = () => {
         showSuccessToast(`OTP sent to ${response.phone}`);
       }
     } catch (error) {
-      let msg = error.data?.detail || error.message || 'Failed to send OTP';
-      if (msg.toLowerCase().includes("not registered") || error.status === 404) {
-        msg = "Phone number not found. Please sign up first.";
+      const errorMessage = error.data?.detail || error.message || 'Failed to send OTP';
+      const notRegistered = error.status === 404 || errorMessage.toLowerCase().includes("not registered");
+
+      if (!notRegistered) {
+        showErrorToast(errorMessage);
+        return;
       }
-      showErrorToast(msg);
+
+      try {
+        const signupOtpResponse = await sendPhoneSignupOTP({
+          phone: phoneData.phone,
+          country_code: phoneData.countryCode,
+        }).unwrap();
+
+        if (signupOtpResponse.success) {
+          setPhoneAuthMode('signup');
+          setVerificationToken('');
+          setCustomerName('');
+          setPhoneData(prev => ({
+            ...prev,
+            verificationId: signupOtpResponse.verification_id
+          }));
+          setOtpSent(true);
+
+          const expiryTime = Date.now() + (signupOtpResponse.expires_in * 1000);
+          setOtpExpiry(expiryTime);
+
+          showSuccessToast('New number detected. OTP sent to continue account creation.');
+        }
+      } catch (signupOtpError) {
+        const signupErrorMsg = signupOtpError.data?.detail || signupOtpError.message || 'Failed to send OTP';
+        showErrorToast(signupErrorMsg);
+      }
     }
   };
 
@@ -288,6 +376,27 @@ const Login = () => {
     }
 
     try {
+      if (phoneAuthMode === 'signup') {
+        const verifySignupResponse = await verifyPhoneSignupOTP({
+          phone: phoneData.phone,
+          otp: phoneData.otp,
+          verification_id: phoneData.verificationId,
+        }).unwrap();
+
+        if (!verifySignupResponse?.success || !verifySignupResponse?.verification_token) {
+          throw new Error('Phone verification failed. Please try again.');
+        }
+
+        setVerificationToken(verifySignupResponse.verification_token);
+        setOtpSent(false);
+        setOtpExpiry(null);
+        setCountdown(0);
+        setPhoneData(prev => ({ ...prev, otp: '' }));
+
+        showSuccessToast('Phone verified. Complete your account details.');
+        return;
+      }
+
       const response = await verifyPhoneOTP({
         phone: phoneData.phone,
         otp: phoneData.otp,
@@ -319,6 +428,47 @@ const Login = () => {
     }
   };
 
+  const handleCreateAccount = async (e) => {
+    e.preventDefault();
+
+    if (!verificationToken) {
+      showErrorToast('Please verify phone number first.');
+      return;
+    }
+
+    if (!validateProfileData()) {
+      return;
+    }
+
+    try {
+      const payload = {
+        email: profileData.email.trim(),
+        password: `PhoneUser!${Math.random().toString(36).slice(2, 12)}`,
+        full_name: profileData.name.trim(),
+        age: parseInt(profileData.age, 10),
+        gender: profileData.gender.toLowerCase(),
+        user_role: 'customer',
+        verification_token: verificationToken,
+      };
+
+      const response = await signup(payload).unwrap();
+
+      if (!response?.access_token || !response?.refresh_token || !response?.user) {
+        throw new Error('Account created but login session was not returned');
+      }
+
+      localStorage.setItem('access_token', response.access_token);
+      localStorage.setItem('refresh_token', response.refresh_token);
+      dispatch(setUser(response.user));
+
+      showSuccessToast('Account created successfully! Welcome 🎉');
+      setTimeout(() => navigate('/'), 500);
+    } catch (error) {
+      const errorMessage = error.data?.detail || error.message || 'Failed to create account';
+      showErrorToast(errorMessage);
+    }
+  };
+
   /**
    * handleResendOTP - Resend OTP
    */
@@ -326,6 +476,7 @@ const Login = () => {
     setPhoneData(prev => ({ ...prev, otp: "", verificationId: "" }));
     setOtpSent(false);
     setOtpExpiry(null);
+    setCountdown(0);
     await handleSendOTP({ preventDefault: () => {} });
   };
 
@@ -342,6 +493,16 @@ const Login = () => {
     setOtpSent(false);
     setOtpExpiry(null);
     setCountdown(0);
+    setPhoneAuthMode(null);
+    setVerificationToken('');
+    setCustomerName('');
+    setProfileData({
+      name: "",
+      email: "",
+      age: "",
+      gender: "",
+    });
+    setProfileErrors({});
   };
 
   /**
@@ -414,11 +575,11 @@ const Login = () => {
             {/* Login Form Card */}
             <div className="bg-primary-white rounded-[10px] shadow-2xl p-8 lg:p-10">
               <h2 className="font-display font-bold text-[32px] text-neutral-black mb-2">
-                Sign In
+                {otpSent && phoneAuthMode === 'login'
+                  ? `Welcome Back${customerName ? `, ${customerName}` : ''}`
+                  : 'Sign In'}
               </h2>
-              <p className="font-body text-[16px] text-neutral-gray-500 mb-6">
-                Enter your credentials to access your account
-              </p>
+              
 
               {/* Forms */}
 
@@ -515,7 +676,99 @@ const Login = () => {
               {/* Phone OTP Login Form */}
               {loginMethod === 'phone' && (
                 <>
-                  {!otpSent ? (
+                  {verificationToken ? (
+                    <form onSubmit={handleCreateAccount} className="space-y-4">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                        <p className="font-body text-sm text-blue-800">
+                          Phone verified for new account: +{phoneData.countryCode} {phoneData.phone}
+                        </p>
+                      </div>
+
+                      <InputField
+                        label="Full Name"
+                        type="text"
+                        name="name"
+                        value={profileData.name}
+                        onChange={handleProfileChange}
+                        placeholder="Enter your full name"
+                        disabled={isSignupLoading}
+                        error={profileErrors.name}
+                        required
+                      />
+
+                      <InputField
+                        label="Email Address"
+                        type="email"
+                        name="email"
+                        value={profileData.email}
+                        onChange={handleProfileChange}
+                        placeholder="Enter your email"
+                        icon={<FiMail />}
+                        disabled={isSignupLoading}
+                        error={profileErrors.email}
+                        required
+                      />
+
+                      <InputField
+                        label="Age"
+                        type="number"
+                        name="age"
+                        value={profileData.age}
+                        onChange={handleProfileChange}
+                        placeholder="Enter your age"
+                        disabled={isSignupLoading}
+                        error={profileErrors.age}
+                        min="13"
+                        max="120"
+                        required
+                      />
+
+                      <div className="space-y-2">
+                        <label className="block font-body text-[14px] font-medium text-neutral-black">
+                          Gender <span className="text-red-500">*</span>
+                        </label>
+                        <select
+                          name="gender"
+                          value={profileData.gender}
+                          onChange={handleProfileChange}
+                          disabled={isSignupLoading}
+                          className={`w-full px-4 py-3 rounded-[10px] border ${
+                            profileErrors.gender ? 'border-red-500' : 'border-neutral-gray-300'
+                          } font-body text-[16px] text-neutral-black focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed`}
+                        >
+                          <option value="">Select gender</option>
+                          <option value="male">Male</option>
+                          <option value="female">Female</option>
+                          <option value="other">Other</option>
+                        </select>
+                        {profileErrors.gender && (
+                          <p className="text-red-500 text-sm mt-1">{profileErrors.gender}</p>
+                        )}
+                      </div>
+
+                      <Button
+                        type="submit"
+                        variant="primary"
+                        size="lg"
+                        fullWidth
+                        loading={isSignupLoading}
+                        disabled={isSignupLoading}
+                      >
+                        Create Account
+                      </Button>
+
+                      <div className="text-center mt-2">
+                        <button
+                          type="button"
+                          onClick={resetPhoneForm}
+                          className="font-body text-sm text-neutral-gray-500 hover:text-neutral-black"
+                          disabled={isSignupLoading}
+                        >
+                          Start over
+                        </button>
+                      </div>
+                    </form>
+                  ) : !otpSent ? (
                     /* Step 1: Enter Phone Number */
                     <form onSubmit={handleSendOTP} className="space-y-5">
                       {/* Country Code & Phone Input */}
@@ -557,14 +810,9 @@ const Login = () => {
                         loading={isSendingOTP}
                         disabled={isSendingOTP}
                       >
-                        Send OTP
+                        Continue with Phone
                       </Button>
 
-                      <div className="flex items-center gap-3 mt-4">
-                        <div className="flex-1 h-px bg-neutral-gray-300" />
-                        <span className="font-body text-xs text-neutral-gray-400 uppercase tracking-wide">or</span>
-                        <div className="flex-1 h-px bg-neutral-gray-300" />
-                      </div>
                       <div className="text-center mt-3">
                         <button
                           type="button"
@@ -582,6 +830,7 @@ const Login = () => {
                         <p className="font-body text-sm text-green-800">
                           ✅ OTP sent to +{phoneData.countryCode} {phoneData.phone}
                         </p>
+                        
                         <p className="font-body text-xs text-green-600 mt-1">
                           Time remaining: <strong>{formatCountdown()}</strong>
                         </p>
@@ -612,7 +861,7 @@ const Login = () => {
                         loading={isVerifyingOTP}
                         disabled={isVerifyingOTP || countdown === 0}
                       >
-                        Verify & Sign In
+                        {phoneAuthMode === 'signup' ? 'Verify & Continue' : 'Verify & Sign In'}
                       </Button>
 
                       {/* Resend OTP / Change Number */}
@@ -646,15 +895,7 @@ const Login = () => {
               )}
 
               {/* Sign Up Link */}
-              <div className="mt-6 text-center text-sm text-neutral-gray-500">
-                Don't have an account?{" "}
-                <Link
-                  to="/signup"
-                  className="text-accent-orange hover:opacity-80 font-semibold transition-opacity"
-                >
-                  Sign up here
-                </Link>
-              </div>
+              
 
               {/* Back to Home Link */}
               <div className="mt-4 text-center">
