@@ -21,7 +21,7 @@ export function Navigation({ onMenuToggle, isMenuOpen }) {
         className="relative shrink-0 pt-1"
       >
         <div className="flex flex-col items-start">
-          <span className="font-display font-bold text-[16px] sm:text-[18px] md:text-[20px] leading-[24px] text-black whitespace-nowrap">Lubist</span>
+          <img src="/logo/lubist_logo_2.svg" alt="Lubist" className="h-[36px] sm:h-[42px] md:h-[48px] w-auto" />
           {/* Location Display */}
           {locationName && (
             <button
