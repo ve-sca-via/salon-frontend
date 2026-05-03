@@ -230,9 +230,7 @@ const ResetPassword = () => {
         {/* Mobile Logo */}
         <div className="text-center mb-6">
           <Link to="/">
-            <h1 className="font-display font-bold text-4xl text-primary-white">
-              Lubist
-            </h1>
+            <img src="/logo/lubist_logo_2.svg" alt="Lubist" className="h-[40px] w-auto brightness-0 invert" />
           </Link>
         </div>
 
