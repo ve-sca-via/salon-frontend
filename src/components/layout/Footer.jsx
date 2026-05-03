@@ -9,7 +9,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Company Info */}
           <div className="space-y-4">
-            <h3 className="text-2xl font-bold text-white mb-4">Lubist</h3>
+            <img src="/logo/lubist_logo_2.svg" alt="Lubist" className="h-[36px] w-auto mb-4 brightness-0 invert" />
             <p className="text-gray-400 leading-relaxed">
               Your trusted platform for discovering and booking appointments with top-rated salons and spas.
             </p>

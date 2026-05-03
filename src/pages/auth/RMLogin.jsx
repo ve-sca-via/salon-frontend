@@ -150,9 +150,7 @@ const RMLogin = () => {
           {/* Left - Info Section */}
           <div className="text-primary-white hidden lg:block">
             <Link to="/" className="inline-block mb-8">
-              <h1 className="font-display font-bold text-5xl text-primary-white">
-                Lubist
-              </h1>
+              <img src="/logo/lubist_logo_2.svg" alt="Lubist" className="h-[48px] w-auto brightness-0 invert" />
             </Link>
             <h2 className="font-display font-bold text-4xl mb-4">
               RM Portal
@@ -184,9 +182,7 @@ const RMLogin = () => {
           <div className="w-full">
             <div className="text-center mb-6 lg:hidden">
               <Link to="/">
-                <h1 className="font-display font-bold text-4xl text-primary-white">
-                  Lubist
-                </h1>
+                <img src="/logo/lubist_logo_2.svg" alt="Lubist" className="h-[40px] w-auto brightness-0 invert" />
               </Link>
             </div>
 

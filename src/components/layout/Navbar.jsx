@@ -118,11 +118,7 @@ const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
             </button>
             
             <Link to={getRoleBasedHome()} className="flex items-center gap-3">
-              <div className="h-10 w-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-xl">
-                  L
-                </span>
-              </div>
+              <img src="/logo/lubist_logo_1.svg" alt="Lubist" className="h-10 w-10 rounded-lg shadow-md" />
               <div className="hidden sm:block">
                 <span className="text-lg font-bold text-gray-900 block">
                   {user?.role === 'relationship_manager' ? 'Lubist - Beauty. Booking. Simplified.' : 'Salon Manager'}
