@@ -61,6 +61,7 @@ const ProductDetail = lazy(() => import('./pages/public/ProductDetail'));
 const SalonFeedback = lazy(() => import('./pages/public/SalonFeedback'));
 const ServiceBooking = lazy(() => import('./pages/public/ServiceBooking'));
 const Cart = lazy(() => import('./pages/public/Cart'));
+const ProductCart = lazy(() => import('./pages/public/ProductCart'));
 const Checkout = lazy(() => import('./pages/public/Checkout'));
 const ProductCheckout = lazy(() => import('./pages/public/ProductCheckout'));
 const OrderConfirmation = lazy(() => import('./pages/public/OrderConfirmation'));
@@ -186,6 +187,11 @@ function App() {
               <Route path="/cart" element={
                 <ErrorBoundary fallback="page">
                   <Cart />
+                </ErrorBoundary>
+              } />
+              <Route path="/product-cart" element={
+                <ErrorBoundary fallback="page">
+                  <ProductCart />
                 </ErrorBoundary>
               } />
               <Route path="/checkout" element={

@@ -2,8 +2,34 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlus } from 'react-icons/fi';
 import OptimizedImage from './OptimizedImage';
+import { useAddToProductCartMutation } from '../../services/api/productCartApi';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { useSelector } from 'react-redux';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const ProductCard = ({ product, compact = false }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { isAuthenticated } = useSelector((state) => state.auth);
+  const [addToCart, { isLoading }] = useAddToProductCartMutation();
+
+  const handleAddToCart = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isAuthenticated) {
+      navigate('/login', { state: { from: location } });
+      return;
+    }
+
+    try {
+      await addToCart({ product_id: product.id, quantity: 1 }).unwrap();
+      showSuccessToast(`${product.name} added to cart`);
+    } catch (err) {
+      showErrorToast(err?.data?.detail || 'Failed to add item to cart');
+    }
+  };
+
   const imageUrl = product.image_urls?.[0] || '/images/placeholders/product-placeholder.jpg';
 
   const discountAmount = product.discount_price 
@@ -58,8 +84,12 @@ const ProductCard = ({ product, compact = false }) => {
                 )}
               </div>
 
-              <button className={`px-2 sm:px-4 w-auto border border-brand-primary text-brand-primary bg-brand-primary/5 hover:bg-brand-primary hover:text-white rounded-md font-medium transition-colors flex items-center justify-center shadow-sm whitespace-nowrap ${compact ? 'h-6 text-[9px]' : 'h-7 sm:h-8 text-[10px] sm:text-xs sm:rounded-lg'}`}>
-                ADD
+              <button 
+                onClick={handleAddToCart}
+                disabled={isLoading}
+                className={`px-2 sm:px-4 w-auto border border-brand-primary text-brand-primary bg-brand-primary/5 hover:bg-brand-primary hover:text-white rounded-md font-medium transition-colors flex items-center justify-center shadow-sm whitespace-nowrap ${compact ? 'h-6 text-[9px]' : 'h-7 sm:h-8 text-[10px] sm:text-xs sm:rounded-lg'}`}
+              >
+                {isLoading ? '...' : 'ADD'}
               </button>
             </div>
             

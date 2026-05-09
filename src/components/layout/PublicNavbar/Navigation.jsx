@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { FiMapPin, FiScissors } from "react-icons/fi";
+import { FiMapPin, FiScissors, FiShoppingBag } from "react-icons/fi";
 import { Menu } from "./Menu";
 import { Actions } from "./Actions";
 import { HamburgerIcon } from "./Icons";
 import { getUserLocation } from "../../../store/slices/locationSlice";
 import { useGetCartQuery } from "../../../services/api/cartApi";
+import { useGetProductCartQuery } from "../../../services/api/productCartApi";
 
 export function Navigation({ onMenuToggle, isMenuOpen }) {
   const dispatch = useDispatch();
@@ -13,12 +14,13 @@ export function Navigation({ onMenuToggle, isMenuOpen }) {
   const { locationName, userLocation } = useSelector((state) => state.location);
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { data: cart } = useGetCartQuery(undefined, { skip: !isAuthenticated });
+  const { data: productCart } = useGetProductCartQuery(undefined, { skip: !isAuthenticated });
 
   return (
-    <div className="content-stretch flex gap-[12px] md:gap-[60px] lg:gap-[120px] xl:gap-[237px] items-start justify-between relative w-full max-w-[1296px]">
+    <div className="content-stretch flex gap-[12px] md:gap-[60px] lg:gap-[120px] xl:gap-[237px] items-center justify-between relative w-full max-w-[1296px]">
       <Link
         to="/"
-        className="relative shrink-0 pt-1"
+        className="relative shrink-0"
       >
         <div className="flex flex-col items-start">
           <img src="/logo/lubist_logo_2.svg" alt="Lubist" className="h-[36px] sm:h-[42px] md:h-[48px] w-auto" />
@@ -44,28 +46,45 @@ export function Navigation({ onMenuToggle, isMenuOpen }) {
           )}
         </div>
       </Link>
-      <div className="flex items-center pt-1">
+      <div className="flex items-center">
         <Menu />
       </div>
-      <div className="flex items-center pt-1">
+      <div className="flex items-center">
         <Actions />
       </div>
 
       {/* Mobile: Login/Signup Button and Hamburger Menu */}
-      <div className="lg:hidden flex items-center gap-1 sm:gap-2 self-start">
+      <div className="lg:hidden flex items-center gap-1 sm:gap-2">
         {isAuthenticated && (
-           <button
-             onClick={() => navigate("/cart")}
-             className="relative p-2 hover:bg-neutral-gray-600 rounded-md transition-colors mt-0.5"
-             aria-label="View Cart"
-           >
-              <FiScissors className="w-5 h-5 text-neutral-black" />
-             {cart?.item_count > 0 && (
-               <span className="absolute -top-1 -right-1 bg-accent-orange text-primary-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                 {cart?.item_count}
-               </span>
-             )}
-           </button>
+          <>
+            <button
+              onClick={() => navigate("/cart")}
+              className="relative p-2 hover:bg-neutral-gray-600 rounded-md transition-colors mt-0.5"
+              aria-label="View Service Cart"
+              title="Services"
+            >
+               <FiScissors className="w-5 h-5 text-neutral-black" />
+              {cart?.item_count > 0 && (
+                <span className="absolute -top-1 -right-1 bg-accent-orange text-primary-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {cart?.item_count}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => navigate("/product-cart")}
+              className="relative p-2 hover:bg-neutral-gray-600 rounded-md transition-colors mt-0.5"
+              aria-label="View Product Cart"
+              title="Products"
+            >
+               <FiShoppingBag className="w-5 h-5 text-neutral-black" />
+              {productCart?.item_count > 0 && (
+                <span className="absolute -top-1 -right-1 bg-accent-orange text-primary-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                  {productCart?.item_count}
+                </span>
+              )}
+            </button>
+          </>
         )}
         {!isAuthenticated && (
           <button

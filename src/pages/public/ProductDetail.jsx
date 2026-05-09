@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { useGetProductBySlugQuery } from '../../../services/api/productApi';
-import { useAddToProductCartMutation } from '../../../services/api/productCartApi';
-import { showSuccessToast, showErrorToast } from '../../../utils/toastConfig';
+import { useGetProductBySlugQuery } from '../../services/api/productApi';
+import { useAddToProductCartMutation } from '../../services/api/productCartApi';
+import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import { FiShoppingCart, FiCreditCard, FiChevronLeft, FiStar, FiTruck, FiShield, FiRotateCcw } from 'react-icons/fi';
-import Button from '../../../components/shared/Button';
+import Button from '../../components/shared/Button';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -47,8 +47,8 @@ const ProductDetail = () => {
   }
 
   // Use product images or placeholder
-  const images = product.images && product.images.length > 0 
-    ? product.images 
+  const images = product.image_urls && product.image_urls.length > 0 
+    ? product.image_urls 
     : ['https://via.placeholder.com/800x800?text=No+Image+Available'];
 
   const discountPercentage = product.discount_price 

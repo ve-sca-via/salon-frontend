@@ -22,6 +22,13 @@ export const productOrderApi = createApi({
       }),
       invalidatesTags: [{ type: 'ProductOrder', id: 'LIST' }],
     }),
+    devVerifyProductPayment: builder.mutation({
+      query: (orderId) => ({
+        url: `/api/v1/product-orders/dev-verify/${orderId}`,
+        method: 'post',
+      }),
+      invalidatesTags: [{ type: 'ProductOrder', id: 'LIST' }],
+    }),
     getMyProductOrders: builder.query({
       query: () => ({
         url: '/api/v1/product-orders/my-orders',
@@ -35,6 +42,7 @@ export const productOrderApi = createApi({
 export const {
   useCreateProductOrderMutation,
   useVerifyProductPaymentMutation,
+  useDevVerifyProductPaymentMutation,
   useGetMyProductOrdersQuery,
 } = productOrderApi;
 
