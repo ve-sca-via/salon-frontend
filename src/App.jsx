@@ -62,6 +62,8 @@ const SalonFeedback = lazy(() => import('./pages/public/SalonFeedback'));
 const ServiceBooking = lazy(() => import('./pages/public/ServiceBooking'));
 const Cart = lazy(() => import('./pages/public/Cart'));
 const Checkout = lazy(() => import('./pages/public/Checkout'));
+const ProductCheckout = lazy(() => import('./pages/public/ProductCheckout'));
+const OrderConfirmation = lazy(() => import('./pages/public/OrderConfirmation'));
 const Payment = lazy(() => import('./pages/public/Payment'));
 const BookingConfirmation = lazy(() => import('./pages/public/BookingConfirmation'));
 const Careers = lazy(() => import('./pages/public/Careers'));
@@ -76,6 +78,7 @@ const NotFoundPage = lazy(() => import('./pages/public/NotFoundPage'));
 const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
 const Favorites = lazy(() => import('./pages/customer/Favorites'));
 const MyReviews = lazy(() => import('./pages/customer/MyReviews'));
+const MyOrders = lazy(() => import('./pages/customer/MyOrders'));
 const CustomerProfile = lazy(() => import('./pages/customer/CustomerProfile'));
 
 // RM (Relationship Manager) pages
@@ -190,6 +193,20 @@ function App() {
                   <Checkout />
                 </ErrorBoundary>
               } />
+              <Route path="/product-checkout" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <ErrorBoundary fallback="page">
+                    <ProductCheckout />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/order-confirmation" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <ErrorBoundary fallback="page">
+                    <OrderConfirmation />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
               <Route path="/payment" element={
                 <ErrorBoundary fallback="page">
                   <Payment />
@@ -231,6 +248,13 @@ function App() {
                 <ProtectedRoute allowedRoles={['customer']}>
                   <ErrorBoundary fallback="page">
                     <MyReviews />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/customer/my-orders" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <ErrorBoundary fallback="page">
+                    <MyOrders />
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />

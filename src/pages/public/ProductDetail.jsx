@@ -72,7 +72,7 @@ const ProductDetail = () => {
       if (actionType === 'add_to_cart') {
         showSuccessToast('Added to cart successfully!');
       } else if (actionType === 'buy_now') {
-        navigate('/checkout'); // Redirect to checkout directly
+        navigate('/product-checkout'); // Redirect to product checkout directly
       }
     } catch (err) {
       showErrorToast(err?.data?.detail || 'Failed to add item to cart');
