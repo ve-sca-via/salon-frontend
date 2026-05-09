@@ -57,6 +57,7 @@ const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 const Home = lazy(() => import('./pages/public/Home'));
 const PublicSalonListing = lazy(() => import('./pages/public/PublicSalonListing'));
 const SalonDetail = lazy(() => import('./pages/public/SalonDetail'));
+const ProductDetail = lazy(() => import('./pages/public/ProductDetail'));
 const SalonFeedback = lazy(() => import('./pages/public/SalonFeedback'));
 const ServiceBooking = lazy(() => import('./pages/public/ServiceBooking'));
 const Cart = lazy(() => import('./pages/public/Cart'));
@@ -162,6 +163,11 @@ function App() {
               <Route path="/salons/:id" element={
                 <ErrorBoundary fallback="page">
                   <SalonDetail />
+                </ErrorBoundary>
+              } />
+              <Route path="/products/:slug" element={
+                <ErrorBoundary fallback="page">
+                  <ProductDetail />
                 </ErrorBoundary>
               } />
               <Route path="/salons/:id/feedback" element={

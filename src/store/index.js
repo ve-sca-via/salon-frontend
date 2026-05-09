@@ -18,6 +18,7 @@ import { rmApi } from '../services/api/rmApi';
 import { paymentApi } from '../services/api/paymentApi';
 import { configApi } from '../services/api/configApi';
 import { productApi } from '../services/api/productApi';
+import { productCartApi } from '../services/api/productCartApi';
 
 const authPersistConfig = {
   key: 'auth',
@@ -45,6 +46,7 @@ export const store = configureStore({
     [paymentApi.reducerPath]: paymentApi.reducer,
     [configApi.reducerPath]: configApi.reducer,
     [productApi.reducerPath]: productApi.reducer,
+    [productCartApi.reducerPath]: productCartApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -67,6 +69,7 @@ export const store = configureStore({
           'paymentApi',
           'configApi',
           'productApi',
+          'productCartApi',
         ],
       },
     }).concat(
@@ -81,7 +84,8 @@ export const store = configureStore({
       rmApi.middleware,
       paymentApi.middleware,
       configApi.middleware,
-      productApi.middleware
+      productApi.middleware,
+      productCartApi.middleware
     ),
 });
 
