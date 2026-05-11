@@ -57,6 +57,7 @@ const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 const Home = lazy(() => import('./pages/public/Home'));
 const PublicSalonListing = lazy(() => import('./pages/public/PublicSalonListing'));
 const SalonDetail = lazy(() => import('./pages/public/SalonDetail'));
+const PublicProductListing = lazy(() => import('./pages/public/PublicProductListing'));
 const ProductDetail = lazy(() => import('./pages/public/ProductDetail'));
 const SalonFeedback = lazy(() => import('./pages/public/SalonFeedback'));
 const ServiceBooking = lazy(() => import('./pages/public/ServiceBooking'));
@@ -80,6 +81,7 @@ const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
 const Favorites = lazy(() => import('./pages/customer/Favorites'));
 const MyReviews = lazy(() => import('./pages/customer/MyReviews'));
 const MyOrders = lazy(() => import('./pages/customer/MyOrders'));
+const TrackOrder = lazy(() => import('./pages/customer/TrackOrder'));
 const CustomerProfile = lazy(() => import('./pages/customer/CustomerProfile'));
 
 // RM (Relationship Manager) pages
@@ -167,6 +169,11 @@ function App() {
               <Route path="/salons/:id" element={
                 <ErrorBoundary fallback="page">
                   <SalonDetail />
+                </ErrorBoundary>
+              } />
+              <Route path="/products" element={
+                <ErrorBoundary fallback="page">
+                  <PublicProductListing />
                 </ErrorBoundary>
               } />
               <Route path="/products/:slug" element={
@@ -261,6 +268,13 @@ function App() {
                 <ProtectedRoute allowedRoles={['customer']}>
                   <ErrorBoundary fallback="page">
                     <MyOrders />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/customer/track-order" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <ErrorBoundary fallback="page">
+                    <TrackOrder />
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />

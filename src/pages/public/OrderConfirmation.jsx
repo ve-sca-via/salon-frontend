@@ -38,7 +38,7 @@ export default function OrderConfirmation() {
         <div className="flex flex-col gap-3">
           <Button 
             variant="primary" 
-            onClick={() => navigate('/customer/my-orders')}
+            onClick={() => navigate('/customer/track-order')}
             fullWidth
           >
             Track My Order
