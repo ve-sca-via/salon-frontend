@@ -122,10 +122,10 @@ const PublicProductListing = () => {
                   <button
                     key={category}
                     onClick={() => setActiveCategory(category)}
-                    className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors capitalize border ${
+                    className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all capitalize border-2 ${
                       activeCategory === category
-                        ? 'bg-gray-900 border-gray-900 text-white shadow-sm'
-                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        ? 'bg-accent-orange border-accent-orange text-white shadow-md transform scale-105'
+                        : 'bg-white border-gray-200 text-gray-500 hover:border-accent-orange hover:text-accent-orange'
                     }`}
                   >
                     {category}

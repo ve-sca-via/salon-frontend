@@ -8,7 +8,7 @@ import { toast } from "react-toastify";
 import { MobileMenuItem } from "./MenuItem";
 import { MobileDropdown } from "./Dropdown";
 import { SERVICES_ITEMS, PAGES_ITEMS } from "./Menu";
-import { FiHeart, FiScissors } from "react-icons/fi";
+import { FiHeart, FiScissors, FiShoppingBag, FiPackage } from "react-icons/fi";
 
 export function MobileMenu({ isOpen, onClose }) {
   const [servicesOpen, setServicesOpen] = useState(false);
@@ -202,6 +202,26 @@ export function MobileMenu({ isOpen, onClose }) {
                 >
                   <FiScissors className="w-5 h-5 text-accent-orange" />
                   <span className="font-body font-medium text-[15px]">My Services</span>
+                </button>
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3 text-neutral-black hover:bg-gray-50 transition-colors border-b border-neutral-gray-600"
+                  onClick={() => {
+                    navigate("/product-cart");
+                    onClose();
+                  }}
+                >
+                  <FiShoppingBag className="w-5 h-5 text-accent-orange" />
+                  <span className="font-body font-medium text-[15px]">My Products</span>
+                </button>
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3 text-neutral-black hover:bg-gray-50 transition-colors border-b border-neutral-gray-600"
+                  onClick={() => {
+                    navigate("/customer/my-orders");
+                    onClose();
+                  }}
+                >
+                  <FiPackage className="w-5 h-5 text-accent-orange" />
+                  <span className="font-body font-medium text-[15px]">My Orders</span>
                 </button>
               </>
             )}
