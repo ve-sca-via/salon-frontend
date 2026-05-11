@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   FiHome, FiCalendar, FiShoppingBag, FiClock, FiMapPin,
   FiSettings, FiUsers, FiBarChart2, FiCheckCircle, FiFileText,
-  FiPlusCircle, FiList, FiUser, FiSave, FiAward
+  FiPlusCircle, FiList, FiUser, FiSave, FiAward, FiPackage
 } from 'react-icons/fi';
 
 const Sidebar = ({ role, isOpen, onClose, isCollapsed }) => {
@@ -11,10 +11,12 @@ const Sidebar = ({ role, isOpen, onClose, isCollapsed }) => {
     switch (role) {
       case 'customer':
         return [
-          { path: '/customer/dashboard', icon: <FiHome />, label: 'Dashboard' },
-          { path: '/customer/salons', icon: <FiMapPin />, label: 'Find Salons' },
-          { path: '/customer/bookings', icon: <FiCalendar />, label: 'My Bookings' },
-          { path: '/customer/history', icon: <FiClock />, label: 'History' },
+          { path: '/', icon: <FiHome />, label: 'Home' },
+          { path: '/salons', icon: <FiMapPin />, label: 'Find Salons' },
+          { path: '/my-bookings', icon: <FiCalendar />, label: 'My Bookings' },
+          { path: '/cart', icon: <FiShoppingBag />, label: 'My Services' },
+          { path: '/product-cart', icon: <FiShoppingBag />, label: 'My Products' },
+          { path: '/customer/my-orders', icon: <FiPackage />, label: 'My Orders' },
         ];
       case 'salon':
         return [

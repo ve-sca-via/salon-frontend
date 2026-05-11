@@ -117,6 +117,14 @@ export function AuthButton() {
             label: 'My Services',
             onClick: () => navigate("/cart")
           },
+          {
+            label: 'My Products',
+            onClick: () => navigate("/product-cart")
+          },
+          {
+            label: 'My Product Orders',
+            onClick: () => navigate("/customer/my-orders")
+          },
           logoutItem
         ];
 
