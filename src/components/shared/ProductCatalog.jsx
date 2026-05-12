@@ -111,9 +111,9 @@ const ProductCatalog = () => {
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs sm:text-sm font-medium transition-colors capitalize border ${activeCategory === category
-                    ? 'bg-brand-primary border-brand-primary text-white shadow-sm'
-                    : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-50'
+                className={`whitespace-nowrap px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all capitalize border ${activeCategory === category
+                    ? 'bg-gray-900 border-gray-900 text-white shadow-md transform scale-105'
+                    : 'bg-white border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900'
                   }`}
               >
                 {category}

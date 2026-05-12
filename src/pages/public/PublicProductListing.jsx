@@ -93,10 +93,10 @@ const PublicProductListing = () => {
             <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
               <button
                 onClick={() => setIsFeaturedOnly(!isFeaturedOnly)}
-                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
+                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
                   isFeaturedOnly 
-                    ? 'bg-brand-primary text-white border-brand-primary' 
-                    : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                    ? 'bg-gray-900 text-white border-gray-900 shadow-sm' 
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-900 hover:text-gray-900'
                 }`}
               >
                 Featured Only
@@ -122,10 +122,10 @@ const PublicProductListing = () => {
                   <button
                     key={category}
                     onClick={() => setActiveCategory(category)}
-                    className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs sm:text-sm font-semibold transition-all capitalize border-2 ${
+                    className={`whitespace-nowrap px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all capitalize border ${
                       activeCategory === category
-                        ? 'bg-accent-orange border-accent-orange text-white shadow-md transform scale-105'
-                        : 'bg-white border-gray-200 text-gray-500 hover:border-accent-orange hover:text-accent-orange'
+                        ? 'bg-gray-900 border-gray-900 text-white shadow-md transform scale-105'
+                        : 'bg-white border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900'
                     }`}
                   >
                     {category}
