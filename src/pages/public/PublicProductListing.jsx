@@ -19,13 +19,15 @@ const PublicProductListing = () => {
   const [searchTerm, setSearchTerm] = useState(queryParam);
   const [activeCategory, setActiveCategory] = useState(categoryParam);
   const [isFeaturedOnly, setIsFeaturedOnly] = useState(featuredParam);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = React.useRef(null);
 
   // Fetch categories
   const { data: categoriesData, isLoading: categoriesLoading } = useGetProductCategoriesQuery();
   const categories = categoriesData?.categories || [];
   const tabs = ['All', ...categories];
 
-  // Prepare API params based on current state
+  // Prepare API params
   const apiParams = useMemo(() => {
     const params = { limit: 50 };
     if (activeCategory !== 'All') params.category = activeCategory;
@@ -38,7 +40,7 @@ const PublicProductListing = () => {
   const { data: productsData, isLoading, error } = useGetProductsQuery(apiParams);
   const products = productsData?.products || [];
 
-  // Update URL params when filters change
+  // Update URL params
   useEffect(() => {
     const params = new URLSearchParams();
     if (activeCategory !== 'All') params.set('category', activeCategory);
@@ -47,9 +49,18 @@ const PublicProductListing = () => {
     setSearchParams(params, { replace: true });
   }, [activeCategory, isFeaturedOnly, searchTerm, setSearchParams]);
 
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleSearch = (e) => {
     e.preventDefault();
-    // The useMemo for apiParams and useEffect for URL will handle the rest
   };
 
   const clearFilters = () => {
@@ -63,40 +74,79 @@ const PublicProductListing = () => {
       <PublicNavbar />
 
       {/* Main Content */}
-      <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-8 w-full">
+      <main className="flex-grow max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 pt-2 pb-6 w-full">
         {/* Page Header */}
-        <div className="mb-5">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+        <div className="mb-3">
+          <h1 className="text-xl md:text-2xl font-bold text-gray-900 tracking-tight">
             {isFeaturedOnly ? "Featured Products" : "All Products"}
           </h1>
-          <p className="text-sm text-gray-500 mt-1 max-w-3xl">
-            Discover our premium collection of beauty and personal care products. Handpicked by experts for your daily routine.
+          <p className="text-[11px] md:text-xs text-gray-500 mt-0.5">
+            Discover our premium beauty collection. Handpicked for your daily routine.
           </p>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 sm:p-6 mb-8">
-          <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-            {/* Search Bar */}
-            <form onSubmit={handleSearch} className="relative w-full md:w-96">
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent text-sm"
-              />
-              <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" />
-            </form>
+        <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-3 mb-4">
+          <div className="flex flex-col md:flex-row gap-2 md:items-center justify-between">
+            {/* Left Side: Search and Category Dropdown */}
+            <div className="flex flex-col md:flex-row gap-2 items-start md:items-center flex-grow">
+              {/* Search Bar */}
+              <form onSubmit={handleSearch} className="relative w-full md:w-64">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full pl-9 pr-4 py-1.5 border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent text-xs"
+                />
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-3.5 h-3.5" />
+              </form>
 
-            {/* Filter Toggles */}
-            <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 hide-scrollbar">
+              {/* Category Dropdown */}
+              {!categoriesLoading && tabs.length > 1 && (
+                <div className="relative" ref={dropdownRef}>
+                  <button
+                    onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white border border-gray-100 rounded-md text-[11px] font-bold text-gray-700 hover:border-accent-orange transition-all min-w-[120px] justify-between shadow-sm"
+                  >
+                    <span className="capitalize">{activeCategory}</span>
+                    <FiFilter className={`w-3 h-3 text-gray-400 transition-colors ${isDropdownOpen ? 'text-accent-orange' : ''}`} />
+                  </button>
+                  
+                  {isDropdownOpen && (
+                    <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden animate-fadeIn">
+                      <div className="py-1">
+                        {tabs.map((category) => (
+                          <button
+                            key={category}
+                            onClick={() => {
+                              setActiveCategory(category);
+                              setIsDropdownOpen(false);
+                            }}
+                            className={`w-full text-left px-4 py-2 text-[11px] transition-colors capitalize ${
+                              activeCategory === category 
+                                ? 'bg-accent-orange text-white' 
+                                : 'text-gray-600 hover:bg-gray-50'
+                            }`}
+                          >
+                            {category}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Right Side: Featured Toggle and Clear */}
+            <div className="flex items-center gap-2">
               <button
                 onClick={() => setIsFeaturedOnly(!isFeaturedOnly)}
-                className={`flex-shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all border ${
+                className={`px-3 py-1.5 rounded-md text-[11px] font-bold transition-all border ${
                   isFeaturedOnly 
                     ? 'bg-gray-900 text-white border-gray-900 shadow-sm' 
-                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-900 hover:text-gray-900'
+                    : 'bg-white text-gray-600 border-gray-200 hover:border-gray-900'
                 }`}
               >
                 Featured Only
@@ -105,68 +155,46 @@ const PublicProductListing = () => {
               {(isFeaturedOnly || activeCategory !== 'All' || searchTerm) && (
                 <button
                   onClick={clearFilters}
-                  className="flex items-center gap-1.5 flex-shrink-0 px-3 py-2 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 transition-colors"
+                  className="flex items-center gap-1 px-2 py-1.5 rounded-md text-[11px] font-bold text-red-500 hover:bg-red-50 transition-colors"
                 >
-                  <FiX /> Clear Filters
+                  <FiX className="w-3 h-3" /> Clear
                 </button>
               )}
             </div>
           </div>
-
-          {/* Categories Tabs */}
-          {!categoriesLoading && tabs.length > 1 && (
-            <div className="mt-6 border-t border-gray-100 pt-6">
-              <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-2">
-                <FiFilter className="text-gray-400 mr-2 flex-shrink-0" />
-                {tabs.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => setActiveCategory(category)}
-                    className={`whitespace-nowrap px-5 py-2 rounded-full text-xs sm:text-sm font-semibold transition-all capitalize border ${
-                      activeCategory === category
-                        ? 'bg-gray-900 border-gray-900 text-white shadow-md transform scale-105'
-                        : 'bg-white border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900'
-                    }`}
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* Products Grid */}
+        {/* Products Grid - Increased density (3 cols on mobile, 4 on sm, 6 on lg) */}
         {isLoading ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 sm:gap-6">
-            {[...Array(10)].map((_, i) => (
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-4">
+            {[...Array(12)].map((_, i) => (
               <div key={i} className="aspect-[3/4] w-full">
-                <Skeleton style={{ width: "100%", height: "100%", borderRadius: "0.75rem" }} />
+                <Skeleton style={{ width: "100%", height: "100%", borderRadius: "0.5rem" }} />
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
-            <p className="text-red-500 font-medium">Failed to load products. Please try again later.</p>
+          <div className="text-center py-8 bg-white rounded-lg border border-gray-100">
+            <p className="text-red-500 text-sm font-medium">Failed to load products.</p>
           </div>
         ) : products.length > 0 ? (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-6">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 sm:gap-4">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product} compact={true} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-xl border border-gray-100 shadow-sm">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4">
-              <FiSearch className="w-8 h-8 text-gray-400" />
+          <div className="text-center py-12 bg-white rounded-lg border border-gray-100 shadow-sm">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-50 mb-3">
+              <FiSearch className="w-6 h-6 text-gray-400" />
             </div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">No Products Found</h3>
-            <p className="text-gray-500 mb-6 max-w-sm mx-auto">
-              We couldn't find any products matching your current filters. Try adjusting your search criteria.
+            <h3 className="text-sm font-medium text-gray-900 mb-1">No Products Found</h3>
+            <p className="text-[11px] text-gray-500 mb-4 max-w-xs mx-auto">
+              Try adjusting your search criteria.
             </p>
             <button
               onClick={clearFilters}
-              className="px-6 py-2.5 bg-brand-primary text-white rounded-lg font-medium hover:bg-opacity-90 transition-colors shadow-sm"
+              className="px-4 py-1.5 bg-accent-orange text-white rounded-md text-[11px] font-bold hover:opacity-90 transition-colors shadow-sm"
             >
               Clear All Filters
             </button>
@@ -178,13 +206,8 @@ const PublicProductListing = () => {
       
       <style dangerouslySetInnerHTML={{
         __html: `
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `}} />
     </div>
   );

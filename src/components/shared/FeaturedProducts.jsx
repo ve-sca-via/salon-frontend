@@ -4,6 +4,29 @@ import { FiChevronRight } from 'react-icons/fi';
 import { useGetProductsQuery } from '../../services/api/productApi';
 import ProductCard from './ProductCard';
 import Skeleton from './Skeleton';
+import svgPaths from "../../utils/svgPaths";
+
+// Scissors Icon for Header - matching ServicesSection
+function ScissorsIcon() {
+  return (
+    <div className="relative shrink-0 size-[16px] md:size-[24px]">
+      <svg
+        className="block size-full"
+        fill="none"
+        preserveAspectRatio="none"
+        viewBox="0 0 24 24"
+      >
+        <g>
+          <path clipRule="evenodd" d={svgPaths.p25acb880} fill="#242B3A" fillRule="evenodd" />
+          <path clipRule="evenodd" d={svgPaths.p278c7db0} fill="#242B3A" fillRule="evenodd" />
+          <path clipRule="evenodd" d={svgPaths.pd7a6390} fill="#242B3A" fillRule="evenodd" />
+          <path clipRule="evenodd" d={svgPaths.p33bb100} fill="#242B3A" fillRule="evenodd" />
+          <path clipRule="evenodd" d={svgPaths.p153dbd00} fill="#242B3A" fillRule="evenodd" />
+        </g>
+      </svg>
+    </div>
+  );
+}
 
 const FeaturedProducts = () => {
   const { data, isLoading, error } = useGetProductsQuery({ is_featured: true, limit: 10 });
@@ -19,15 +42,11 @@ const FeaturedProducts = () => {
 
   if (isLoading) {
     return (
-      <section className="py-12 bg-white">
+      <section className="py-4 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center mb-6">
-            <Skeleton style={{ width: "200px", height: "32px" }} />
-            <Skeleton style={{ width: "100px", height: "24px" }} />
-          </div>
           <div className="flex gap-4 overflow-hidden">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <div key={i} className="min-w-[130px] md:min-w-[170px] lg:min-w-[200px] h-[180px] sm:h-[220px]">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="min-w-[90px] md:min-w-[130px] lg:min-w-[150px] h-[150px] sm:h-[180px]">
                 <Skeleton style={{ width: "100%", height: "100%", borderRadius: "0.75rem" }} />
               </div>
             ))}
@@ -38,43 +57,46 @@ const FeaturedProducts = () => {
   }
 
   if (error || products.length === 0) {
-    return null; // Do not show section if no featured products
+    return null;
   }
 
   return (
-    <section className="py-10 bg-gradient-to-b from-gray-50 to-white relative overflow-hidden">
-      {/* Background Decorative Elements */}
-      <div className="absolute top-0 right-0 -mr-20 -mt-20 w-64 h-64 rounded-full bg-brand-primary/5 blur-3xl opacity-60 pointer-events-none"></div>
-      <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-orange-300/10 blur-3xl opacity-60 pointer-events-none"></div>
-
+    <section className="py-0 bg-white relative overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="flex justify-between items-end mb-6">
-          <div>
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
-              Featured Products
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              Top-rated essentials handpicked for you
-            </p>
+        
+        {/* Header - Matching ServicesSection Style Perfectly */}
+        <div className="flex flex-col gap-0 items-center w-full mb-2 md:mb-6">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex items-center justify-center gap-2 md:gap-4 w-full">
+              {/* Left Decoration */}
+              <div className="flex items-center gap-1.5 md:gap-3">
+                <div className="h-[1px] w-[15px] md:w-[40px] bg-neutral-black"></div>
+                <ScissorsIcon />
+              </div>
+
+              {/* Title */}
+              <h2 className="font-display font-bold text-[18px] md:text-[32px] leading-tight md:leading-[48px] text-neutral-black whitespace-nowrap">
+                Featured Products
+              </h2>
+
+              {/* Right Decoration */}
+              <div className="flex items-center gap-1.5 md:gap-3">
+                <ScissorsIcon />
+                <div className="h-[1px] w-[15px] md:w-[40px] bg-neutral-black"></div>
+              </div>
+            </div>
           </div>
-          <Link
-            to="/products?featured=true"
-            className="text-brand-primary font-semibold text-sm hover:text-brand-dark transition-colors flex items-center gap-1 group"
-          >
-            View all 
-            <FiChevronRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
         </div>
 
-        <div className="relative mt-8 group/carousel overflow-hidden w-full">
+        <div className="relative group/carousel overflow-hidden w-full">
           {/* Continuous Marquee Container */}
           <div className="flex w-full">
             {/* First Set */}
-            <div className="flex animate-marquee shrink-0 gap-3 sm:gap-4 md:gap-6 pr-3 sm:pr-4 md:pr-6 py-2">
+            <div className="flex animate-marquee shrink-0 gap-2 sm:gap-3 md:gap-4 pr-2 sm:pr-3 md:pr-4 py-1">
               {baseProducts.map((product, index) => (
                 <div 
                   key={`first-${product.id}-${index}`} 
-                  className="w-[130px] sm:w-[150px] md:w-[170px] lg:w-[200px] flex-shrink-0"
+                  className="w-[85px] sm:w-[100px] md:w-[120px] lg:w-[140px] flex-shrink-0"
                 >
                   <ProductCard product={product} compact={true} />
                 </div>
@@ -82,11 +104,11 @@ const FeaturedProducts = () => {
             </div>
 
             {/* Second Set (Duplicate for seamless loop) */}
-            <div className="flex animate-marquee shrink-0 gap-3 sm:gap-4 md:gap-6 pr-3 sm:pr-4 md:pr-6 py-2" aria-hidden="true">
+            <div className="flex animate-marquee shrink-0 gap-2 sm:gap-3 md:gap-4 pr-2 sm:pr-3 md:pr-4 py-1" aria-hidden="true">
               {baseProducts.map((product, index) => (
                 <div 
                   key={`second-${product.id}-${index}`} 
-                  className="w-[130px] sm:w-[150px] md:w-[170px] lg:w-[200px] flex-shrink-0"
+                  className="w-[85px] sm:w-[100px] md:w-[120px] lg:w-[140px] flex-shrink-0"
                 >
                   <ProductCard product={product} compact={true} />
                 </div>
@@ -102,7 +124,7 @@ const FeaturedProducts = () => {
           100% { transform: translateX(-100%); }
         }
         .animate-marquee {
-          animation: marquee 30s linear infinite;
+          animation: marquee 35s linear infinite;
         }
         .group\\/carousel:hover .animate-marquee {
           animation-play-state: paused;
