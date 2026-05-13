@@ -207,14 +207,14 @@ function App() {
                 </ErrorBoundary>
               } />
               <Route path="/product-checkout" element={
-                <ProtectedRoute allowedRoles={['customer']}>
+                <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer']}>
                   <ErrorBoundary fallback="page">
                     <ProductCheckout />
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
               <Route path="/order-confirmation" element={
-                <ProtectedRoute allowedRoles={['customer']}>
+                <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer']}>
                   <ErrorBoundary fallback="page">
                     <OrderConfirmation />
                   </ErrorBoundary>
@@ -265,7 +265,7 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/customer/my-orders" element={
-                <ProtectedRoute allowedRoles={['customer']}>
+                <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer']}>
                   <ErrorBoundary fallback="page">
                     <MyOrders />
                   </ErrorBoundary>

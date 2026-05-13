@@ -59,6 +59,14 @@ const ProductCard = ({ product, compact = false }) => {
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] transition-all duration-300 group flex flex-col h-full relative">
+      {/* B2B Price Badge */}
+      {product.is_b2b_price && (
+        <div className="absolute top-2 right-2 z-10">
+          <span className="bg-blue-600 text-white text-[8px] sm:text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+            B2B PRICE
+          </span>
+        </div>
+      )}
       {/* Image Container */}
       <Link to={`/products/${product.slug}`} className={`block relative w-full ${compact ? 'pt-[80%]' : 'pt-[100%]'} bg-white overflow-hidden`}>
         <div className={`absolute ${compact ? 'inset-0.5' : 'inset-2 sm:inset-4'} flex items-center justify-center mix-blend-multiply group-hover:scale-105 transition-transform duration-500`}>

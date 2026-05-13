@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   FiHome, FiCalendar, FiShoppingBag, FiClock, FiMapPin,
   FiSettings, FiUsers, FiBarChart2, FiCheckCircle, FiFileText,
@@ -32,11 +32,21 @@ const Sidebar = ({ role, isOpen, onClose, isCollapsed }) => {
           { path: '/vendor/profile', icon: <FiSettings />, label: 'Salon Profile' },
           { path: '/vendor/services', icon: <FiShoppingBag />, label: 'Services' },
           { path: '/vendor/bookings', icon: <FiCalendar />, label: 'Bookings' },
+          { path: '/products', icon: <FiPackage />, label: 'Product Catalog' },
+          { path: '/customer/my-orders', icon: <FiPackage />, label: 'My Product Orders' },
+        ];
+      case 'regular_buyer':
+        return [
+          { path: '/vendor/dashboard', icon: <FiHome />, label: 'Dashboard' },
+          { path: '/vendor/profile', icon: <FiUser />, label: 'My Profile' },
+          { path: '/products', icon: <FiPackage />, label: 'Product Catalog' },
+          { path: '/customer/my-orders', icon: <FiPackage />, label: 'My Product Orders' },
         ];
       case 'hmr':
         return [
           { path: '/hmr/dashboard', icon: <FiHome />, label: 'Dashboard' },
           { path: '/hmr/add-salon', icon: <FiPlusCircle />, label: 'Add Salon' },
+          { path: '/hmr/add-salon?type=regular_buyer', icon: <FiPlusCircle />, label: 'Add Regular Buyer' },
           { path: '/hmr/drafts', icon: <FiSave />, label: 'Drafts' },
           { path: '/hmr/submissions', icon: <FiList />, label: 'My Submissions' },
           { path: '/hmr/leaderboard', icon: <FiAward />, label: 'Leaderboard' },
@@ -56,6 +66,9 @@ const Sidebar = ({ role, isOpen, onClose, isCollapsed }) => {
   };
 
   const menuItems = getMenuItems();
+
+  const { pathname, search } = useLocation();
+  const currentPath = pathname + search;
 
   return (
     <>
@@ -83,25 +96,27 @@ const Sidebar = ({ role, isOpen, onClose, isCollapsed }) => {
           {/* Navigation Links */}
           <nav className="flex-1 overflow-y-auto p-4">
             <ul className="space-y-1">
-              {menuItems.map((item) => (
-                <li key={item.path}>
-                  <NavLink
-                    to={item.path}
-                    onClick={onClose}
-                    className={({ isActive }) =>
-                      `flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
+              {menuItems.map((item) => {
+                const isActive = currentPath === item.path;
+                  
+                return (
+                  <li key={item.path}>
+                    <NavLink
+                      to={item.path}
+                      onClick={onClose}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${
                         isActive 
                           ? 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-md' 
                           : 'text-gray-600 hover:bg-orange-50 hover:text-orange-600'
-                      } ${isCollapsed ? 'justify-center' : ''}`
-                    }
-                    title={isCollapsed ? item.label : ''}
-                  >
-                    <span className="text-xl">{item.icon}</span>
-                    <span className={`font-medium ${isCollapsed ? 'hidden' : ''}`}>{item.label}</span>
-                  </NavLink>
-                </li>
-              ))}
+                      } ${isCollapsed ? 'justify-center' : ''}`}
+                      title={isCollapsed ? item.label : ''}
+                    >
+                      <span className="text-xl">{item.icon}</span>
+                      <span className={`font-medium ${isCollapsed ? 'hidden' : ''}`}>{item.label}</span>
+                    </NavLink>
+                  </li>
+                );
+              })}
             </ul>
           </nav>
 
