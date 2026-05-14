@@ -9,96 +9,12 @@ import {
   useDevVerifyProductPaymentMutation,
 } from "../../services/api/productOrderApi";
 import { showSuccessToast, showErrorToast, showInfoToast } from "../../utils/toastConfig";
+import { IS_PRODUCTION } from "../../utils/constants";
 import InputField from "../../components/shared/InputField";
-import { FiShield, FiLock, FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
+import Card from "../../components/shared/Card";
+import { FiShield, FiLock, FiCheckCircle, FiAlertTriangle, FiCreditCard, FiInfo } from "react-icons/fi";
 
-const IS_DEV = import.meta.env.VITE_APP_ENV === "development";
-
-// ─── Dev Mock Payment Modal ──────────────────────────────────────────────────
-function DevPaymentModal({ amount, orderNumber, onSuccess, onCancel, isProcessing }) {
-  const [step, setStep] = useState("idle"); // idle | processing | done
-
-  const handlePay = async () => {
-    setStep("processing");
-    await new Promise((r) => setTimeout(r, 1500)); // simulate delay
-    setStep("done");
-    await new Promise((r) => setTimeout(r, 800));
-    onSuccess();
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
-      <div className="bg-white rounded-2xl w-full max-w-sm shadow-2xl overflow-hidden">
-        {/* Header */}
-        <div className="bg-[#072654] text-white px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <FiLock className="w-4 h-4" />
-            <span className="text-sm font-semibold tracking-wide">Razorpay Secure</span>
-          </div>
-          <div className="flex items-center gap-1 bg-yellow-400 text-[#072654] text-[10px] font-bold px-2 py-0.5 rounded-full">
-            <FiAlertTriangle className="w-3 h-3" />
-            DEV MODE
-          </div>
-        </div>
-
-        <div className="px-6 py-6">
-          {step === "done" ? (
-            <div className="text-center py-6">
-              <FiCheckCircle className="w-16 h-16 text-green-500 mx-auto mb-3" />
-              <p className="text-gray-800 font-bold text-lg">Payment Successful!</p>
-              <p className="text-gray-500 text-sm mt-1">Redirecting…</p>
-            </div>
-          ) : (
-            <>
-              <div className="text-center mb-6">
-                <p className="text-gray-500 text-xs mb-1">Total Amount</p>
-                <p className="text-3xl font-bold text-gray-900">₹{amount.toFixed(2)}</p>
-                <p className="text-gray-400 text-xs mt-1">Order #{orderNumber}</p>
-              </div>
-
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6 text-xs text-yellow-800">
-                <strong>Development Mode:</strong> No real payment will be charged. Click below to simulate a successful payment.
-              </div>
-
-              <div className="space-y-3">
-                <button
-                  onClick={handlePay}
-                  disabled={step === "processing"}
-                  className="w-full bg-[#072654] hover:bg-[#0a3070] text-white font-bold py-3.5 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-70"
-                >
-                  {step === "processing" ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Processing…
-                    </>
-                  ) : (
-                    <>
-                      <FiShield className="w-4 h-4" />
-                      Simulate Payment
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={onCancel}
-                  disabled={step === "processing"}
-                  className="w-full text-gray-500 hover:text-gray-700 text-sm py-2 transition-colors"
-                >
-                  Cancel
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="border-t border-gray-100 px-6 py-3 flex items-center justify-center gap-1 text-gray-400 text-[10px]">
-          <FiLock className="w-3 h-3" />
-          Secured by Razorpay (Dev Simulation)
-        </div>
-      </div>
-    </div>
-  );
-}
+// Removed DevPaymentModal - now uses standard Razorpay flow for both dev and prod
 
 // ─── Main Checkout Page ───────────────────────────────────────────────────────
 export default function ProductCheckout() {
@@ -111,8 +27,8 @@ export default function ProductCheckout() {
   const [devVerifyPayment] = useDevVerifyProductPaymentMutation();
   const [clearCart] = useClearProductCartMutation();
 
+  const [paymentStep, setPaymentStep] = useState(1); // 1 = Details, 2 = Processing, 3 = Success
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [showDevModal, setShowDevModal] = useState(false);
   const [pendingOrder, setPendingOrder] = useState(null);
 
   const [address, setAddress] = useState({
@@ -139,35 +55,12 @@ export default function ProductCheckout() {
   const isAddressValid = () =>
     address.street && address.city && address.state && address.postal_code && address.phone;
 
-  // ── Dev mode: complete order without Razorpay ──
-  const handleDevSuccess = async () => {
-    if (!pendingOrder) return;
-    try {
-      await devVerifyPayment(pendingOrder.order.id).unwrap();
-      await clearCart().unwrap();
-      showSuccessToast("Order placed successfully! (Dev Mode)");
-      navigate("/order-confirmation", {
-        state: { orderNumber: pendingOrder.order.order_number },
-      });
-    } catch (err) {
-      showErrorToast("Failed to complete dev payment");
-    } finally {
-      setShowDevModal(false);
-      setIsProcessingPayment(false);
-      setPendingOrder(null);
-    }
-  };
-
-  const handleDevCancel = () => {
-    setShowDevModal(false);
-    setIsProcessingPayment(false);
-    showInfoToast("Payment cancelled");
-  };
+  // Removed dev handlers - now uses standard flow
 
   // ── Real Razorpay flow ──
   const openRazorpay = (orderResponse) => {
     const options = {
-      key: import.meta.env.VITE_RAZORPAY_KEY_ID,
+      key: orderResponse.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID,
       amount: orderResponse.amount * 100,
       currency: orderResponse.currency,
       order_id: orderResponse.razorpay_order_id,
@@ -181,24 +74,29 @@ export default function ProductCheckout() {
             razorpay_signature: response.razorpay_signature,
           }).unwrap();
           await clearCart().unwrap();
-          setIsProcessingPayment(false);
+          setPaymentStep(3);
           showSuccessToast("Order placed successfully!");
-          navigate("/order-confirmation", {
-            state: { orderNumber: orderResponse.order.order_number },
-          });
+          
+          setTimeout(() => {
+            navigate("/order-confirmation", {
+              state: { orderNumber: orderResponse.order.order_number },
+            });
+          }, 2000);
         } catch {
+          setPaymentStep(1);
           setIsProcessingPayment(false);
           showErrorToast("Payment verification failed. Please contact support.");
         }
       },
       prefill: {
-        name: user?.name || "",
+        name: user?.full_name || user?.name || "",
         email: user?.email || "",
         contact: address.phone,
       },
       theme: { color: "#F89C02" },
       modal: {
         ondismiss: () => {
+          setPaymentStep(1);
           setIsProcessingPayment(false);
           showInfoToast("Payment cancelled");
         },
@@ -206,6 +104,29 @@ export default function ProductCheckout() {
     };
     const rzp = new window.Razorpay(options);
     rzp.open();
+  };
+
+  const simulatePayment = async (orderResponse) => {
+    try {
+      // Step 2 is already shown in handleProceedToPayment
+      await new Promise(r => setTimeout(r, 2000)); // Simulate processing delay
+      
+      await devVerifyPayment(orderResponse.order.id).unwrap();
+      await clearCart().unwrap();
+      
+      setPaymentStep(3);
+      showSuccessToast("Order placed successfully! (Demo Mode)");
+      
+      setTimeout(() => {
+        navigate("/order-confirmation", {
+          state: { orderNumber: orderResponse.order.order_number },
+        });
+      }, 2000);
+    } catch (err) {
+      setPaymentStep(1);
+      setIsProcessingPayment(false);
+      showErrorToast("Failed to complete demo payment simulation");
+    }
   };
 
   const handleProceedToPayment = async () => {
@@ -216,6 +137,7 @@ export default function ProductCheckout() {
 
     try {
       setIsProcessingPayment(true);
+      setPaymentStep(2); // Show processing overlay
 
       const itemsData = cart.items.map((item) => ({
         product_id: item.product_id || item.id,
@@ -231,17 +153,14 @@ export default function ProductCheckout() {
         items: itemsData,
       }).unwrap();
 
-      // If backend signals dev mode (placeholder keys), show mock UI
       if (orderResponse.dev_mode) {
-        setPendingOrder(orderResponse);
-        setShowDevModal(true);
-        return; // don't set isProcessingPayment to false yet
+        simulatePayment(orderResponse);
+      } else {
+        openRazorpay(orderResponse);
       }
-
-      // Production: open real Razorpay
-      openRazorpay(orderResponse);
     } catch (err) {
       setIsProcessingPayment(false);
+      setPaymentStep(1);
       showErrorToast(err?.data?.detail || "Failed to initiate payment");
     }
   };
@@ -265,15 +184,49 @@ export default function ProductCheckout() {
     <div className="min-h-screen bg-bg-secondary">
       <PublicNavbar />
 
-      {/* Dev Payment Modal */}
-      {showDevModal && pendingOrder && (
-        <DevPaymentModal
-          amount={subtotal}
-          orderNumber={pendingOrder.order.order_number}
-          onSuccess={handleDevSuccess}
-          onCancel={handleDevCancel}
-          isProcessing={isProcessingPayment}
-        />
+      {/* Processing Payment Animation (Step 2) */}
+      {paymentStep === 2 && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] px-4">
+          <div className="bg-white rounded-2xl max-w-md w-full text-center p-12 shadow-2xl">
+            <div className="relative mx-auto w-24 h-24 mb-6">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#F89C02] to-orange-600 rounded-full animate-ping opacity-75"></div>
+              <div className="relative bg-gradient-to-r from-[#F89C02] to-orange-600 rounded-full w-24 h-24 flex items-center justify-center">
+                <FiCreditCard className="text-white text-4xl animate-pulse" />
+              </div>
+            </div>
+            <h2 className="text-2xl font-display font-bold text-gray-900 mb-3">
+              Processing Payment...
+            </h2>
+            <p className="text-gray-600 font-body mb-6">
+              Please wait while we process your payment securely
+            </p>
+            <div className="flex justify-center space-x-2">
+              <div className="w-3 h-3 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+              <div className="w-3 h-3 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+              <div className="w-3 h-3 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Screen (Step 3) */}
+      {paymentStep === 3 && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] px-4">
+          <div className="bg-white rounded-2xl max-w-md w-full text-center p-12 shadow-2xl">
+            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <FiCheckCircle className="text-green-600 text-5xl" />
+            </div>
+            <h2 className="text-3xl font-display font-bold text-gray-900 mb-3">
+              Payment Successful! 🎉
+            </h2>
+            <p className="text-gray-600 font-body mb-2">
+              Your order has been placed successfully.
+            </p>
+            <p className="text-sm text-gray-500 font-body">
+              Redirecting to confirmation...
+            </p>
+          </div>
+        </div>
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-8">
@@ -290,10 +243,24 @@ export default function ProductCheckout() {
           </button>
           <h1 className="font-display font-bold text-3xl text-neutral-black mb-2">Checkout</h1>
           <p className="font-body text-neutral-gray-500">Provide shipping details and complete your purchase</p>
-          {IS_DEV && (
-            <div className="mt-3 flex items-center gap-2 text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 px-3 py-2 rounded-lg w-fit">
-              <FiAlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-              Development mode — payment will be simulated without charging you
+          
+          {/* Demo Mode Warning - Matching Vendor Payment flow */}
+          {!IS_PRODUCTION && (
+            <div className="mt-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-400 rounded-lg p-6 shadow-lg">
+              <div className="flex items-start">
+                <FiInfo className="text-blue-600 mt-1 mr-4 flex-shrink-0 text-2xl" />
+                <div>
+                  <h3 className="font-heading font-bold text-blue-900 text-lg mb-2">
+                    💳 Demo Mode - Test Payment
+                  </h3>
+                  <p className="text-sm text-blue-800 font-body mb-2">
+                    This is a <strong>demo Razorpay integration</strong> using test credentials.
+                  </p>
+                  <p className="text-sm text-blue-800 font-body">
+                    You'll be redirected to Razorpay's secure payment gateway to complete the transaction.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -368,7 +335,7 @@ export default function ProductCheckout() {
               </button>
 
               <p className="text-xs text-center text-neutral-gray-400 mt-4">
-                {IS_DEV ? "Dev mode — payment simulated" : "Secure checkout powered by Razorpay"}
+                {IS_PRODUCTION ? "Secure checkout powered by Razorpay" : "Demo mode — payment simulated"}
               </p>
             </div>
           </div>
