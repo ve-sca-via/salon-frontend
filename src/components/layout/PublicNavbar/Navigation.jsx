@@ -17,7 +17,7 @@ export function Navigation({ onMenuToggle, isMenuOpen }) {
   const { data: productCart } = useGetProductCartQuery(undefined, { skip: !isAuthenticated });
 
   return (
-    <div className="content-stretch flex gap-[12px] md:gap-[60px] lg:gap-[120px] xl:gap-[237px] items-center justify-between relative w-full max-w-[1296px]">
+    <div className="flex gap-3 md:gap-8 lg:gap-12 items-center justify-between relative w-full max-w-[1296px]">
       <Link
         to="/"
         className="relative shrink-0"

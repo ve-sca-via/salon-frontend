@@ -11,7 +11,7 @@ export function Actions() {
   const { data: productCart } = useGetProductCartQuery();
 
   return (
-    <div className="hidden lg:flex basis-0 content-stretch gap-[8px] grow items-center justify-end min-h-px min-w-px relative shrink-0">
+    <div className="hidden lg:flex basis-0 gap-[8px] grow items-center justify-end min-h-px min-w-px relative shrink-0">
       {/* Service Cart Icon */}
       <button
         onClick={() => navigate("/cart")}

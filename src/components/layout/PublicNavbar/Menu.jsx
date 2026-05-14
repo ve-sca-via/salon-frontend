@@ -21,7 +21,7 @@ export function Menu({ onItemClick }) {
   const [pagesOpen, setPagesOpen] = useState(false);
 
   return (
-    <div className="hidden lg:flex content-stretch gap-[20px] items-start relative shrink-0">
+    <div className="hidden lg:flex gap-[16px] items-start relative shrink-0">
       <MenuItem to="/" onClick={onItemClick}>
         Home
       </MenuItem>
