@@ -36,6 +36,8 @@ import WhyChooseUs from "../../components/shared/WhyChooseUs";
 import ClientTestimonials from "../../components/shared/ClientTestimonials";
 import InstagramFeed from "../../components/shared/InstagramFeed";
 import UserQuickDashboard from "../../components/shared/UserQuickDashboard";
+import FeaturedProducts from "../../components/shared/FeaturedProducts";
+import ProductCatalog from "../../components/shared/ProductCatalog";
 // Carousel items
 import carouselImg1 from "../../assets/images/website pic 1.png";
 import carouselImg2 from "../../assets/images/website pic 2.png";
@@ -310,8 +312,14 @@ const Home = () => {
       {/* Dynamic Section: Search Box (Unauthenticated) or Dashboard (Authenticated) */}
       {isAuthenticated ? <UserQuickDashboard /> : <SearchBox />}
 
+      {/* Featured Products */}
+      <FeaturedProducts />
+
       {/* Service categories */}
       <ServicesSection />
+
+      {/* Products Catalog */}
+      <ProductCatalog />
 
       {/* Top-rated salons */}
       <FeaturedSaloons />

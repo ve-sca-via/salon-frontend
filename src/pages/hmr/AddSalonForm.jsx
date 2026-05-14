@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -64,6 +64,9 @@ import { FiUpload, FiMapPin, FiChevronLeft, FiChevronRight, FiCheck, FiPlus, FiT
 
 const AddSalonForm = () => {
   const { draftId } = useParams(); // Get draft ID from URL if editing
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const typeFromQuery = queryParams.get('type'); // 'regular_buyer' or null
 
   // RTK Query hooks 
   const [submitVendorRequest, { isLoading: isSubmitting }] = useSubmitVendorRequestMutation();
@@ -107,6 +110,9 @@ const AddSalonForm = () => {
 
   // Location state
   const [gettingLocation, setGettingLocation] = useState(false);
+
+  // Request type (salon or regular_buyer)
+  const [requestType, setRequestType] = useState(typeFromQuery || 'salon');
 
   // Edit mode derived from URL param
   const isEditMode = Boolean(draftId);
@@ -250,9 +256,12 @@ const AddSalonForm = () => {
       console.log('==========================');
 
       setCurrentStep(startStep);
+      setRequestType(draft.request_type || 'salon');
       showInfoToast(`Draft loaded. Starting from Step ${startStep}...`);
+    } else if (!draftId) {
+      setRequestType(typeFromQuery || 'salon');
     }
-  }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset]);
+  }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset, typeFromQuery]);
 
   const handleImageUpload = async (e, type) => {
     const files = Array.from(e.target.files);
@@ -390,7 +399,7 @@ const AddSalonForm = () => {
           setCurrentStep(3);
           return;
         }
-        if (services.length === 0 || !services.some(s => s.name && s.price)) {
+        if (requestType !== 'regular_buyer' && (services.length === 0 || !services.some(s => s.name && s.price))) {
           showErrorToast('At least one service is required for submission');
           setCurrentStep(2);
           return;
@@ -591,6 +600,7 @@ const AddSalonForm = () => {
             sanitized_tools: !!data.facility_sanitized_tools,
           }
         },
+        request_type: requestType,
         facilities: {
           air_conditioner: !!data.facility_air_conditioner,
           car_parking: !!data.facility_car_parking,
@@ -776,57 +786,84 @@ const AddSalonForm = () => {
       }
     }
 
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (currentStep === 1) {
+      if (requestType === 'regular_buyer') {
+        setCurrentStep(3);
+      } else {
+        setCurrentStep(2);
+      }
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
+    } else if (currentStep === 3) {
+      if (requestType === 'regular_buyer') {
+        setCurrentStep(5);
+      } else {
+        setCurrentStep(4);
+      }
+    } else if (currentStep === 4) {
+      setCurrentStep(5);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
+    if (currentStep === 5 && requestType === 'regular_buyer') {
+      setCurrentStep(3);
+    } else if (currentStep === 3 && requestType === 'regular_buyer') {
+      setCurrentStep(1);
+    } else if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const renderStepIndicator = () => (
-    <div className="flex items-center justify-center mb-8 px-2">
-      {[1, 2, 3, 4, 5].map((step) => (
-        <React.Fragment key={step}>
-          <div className="flex flex-col items-center flex-1 max-w-[80px]">
-            <div
-              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-body font-semibold transition-all text-sm sm:text-base ${currentStep >= step
-                  ? 'bg-accent-orange text-white'
-                  : 'bg-gray-200 text-gray-500'
-                }`}
-            >
-              {currentStep > step ? <FiCheck size={16} className="sm:w-5 sm:h-5" /> : step}
+  const renderStepIndicator = () => {
+    // Define steps based on request type
+    const steps = requestType === 'regular_buyer' 
+      ? [
+          { id: 1, label: 'Basic Info', mobileLabel: 'Info' },
+          { id: 3, label: 'Photos', mobileLabel: 'Photos' },
+          { id: 5, label: 'Review', mobileLabel: 'Review' }
+        ]
+      : [
+          { id: 1, label: 'Basic Info', mobileLabel: 'Info' },
+          { id: 2, label: 'Services', mobileLabel: 'Services' },
+          { id: 3, label: 'Photos', mobileLabel: 'Photos' },
+          { id: 4, label: 'Facilities', mobileLabel: 'Facilities' },
+          { id: 5, label: 'Review', mobileLabel: 'Review' }
+        ];
+
+    return (
+      <div className="flex items-center justify-center mb-8 px-2">
+        {steps.map((step, index) => (
+          <React.Fragment key={step.id}>
+            <div className="flex flex-col items-center flex-1 max-w-[80px]">
+              <div
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-body font-semibold transition-all text-sm sm:text-base ${currentStep >= step.id
+                    ? 'bg-accent-orange text-white'
+                    : 'bg-gray-200 text-gray-500'
+                  }`}
+              >
+                {currentStep > step.id ? <FiCheck size={16} className="sm:w-5 sm:h-5" /> : index + 1}
+              </div>
+              <span className="text-xs font-body mt-2 text-gray-600 text-center hidden sm:block">
+                {step.label}
+              </span>
+              <span className="text-xs font-body mt-1 text-gray-600 text-center sm:hidden">
+                {step.mobileLabel}
+              </span>
             </div>
-            <span className="text-xs font-body mt-2 text-gray-600 text-center hidden sm:block">
-              {step === 1 && 'Basic Info'}
-              {step === 2 && 'Services'}
-              {step === 3 && 'Photos'}
-              {step === 4 && 'Facilities'}
-              {step === 5 && 'Review'}
-            </span>
-            <span className="text-xs font-body mt-1 text-gray-600 text-center sm:hidden">
-              {step === 1 && 'Info'}
-              {step === 2 && 'Services'}
-              {step === 3 && 'Photos'}
-              {step === 4 && 'Facilities'}
-              {step === 5 && 'Review'}
-            </span>
-          </div>
-          {step < 5 && (
-            <div
-              className={`h-1 flex-1 mx-1 sm:mx-2 transition-all ${currentStep > step ? 'bg-accent-orange' : 'bg-gray-200'
-                }`}
-            />
-          )}
-        </React.Fragment>
-      ))}
-    </div>
-  );
+            {index < steps.length - 1 && (
+              <div
+                className={`h-1 flex-1 mx-1 sm:mx-2 transition-all ${currentStep >= steps[index+1].id ? 'bg-accent-orange' : 'bg-gray-200'
+                  }`}
+              />
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+    );
+  };
 
   // Show loading state while fetching draft
   if (loadingDraft) {
@@ -856,7 +893,9 @@ const AddSalonForm = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900 mb-2">
-              {isEditMode ? (draftData?.status === 'rejected' ? 'Edit & Resubmit Rejected Salon' : 'Edit Draft Salon') : 'Add New Salon'}
+              {isEditMode 
+                ? (draftData?.status === 'rejected' ? 'Edit & Resubmit Rejected Request' : 'Edit Draft') 
+                : (requestType === 'regular_buyer' ? 'Add Regular Buyer' : 'Add New Salon')}
             </h1>
             <p className="text-gray-600 font-body">
               {isEditMode ? (draftData?.status === 'rejected' ? 'Fix the issues and resubmit for approval' : 'Continue editing your draft or submit for approval') : 'Submit a new salon for approval'}
@@ -918,8 +957,8 @@ const AddSalonForm = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField
-                  label="Salon Name"
-                  {...register('name', { required: 'Salon name is required' })}
+                  label={requestType === 'regular_buyer' ? "Shop Name" : "Salon Name"}
+                  {...register('name', { required: `${requestType === 'regular_buyer' ? 'Shop' : 'Salon'} name is required` })}
                   error={errors.name?.message}
                   placeholder="e.g., Glamour Beauty Salon"
                   required
@@ -1996,49 +2035,51 @@ const AddSalonForm = () => {
                   </div>
                 </div>
 
-                {/* Services */}
-                <div className="border-l-4 border-purple-500 pl-4">
-                  <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
-                    <span className="bg-purple-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">2</span>
-                    Services ({services.filter(s => s.name && s.price).length})
-                  </h3>
-                  {services.filter(s => s.name && s.price).length === 0 ? (
-                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg text-sm font-body">
-                      ⚠️ No services added. Please go back to add at least one service.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {services.filter(s => s.name && s.price).map((service, index) => (
-                        <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-purple-300 transition-all">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="font-semibold text-gray-900 font-body">{service.name}</span>
-                                <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                                  {service.category}
-                                </span>
-                                {service.gender_category && service.gender_category !== 'both' && (
-                                  <span className={`inline-block px-2 py-1 text-[10px] rounded-full uppercase tracking-wider font-semibold ${
-                                    service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
-                                  }`}>
-                                    {service.gender_category}
+                {/* Services - Hidden for Regular Buyers */}
+                {requestType !== 'regular_buyer' && (
+                  <div className="border-l-4 border-purple-500 pl-4">
+                    <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
+                      <span className="bg-purple-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">2</span>
+                      Services ({services.filter(s => s.name && s.price).length})
+                    </h3>
+                    {services.filter(s => s.name && s.price).length === 0 ? (
+                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg text-sm font-body">
+                        ⚠️ No services added. Please go back to add at least one service.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {services.filter(s => s.name && s.price).map((service, index) => (
+                          <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-purple-300 transition-all">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="font-semibold text-gray-900 font-body">{service.name}</span>
+                                  <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                    {service.category}
                                   </span>
+                                  {service.gender_category && service.gender_category !== 'both' && (
+                                    <span className={`inline-block px-2 py-1 text-[10px] rounded-full uppercase tracking-wider font-semibold ${
+                                      service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
+                                    }`}>
+                                      {service.gender_category}
+                                    </span>
+                                  )}
+                                </div>
+                                {service.description && (
+                                  <p className="text-xs text-gray-600 mb-2">{service.description}</p>
                                 )}
-                              </div>
-                              {service.description && (
-                                <p className="text-xs text-gray-600 mb-2">{service.description}</p>
-                              )}
-                              <div className="flex gap-4 text-xs text-gray-600">
-                                <span>💰 ₹{service.price}</span>
-                                <span>⏱️ {service.duration_minutes || service.duration} mins</span>
+                                <div className="flex gap-4 text-xs text-gray-600">
+                                  <span>💰 ₹{service.price}</span>
+                                  <span>⏱️ {service.duration_minutes || service.duration} mins</span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Photos */}
                 <div className="border-l-4 border-pink-500 pl-4">
@@ -2211,14 +2252,16 @@ const AddSalonForm = () => {
                       )}
                       <span>Basic information filled (including owner details)</span>
                     </div>
-                    <div className={`flex items-center gap-2 ${services.filter(s => s.name && s.price).length > 0 ? 'text-green-700' : 'text-gray-600'}`}>
-                      {services.filter(s => s.name && s.price).length > 0 ? (
-                        <FiCheck className="text-green-600" size={16} />
-                      ) : (
-                        <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
-                      )}
-                      <span>At least one service added ({services.filter(s => s.name && s.price).length} services)</span>
-                    </div>
+                    {requestType !== 'regular_buyer' && (
+                      <div className={`flex items-center gap-2 ${services.filter(s => s.name && s.price).length > 0 ? 'text-green-700' : 'text-gray-600'}`}>
+                        {services.filter(s => s.name && s.price).length > 0 ? (
+                          <FiCheck className="text-green-600" size={16} />
+                        ) : (
+                          <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
+                        )}
+                        <span>At least one service added ({services.filter(s => s.name && s.price).length} services)</span>
+                      </div>
+                    )}
                     <div className={`flex items-center gap-2 ${coverImage ? 'text-green-700' : 'text-gray-600'}`}>
                       {coverImage ? (
                         <FiCheck className="text-green-600" size={16} />

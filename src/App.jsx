@@ -57,10 +57,15 @@ const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 const Home = lazy(() => import('./pages/public/Home'));
 const PublicSalonListing = lazy(() => import('./pages/public/PublicSalonListing'));
 const SalonDetail = lazy(() => import('./pages/public/SalonDetail'));
+const PublicProductListing = lazy(() => import('./pages/public/PublicProductListing'));
+const ProductDetail = lazy(() => import('./pages/public/ProductDetail'));
 const SalonFeedback = lazy(() => import('./pages/public/SalonFeedback'));
 const ServiceBooking = lazy(() => import('./pages/public/ServiceBooking'));
 const Cart = lazy(() => import('./pages/public/Cart'));
+const ProductCart = lazy(() => import('./pages/public/ProductCart'));
 const Checkout = lazy(() => import('./pages/public/Checkout'));
+const ProductCheckout = lazy(() => import('./pages/public/ProductCheckout'));
+const OrderConfirmation = lazy(() => import('./pages/public/OrderConfirmation'));
 const Payment = lazy(() => import('./pages/public/Payment'));
 const BookingConfirmation = lazy(() => import('./pages/public/BookingConfirmation'));
 const Careers = lazy(() => import('./pages/public/Careers'));
@@ -75,6 +80,8 @@ const NotFoundPage = lazy(() => import('./pages/public/NotFoundPage'));
 const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
 const Favorites = lazy(() => import('./pages/customer/Favorites'));
 const MyReviews = lazy(() => import('./pages/customer/MyReviews'));
+const MyOrders = lazy(() => import('./pages/customer/MyOrders'));
+const TrackOrder = lazy(() => import('./pages/customer/TrackOrder'));
 const CustomerProfile = lazy(() => import('./pages/customer/CustomerProfile'));
 
 // RM (Relationship Manager) pages
@@ -164,6 +171,16 @@ function App() {
                   <SalonDetail />
                 </ErrorBoundary>
               } />
+              <Route path="/products" element={
+                <ErrorBoundary fallback="page">
+                  <PublicProductListing />
+                </ErrorBoundary>
+              } />
+              <Route path="/products/:slug" element={
+                <ErrorBoundary fallback="page">
+                  <ProductDetail />
+                </ErrorBoundary>
+              } />
               <Route path="/salons/:id/feedback" element={
                 <ErrorBoundary fallback="page">
                   <SalonFeedback />
@@ -179,10 +196,29 @@ function App() {
                   <Cart />
                 </ErrorBoundary>
               } />
+              <Route path="/product-cart" element={
+                <ErrorBoundary fallback="page">
+                  <ProductCart />
+                </ErrorBoundary>
+              } />
               <Route path="/checkout" element={
                 <ErrorBoundary fallback="page">
                   <Checkout />
                 </ErrorBoundary>
+              } />
+              <Route path="/product-checkout" element={
+                <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer', 'admin', 'hmr']}>
+                  <ErrorBoundary fallback="page">
+                    <ProductCheckout />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/order-confirmation" element={
+                <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer', 'admin', 'hmr']}>
+                  <ErrorBoundary fallback="page">
+                    <OrderConfirmation />
+                  </ErrorBoundary>
+                </ProtectedRoute>
               } />
               <Route path="/payment" element={
                 <ErrorBoundary fallback="page">
@@ -225,6 +261,20 @@ function App() {
                 <ProtectedRoute allowedRoles={['customer']}>
                   <ErrorBoundary fallback="page">
                     <MyReviews />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/customer/my-orders" element={
+                <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer', 'admin', 'hmr']}>
+                  <ErrorBoundary fallback="page">
+                    <MyOrders />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/customer/track-order" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <ErrorBoundary fallback="page">
+                    <TrackOrder />
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
