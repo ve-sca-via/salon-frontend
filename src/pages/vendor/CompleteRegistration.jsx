@@ -248,13 +248,13 @@ const CompleteRegistration = () => {
               </div>
               <div className="ml-4 flex-1">
                 <h3 className="text-lg font-heading font-bold text-gray-900 mb-1">
-                  Your Salon is Approved!
+                  Your {tokenData.request_type === 'regular_buyer' ? 'Business Account' : 'Salon'} is Approved!
                 </h3>
                 <p className="text-gray-700 font-body mb-2">
                   <span className="font-semibold">Email:</span> {tokenData.email}
                 </p>
                 <p className="text-sm text-gray-600 font-body">
-                  Complete your registration to access your vendor dashboard and start managing your salon.
+                  Complete your registration to access your partner dashboard and start managing your {tokenData.request_type === 'regular_buyer' ? 'account' : 'salon'}.
                 </p>
               </div>
             </div>

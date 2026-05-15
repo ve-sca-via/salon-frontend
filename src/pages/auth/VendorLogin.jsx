@@ -138,10 +138,12 @@ const VendorLogin = () => {
         throw new Error('Incomplete user data received');
       }
 
-      // Vendor/salon role validation - only vendors/salon owners can login here
-      const userRole = response.user.role || '';
-      if (userRole !== 'vendor' && userRole !== 'salon') {
-        throw new Error('Access denied. This portal is for salon owners only.');
+      // Vendor/salon/regular_buyer role validation
+      const userRole = response.user.role || response.user.user_role || '';
+      const allowedRoles = ['vendor', 'regular_buyer'];
+      
+      if (!allowedRoles.includes(userRole)) {
+        throw new Error('Access denied. This portal is for business partners only.');
       }
 
       // Handle "Remember me" functionality
@@ -249,10 +251,10 @@ const VendorLogin = () => {
             <div className="bg-primary-white rounded-[10px] shadow-2xl p-8 lg:p-10">
               {/* Form Header */}
               <h2 className="font-display font-bold text-[32px] text-neutral-black mb-2">
-                Vendor Portal Sign In
+                Business Partner Sign In
               </h2>
               <p className="font-body text-[16px] text-neutral-gray-500 mb-8">
-                For Salon Owners & Partners
+                For Salon Owners & Regular Buyers
               </p>
 
               {/* Login Form */}
@@ -341,10 +343,10 @@ const VendorLogin = () => {
                   </div>
                   <div className="ml-3">
                     <h3 className="text-sm font-body font-semibold text-blue-900 mb-1">
-                      For Verified Salon Owners
+                      For Verified Business Partners
                     </h3>
                     <p className="text-sm text-blue-700 font-body">
-                      This portal is exclusively for verified salon vendors. Need approval? Contact your Relationship Manager.
+                      This portal is exclusively for verified salon vendors and regular buyers. Need approval? Contact your Relationship Manager.
                     </p>
                   </div>
                 </div>

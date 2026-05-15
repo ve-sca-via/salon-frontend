@@ -26,7 +26,7 @@
  */
 
 import React, { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch } from 'react-redux';
@@ -51,16 +51,22 @@ const Login = lazy(() => import('./pages/auth/Login'));
 const RMLogin = lazy(() => import('./pages/auth/RMLogin'));
 const VendorLogin = lazy(() => import('./pages/auth/VendorLogin'));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const Signup = lazy(() => import('./pages/auth/Signup'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 
 // Public pages
 const Home = lazy(() => import('./pages/public/Home'));
 const PublicSalonListing = lazy(() => import('./pages/public/PublicSalonListing'));
 const SalonDetail = lazy(() => import('./pages/public/SalonDetail'));
+const PublicProductListing = lazy(() => import('./pages/public/PublicProductListing'));
+const ProductDetail = lazy(() => import('./pages/public/ProductDetail'));
 const SalonFeedback = lazy(() => import('./pages/public/SalonFeedback'));
 const ServiceBooking = lazy(() => import('./pages/public/ServiceBooking'));
 const Cart = lazy(() => import('./pages/public/Cart'));
+const ProductCart = lazy(() => import('./pages/public/ProductCart'));
 const Checkout = lazy(() => import('./pages/public/Checkout'));
+const ProductCheckout = lazy(() => import('./pages/public/ProductCheckout'));
+const OrderConfirmation = lazy(() => import('./pages/public/OrderConfirmation'));
 const Payment = lazy(() => import('./pages/public/Payment'));
 const BookingConfirmation = lazy(() => import('./pages/public/BookingConfirmation'));
 const Careers = lazy(() => import('./pages/public/Careers'));
@@ -75,6 +81,8 @@ const NotFoundPage = lazy(() => import('./pages/public/NotFoundPage'));
 const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
 const Favorites = lazy(() => import('./pages/customer/Favorites'));
 const MyReviews = lazy(() => import('./pages/customer/MyReviews'));
+const MyOrders = lazy(() => import('./pages/customer/MyOrders'));
+const TrackOrder = lazy(() => import('./pages/customer/TrackOrder'));
 const CustomerProfile = lazy(() => import('./pages/customer/CustomerProfile'));
 
 // RM (Relationship Manager) pages
@@ -84,6 +92,14 @@ const Drafts = lazy(() => import('./pages/hmr/Drafts'));
 const SubmissionHistory = lazy(() => import('./pages/hmr/SubmissionHistory'));
 const RMProfile = lazy(() => import('./pages/hmr/RMProfile'));
 const RMLeaderboard = lazy(() => import('./pages/hmr/RMLeaderboard'));
+
+// Wrapper to force full remount of AddSalonForm on every navigation.
+// Without this, React reuses the component instance and draft data
+// leaks when navigating between edit-salon, add-salon, and add-regular-buyer.
+const AddSalonFormKeyed = () => {
+  const location = useLocation();
+  return <AddSalonForm key={location.key} />;
+};
 
 // Vendor pages
 const VendorDashboard = lazy(() => import('./pages/vendor/VendorDashboard'));
@@ -164,6 +180,16 @@ function App() {
                   <SalonDetail />
                 </ErrorBoundary>
               } />
+              <Route path="/products" element={
+                <ErrorBoundary fallback="page">
+                  <PublicProductListing />
+                </ErrorBoundary>
+              } />
+              <Route path="/products/:slug" element={
+                <ErrorBoundary fallback="page">
+                  <ProductDetail />
+                </ErrorBoundary>
+              } />
               <Route path="/salons/:id/feedback" element={
                 <ErrorBoundary fallback="page">
                   <SalonFeedback />
@@ -179,10 +205,29 @@ function App() {
                   <Cart />
                 </ErrorBoundary>
               } />
+              <Route path="/product-cart" element={
+                <ErrorBoundary fallback="page">
+                  <ProductCart />
+                </ErrorBoundary>
+              } />
               <Route path="/checkout" element={
                 <ErrorBoundary fallback="page">
                   <Checkout />
                 </ErrorBoundary>
+              } />
+              <Route path="/product-checkout" element={
+                <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer', 'admin', 'hmr']}>
+                  <ErrorBoundary fallback="page">
+                    <ProductCheckout />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/order-confirmation" element={
+                <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer', 'admin', 'hmr']}>
+                  <ErrorBoundary fallback="page">
+                    <OrderConfirmation />
+                  </ErrorBoundary>
+                </ProtectedRoute>
               } />
               <Route path="/payment" element={
                 <ErrorBoundary fallback="page">
@@ -197,7 +242,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/rm-login" element={<RMLogin />} />
               <Route path="/vendor-login" element={<VendorLogin />} />
-              <Route path="/signup" element={<Navigate to="/login" replace />} />
+              <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               
@@ -228,6 +273,20 @@ function App() {
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
+              <Route path="/customer/my-orders" element={
+                <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer', 'admin', 'hmr']}>
+                  <ErrorBoundary fallback="page">
+                    <MyOrders />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
+              <Route path="/customer/track-order" element={
+                <ProtectedRoute allowedRoles={['customer']}>
+                  <ErrorBoundary fallback="page">
+                    <TrackOrder />
+                  </ErrorBoundary>
+                </ProtectedRoute>
+              } />
               <Route path="/customer/profile" element={
                 <ProtectedRoute allowedRoles={['customer']}>
                   <ErrorBoundary fallback="page">
@@ -249,14 +308,14 @@ function App() {
               <Route path="/hmr/add-salon" element={
                 <RMProtectedRoute>
                   <ErrorBoundary fallback="page">
-                    <AddSalonForm />
+                    <AddSalonFormKeyed />
                   </ErrorBoundary>
                 </RMProtectedRoute>
               } />
               <Route path="/hmr/edit-salon/:draftId" element={
                 <RMProtectedRoute>
                   <ErrorBoundary fallback="page">
-                    <AddSalonForm />
+                    <AddSalonFormKeyed />
                   </ErrorBoundary>
                 </RMProtectedRoute>
               } />

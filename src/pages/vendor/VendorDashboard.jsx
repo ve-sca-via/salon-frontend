@@ -40,7 +40,7 @@ import {
 } from '../../services/api/vendorApi';
 import { 
   FiCalendar, FiTrendingUp, FiShoppingBag, FiUsers, 
-  FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle, FiLock
+  FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle, FiLock, FiPackage
 } from 'react-icons/fi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import { SkeletonStatCard, SkeletonTableRow } from '../../components/shared/Skeleton';
@@ -143,7 +143,7 @@ const VendorDashboard = () => {
    */
   if ((analyticsLoading && !analytics) || (salonLoading && !salonProfile)) {
     return (
-      <DashboardLayout role="vendor">
+      <DashboardLayout role={user?.role || "vendor"}>
         <div className="space-y-8 p-4 md:p-6">
           {/* Header Skeleton */}
           <div className="animate-pulse">
@@ -189,7 +189,7 @@ const VendorDashboard = () => {
    */
   if (salonError || analyticsError) {
     return (
-      <DashboardLayout role="vendor">
+      <DashboardLayout role={user?.role || "vendor"}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Card className="max-w-md text-center">
             <FiAlertCircle className="text-red-600 text-5xl mx-auto mb-4" />
@@ -197,7 +197,7 @@ const VendorDashboard = () => {
               Failed to Load Dashboard
             </h2>
             <p className="text-gray-600 font-body mb-4">
-              {salonError?.message || analyticsError?.message || "Unable to fetch dashboard data"}
+              {salonError?.data?.detail || analyticsError?.data?.detail || salonError?.message || analyticsError?.message || "Unable to fetch dashboard data"}
             </p>
             <Button onClick={() => window.location.reload()} className="bg-accent-orange text-white">
               Retry
@@ -210,52 +210,95 @@ const VendorDashboard = () => {
 
   /**
    * Analytics stats cards configuration
-   * Note: Change percentages are currently static - consider implementing
-   * real comparison with previous period from analytics API
+   * Note: Filtered based on user role (regular_buyer vs vendor)
    */
-  const stats = [
-    {
-      title: 'Total Bookings',
-      value: analytics?.total_bookings || 0,
-      icon: <FiCalendar className="text-blue-600" size={24} />,
-      bgColor: 'bg-blue-100',
-      // TODO: Replace with real comparison data from API
-      change: analytics?.bookings_change || null,
-      changeType: 'increase',
-    },
-    {
-      title: 'Revenue',
-      value: `₹${analytics?.total_revenue || 0}`,
-      icon: <FiTrendingUp className="text-green-600" size={24} />,
-      bgColor: 'bg-green-100',
-      change: analytics?.revenue_change || null,
-      changeType: 'increase',
-    },
-    {
-      title: 'Active Services',
-      value: analytics?.active_services || 0,
-      icon: <FiShoppingBag className="text-accent-orange" size={24} />,
-      bgColor: 'bg-orange-100',
-      change: analytics?.services_change || null,
-      changeType: 'neutral',
-    },
-    {
-      title: 'Average Rating',
-      value: (analytics?.average_rating || 0).toFixed(1),
-      icon: <FiStar className="text-yellow-600" size={24} />,
-      bgColor: 'bg-yellow-100',
-      change: analytics?.rating_change || null,
-      changeType: 'increase',
-    },
-    {
-      title: 'Pending Bookings',
-      value: analytics?.pending_bookings || 0,
-      icon: <FiClock className="text-red-600" size={24} />,
-      bgColor: 'bg-red-100',
-      change: analytics?.pending_change || null,
-      changeType: 'decrease',
-    },
-  ];
+  const userRole = user?.role || user?.user_role || 'vendor';
+  const isRegularBuyer = userRole === 'regular_buyer';
+
+  const stats = [];
+
+  if (isRegularBuyer) {
+    // Stats for Regular Buyers
+    stats.push(
+      {
+        title: 'Total Product Orders',
+        value: analytics?.total_product_orders || 0,
+        icon: <FiPackage className="text-blue-600" size={24} />,
+        bgColor: 'bg-blue-100',
+        change: analytics?.orders_change || null,
+        changeType: 'increase',
+      },
+      {
+        title: 'Total Spending',
+        value: `₹${(analytics?.total_product_spending || 0).toLocaleString()}`,
+        icon: <FiTrendingUp className="text-green-600" size={24} />,
+        bgColor: 'bg-green-100',
+        change: analytics?.spending_change || null,
+        changeType: 'increase',
+      },
+      {
+        title: 'Pending Orders',
+        value: analytics?.pending_product_orders || 0,
+        icon: <FiClock className="text-red-600" size={24} />,
+        bgColor: 'bg-red-100',
+        change: analytics?.pending_orders_change || null,
+        changeType: 'decrease',
+      }
+    );
+  } else {
+    // Stats for Standard Vendors (Salon + Product Purchases)
+    stats.push(
+      {
+        title: 'Total Bookings',
+        value: analytics?.total_bookings || 0,
+        icon: <FiCalendar className="text-blue-600" size={24} />,
+        bgColor: 'bg-blue-100',
+      },
+      {
+        title: 'Revenue',
+        value: `₹${(analytics?.total_revenue || 0).toLocaleString()}`,
+        icon: <FiTrendingUp className="text-green-600" size={24} />,
+        bgColor: 'bg-green-100',
+      },
+      {
+        title: 'Pending Bookings',
+        value: analytics?.pending_bookings || 0,
+        icon: <FiClock className="text-red-600" size={24} />,
+        bgColor: 'bg-red-100',
+      },
+      {
+        title: 'Active Services',
+        value: analytics?.active_services || 0,
+        icon: <FiShoppingBag className="text-accent-orange" size={24} />,
+        bgColor: 'bg-orange-100',
+      },
+      {
+        title: 'Average Rating',
+        value: (analytics?.average_rating || 0).toFixed(1),
+        icon: <FiStar className="text-yellow-600" size={24} />,
+        bgColor: 'bg-yellow-100',
+      },
+      // Product Stats for Vendor
+      {
+        title: 'Product Orders',
+        value: analytics?.total_product_orders || 0,
+        icon: <FiPackage className="text-indigo-600" size={24} />,
+        bgColor: 'bg-indigo-100',
+      },
+      {
+        title: 'Total Spending',
+        value: `₹${(analytics?.total_product_spending || 0).toLocaleString()}`,
+        icon: <FiTrendingUp className="text-emerald-600" size={24} />,
+        bgColor: 'bg-emerald-100',
+      },
+      {
+        title: 'Pending Orders',
+        value: analytics?.pending_product_orders || 0,
+        icon: <FiClock className="text-rose-600" size={24} />,
+        bgColor: 'bg-rose-100',
+      }
+    );
+  }
 
   /**
    * Status badge colors for booking statuses
@@ -268,7 +311,7 @@ const VendorDashboard = () => {
   };
 
   return (
-    <DashboardLayout role="vendor">
+    <DashboardLayout role={user?.role || "vendor"}>
 
       {/* Main Dashboard Content - Only visible after payment */}
       {!isPaymentPending && (
@@ -277,10 +320,10 @@ const VendorDashboard = () => {
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">
-                Welcome back, {user?.full_name || 'Vendor'}! 👋
+                Welcome back, {user?.full_name || (isRegularBuyer ? 'Business Partner' : 'Vendor')}! 👋
               </h1>
               <p className="text-gray-600 font-body mt-1">
-                {salonProfile?.business_name ? `Managing ${salonProfile.business_name}` : "Here's what's happening with your salon today"}
+                {salonProfile?.business_name ? `Managing ${salonProfile.business_name}` : `Here's what's happening with your ${isRegularBuyer ? 'business' : 'salon'} today`}
               </p>
             </div>
           </div>
@@ -318,31 +361,63 @@ const VendorDashboard = () => {
         {/* Quick Actions Section */}
         <Card>
           <h2 className="text-xl font-display font-bold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Standard Vendor Actions */}
+            {!isRegularBuyer && (
+              <>
+                <Link
+                  to="/vendor/services"
+                  className="flex items-center justify-between p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200"
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-accent-orange rounded-lg flex items-center justify-center mr-3">
+                      <FiPlus className="text-white" size={20} />
+                    </div>
+                    <span className="font-body font-semibold text-gray-900">Add Service</span>
+                  </div>
+                  <FiArrowRight className="text-accent-orange" />
+                </Link>
+
+                <Link
+                  to="/vendor/bookings"
+                  className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
+                >
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mr-3">
+                      <FiCalendar className="text-white" size={20} />
+                    </div>
+                    <span className="font-body font-semibold text-gray-900">View Bookings</span>
+                  </div>
+                  <FiArrowRight className="text-green-600" />
+                </Link>
+              </>
+            )}
+
+            {/* Product Actions (Available to both Vendors and Regular Buyers) */}
             <Link
-              to="/vendor/services"
-              className="flex items-center justify-between p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200"
+              to="/products"
+              className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
             >
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-accent-orange rounded-lg flex items-center justify-center mr-3">
-                  <FiPlus className="text-white" size={20} />
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                  <FiShoppingBag className="text-white" size={20} />
                 </div>
-                <span className="font-body font-semibold text-gray-900">Add Service</span>
+                <span className="font-body font-semibold text-gray-900">Browse Products</span>
               </div>
-              <FiArrowRight className="text-accent-orange" />
+              <FiArrowRight className="text-blue-600" />
             </Link>
 
             <Link
-              to="/vendor/bookings"
-              className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
+              to="/customer/my-orders"
+              className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200"
             >
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mr-3">
-                  <FiCalendar className="text-white" size={20} />
+                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
+                  <FiPackage className="text-white" size={20} />
                 </div>
-                <span className="font-body font-semibold text-gray-900">View Bookings</span>
+                <span className="font-body font-semibold text-gray-900">View My Orders</span>
               </div>
-              <FiArrowRight className="text-green-600" />
+              <FiArrowRight className="text-purple-600" />
             </Link>
           </div>
         </Card>
@@ -350,9 +425,11 @@ const VendorDashboard = () => {
         {/* Recent Bookings Table */}
         <Card>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-display font-bold text-gray-900">Recent Bookings</h2>
+            <h2 className="text-xl font-display font-bold text-gray-900">
+              {isRegularBuyer ? 'Recent Orders' : 'Recent Bookings'}
+            </h2>
             <Link
-              to="/vendor/bookings"
+              to={isRegularBuyer ? "/customer/my-orders" : "/vendor/bookings"}
               className="text-accent-orange hover:text-orange-600 font-body font-medium text-sm"
             >
               View All →
@@ -371,13 +448,13 @@ const VendorDashboard = () => {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                        Customer
+                        {isRegularBuyer ? 'Order ID' : 'Customer'}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                        Service
+                        {isRegularBuyer ? 'Items' : 'Service'}
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                        Date & Time
+                        Date
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
                         Status
@@ -388,30 +465,36 @@ const VendorDashboard = () => {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {recentBookings.map((booking) => (
-                      <tr key={booking.id} className="hover:bg-gray-50">
+                    {recentBookings.map((item) => (
+                      <tr key={item.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-900">
-                          {booking.customer_name || 'N/A'}
+                          {isRegularBuyer 
+                            ? (item.order_number || `#${item.id.slice(0, 8)}`) 
+                            : (item.customer_name || 'N/A')}
                         </td>
                         <td className="px-6 py-4 text-sm font-body text-gray-900">
-                          {getServiceNames(booking)}
+                          {isRegularBuyer 
+                            ? `${item.items?.length || 0} items` 
+                            : getServiceNames(item)}
                         </td>
                         <td className="px-6 py-4 text-sm font-body text-gray-600">
-                          {booking.booking_date ? (
+                          {item.booking_date || item.created_at ? (
                             <>
                               <div>
-                                {new Date(booking.booking_date).toLocaleDateString("en-US", {
+                                {new Date(item.booking_date || item.created_at).toLocaleDateString("en-US", {
                                   weekday: "short",
                                   month: "short",
                                   day: "numeric",
                                   year: "numeric",
                                 })}
                               </div>
-                              <div className="text-xs text-gray-500 mt-1">
-                                {booking.time_slots && booking.time_slots.length > 0
-                                  ? booking.time_slots.join(', ')
-                                  : 'N/A'}
-                              </div>
+                              {!isRegularBuyer && (
+                                <div className="text-xs text-gray-500 mt-1">
+                                  {item.time_slots && item.time_slots.length > 0
+                                    ? item.time_slots.join(', ')
+                                    : 'N/A'}
+                                </div>
+                              )}
                             </>
                           ) : (
                             'N/A'
@@ -420,14 +503,14 @@ const VendorDashboard = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span
                             className={`px-3 py-1 rounded-full text-xs font-body font-semibold ${
-                              statusColors[booking.status] || 'bg-gray-100 text-gray-800'
+                              statusColors[item.status] || 'bg-gray-100 text-gray-800'
                             }`}
                           >
-                            {booking.status || 'pending'}
+                            {item.status || 'pending'}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-body font-semibold text-gray-900">
-                          ₹{booking.total_amount || 0}
+                          ₹{item.total_amount || 0}
                         </td>
                       </tr>
                     ))}
@@ -489,7 +572,7 @@ const VendorDashboard = () => {
                 Dashboard Locked
               </h2>
               <p className="text-gray-600 font-body text-lg mb-8">
-                Your salon has been verified by admin! Complete your registration payment to unlock full dashboard access and start managing your salon.
+                Your {isRegularBuyer ? 'business partner account' : 'salon'} has been verified by admin! Complete your registration payment to unlock full dashboard access and start managing your {isRegularBuyer ? 'business' : 'salon'}.
               </p>
               
               {/* Payment Details */}
@@ -521,15 +604,15 @@ const VendorDashboard = () => {
                 <ul className="space-y-2 text-sm text-gray-700 font-body text-left">
                   <li className="flex items-center gap-2">
                     <FiShoppingBag className="text-gray-400" />
-                    Manage Services & Pricing
+                    {isRegularBuyer ? 'Manage Product Orders' : 'Manage Services & Pricing'}
                   </li>
                   <li className="flex items-center gap-2">
                     <FiCalendar className="text-gray-400" />
-                    Accept Customer Bookings
+                    {isRegularBuyer ? 'Access Wholesale Catalog' : 'Accept Customer Bookings'}
                   </li>
                   <li className="flex items-center gap-2">
                     <FiStar className="text-gray-400" />
-                    Update Salon Profile
+                    {isRegularBuyer ? 'Update Business Profile' : 'Update Salon Profile'}
                   </li>
                 </ul>
               </div>

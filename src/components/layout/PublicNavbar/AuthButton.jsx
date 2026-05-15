@@ -77,7 +77,7 @@ export function AuthButton() {
       case 'customer':
         return '/customer/dashboard';
       case 'vendor':
-      case 'salon':
+      case 'regular_buyer':
         return '/vendor/dashboard';
       case 'relationship_manager':
         return '/hmr/dashboard';
@@ -117,11 +117,19 @@ export function AuthButton() {
             label: 'My Services',
             onClick: () => navigate("/cart")
           },
+          {
+            label: 'My Products',
+            onClick: () => navigate("/product-cart")
+          },
+          {
+            label: 'My Product Orders',
+            onClick: () => navigate("/customer/my-orders")
+          },
           logoutItem
         ];
 
       case 'vendor':
-      case 'salon':
+      case 'regular_buyer':
         return [
           {
             label: 'Dashboard',

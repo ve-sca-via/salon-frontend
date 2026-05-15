@@ -48,9 +48,10 @@ const Drafts = () => {
     console.log('========================');
   }, [submissionsData, submissions, drafts, submissionsLoading, isFetching]);
 
-  const handleEdit = (draftId) => {
-    // Navigate to edit page (we'll create this next)
-    navigate(`/hmr/edit-salon/${draftId}`);
+  const handleEdit = (draftId, type) => {
+    // Navigate to edit page with type query param if available
+    const typeParam = type ? `?type=${type}` : '';
+    navigate(`/hmr/edit-salon/${draftId}${typeParam}`);
   };
 
   const handleDelete = async (draftId) => {
@@ -164,6 +165,16 @@ const Drafts = () => {
                           <FiClock className="mr-1" size={12} />
                           Draft
                         </span>
+                        {draft.request_type === 'regular_buyer' && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+                            Regular Buyer
+                          </span>
+                        )}
+                        {(!draft.request_type || draft.request_type === 'salon') && (
+                          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+                            Salon
+                          </span>
+                        )}
                       </div>
                       
                       <div className="space-y-2 text-sm text-gray-600 font-body">
@@ -210,7 +221,7 @@ const Drafts = () => {
                     <div className="flex flex-row lg:flex-col gap-2 lg:ml-6">
                       <Button
                         variant="primary"
-                        onClick={() => handleEdit(draft.id)}
+                        onClick={() => handleEdit(draft.id, draft.request_type)}
                         className="bg-gradient-orange whitespace-nowrap flex-1 lg:flex-none justify-center"
                         disabled={deleteLoading}
                         aria-label={`Continue editing ${draft.business_name || 'draft'}`}

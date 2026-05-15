@@ -17,9 +17,9 @@ const VendorProtectedRoute = ({ children }) => {
     { skip: !token || !!user } // Skip if no token or user already loaded
   );
 
-  // Fetch vendor salon profile (only runs when user is vendor)
+  // Fetch vendor salon profile (only runs when user is vendor or regular buyer)
   const { data: salonProfile } = useGetVendorSalonQuery(undefined, {
-    skip: !user || user.role !== 'vendor'
+    skip: !user || !['vendor', 'regular_buyer'].includes(user.role)
   });
 
   useEffect(() => {
@@ -27,9 +27,10 @@ const VendorProtectedRoute = ({ children }) => {
     if (currentUserData?.user && !user) {
       const userData = currentUserData.user;
       
-      // Validate vendor role
-      if (userData.role !== 'vendor') {
-        toast.error('Access denied. This portal is for salon owners only.');
+      // Validate vendor/regular_buyer role
+      const allowedRoles = ['vendor', 'regular_buyer'];
+      if (!allowedRoles.includes(userData.role)) {
+        toast.error('Access denied. This portal is for business partners only.');
         localStorage.removeItem('access_token');
         localStorage.removeItem('refresh_token');
         return;
@@ -74,7 +75,8 @@ const VendorProtectedRoute = ({ children }) => {
   }
 
   // Redirect if not authorized (wrong role)
-  if (user && user.role !== 'vendor') {
+  const allowedRoles = ['vendor', 'regular_buyer'];
+  if (user && !allowedRoles.includes(user.role)) {
     return <Navigate to="/vendor-login" replace />;
   }
 

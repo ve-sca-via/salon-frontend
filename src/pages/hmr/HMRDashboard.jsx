@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -62,6 +62,11 @@ const HMRDashboard = () => {
             <Link to="/hmr/add-salon" className="w-full sm:w-auto">
               <Button variant="secondary" className="bg-neutral-black hover:bg-neutral-gray-400 w-full sm:w-auto justify-center" aria-label="Add new salon">
                 <FiPlusCircle className="mr-2" />Add New Salon
+              </Button>
+            </Link>
+            <Link to="/hmr/add-salon?type=regular_buyer" className="w-full sm:w-auto">
+              <Button variant="outline" className="bg-white/10 hover:bg-white/20 text-white border-white/30 w-full sm:w-auto justify-center" aria-label="Add regular buyer">
+                <FiPlusCircle className="mr-2" />Add Regular Buyer
               </Button>
             </Link>
             <Link to="/hmr/leaderboard" className="w-full sm:w-auto">

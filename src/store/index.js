@@ -1,4 +1,4 @@
-﻿import { configureStore } from '@reduxjs/toolkit';
+import { configureStore } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import authReducer from './slices/authSlice';
@@ -17,6 +17,9 @@ import { vendorApi } from '../services/api/vendorApi';
 import { rmApi } from '../services/api/rmApi';
 import { paymentApi } from '../services/api/paymentApi';
 import { configApi } from '../services/api/configApi';
+import { productApi } from '../services/api/productApi';
+import { productCartApi } from '../services/api/productCartApi';
+import { productOrderApi } from '../services/api/productOrderApi';
 
 const authPersistConfig = {
   key: 'auth',
@@ -43,6 +46,9 @@ export const store = configureStore({
     [rmApi.reducerPath]: rmApi.reducer,
     [paymentApi.reducerPath]: paymentApi.reducer,
     [configApi.reducerPath]: configApi.reducer,
+    [productApi.reducerPath]: productApi.reducer,
+    [productCartApi.reducerPath]: productCartApi.reducer,
+    [productOrderApi.reducerPath]: productOrderApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -64,6 +70,9 @@ export const store = configureStore({
           'rmApi',
           'paymentApi',
           'configApi',
+          'productApi',
+          'productCartApi',
+          'productOrderApi',
         ],
       },
     }).concat(
@@ -77,7 +86,10 @@ export const store = configureStore({
       vendorApi.middleware,
       rmApi.middleware,
       paymentApi.middleware,
-      configApi.middleware
+      configApi.middleware,
+      productApi.middleware,
+      productCartApi.middleware,
+      productOrderApi.middleware
     ),
 });
 

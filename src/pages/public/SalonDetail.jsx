@@ -33,6 +33,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
+import Footer from "../../components/layout/Footer";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { useGetSalonReviewsQuery } from "../../services/api/reviewApi";
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock, FiHeart } from "react-icons/fi";
@@ -1246,6 +1247,8 @@ export default function SalonDetail() {
         onClose={() => setIsShareModalOpen(false)} 
         shareUrl={window.location.href}
       />
+
+      <Footer />
     </div>
   );
 }

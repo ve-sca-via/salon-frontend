@@ -30,9 +30,9 @@ const Signup = () => {
   const [sendPhoneSignupOTP, { isLoading: isSendingOTP }] = useSendPhoneSignupOTPMutation();
   const [verifyPhoneSignupOTP, { isLoading: isVerifyingOTP }] = useVerifyPhoneSignupOTPMutation();
 
-  const [signupMethod, setSignupMethod] = useState("phone");
+  const [signupMethod, setSignupMethod] = useState("email");
   // steps: "phone_input", "verify_phone", "form"
-  const [step, setStep] = useState("phone_input");
+  const [step, setStep] = useState("form");
 
   const [formData, setFormData] = useState({
     name: "",

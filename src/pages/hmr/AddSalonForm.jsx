@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useForm } from 'react-hook-form';
 import DashboardLayout from '../../components/layout/DashboardLayout';
@@ -64,6 +64,9 @@ import { FiUpload, FiMapPin, FiChevronLeft, FiChevronRight, FiCheck, FiPlus, FiT
 
 const AddSalonForm = () => {
   const { draftId } = useParams(); // Get draft ID from URL if editing
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const typeFromQuery = queryParams.get('type'); // 'regular_buyer' or null
 
   // RTK Query hooks 
   const [submitVendorRequest, { isLoading: isSubmitting }] = useSubmitVendorRequestMutation();
@@ -108,10 +111,13 @@ const AddSalonForm = () => {
   // Location state
   const [gettingLocation, setGettingLocation] = useState(false);
 
+  // Request type (salon or regular_buyer)
+  const [requestType, setRequestType] = useState(typeFromQuery || 'salon');
+
   // Edit mode derived from URL param
   const isEditMode = Boolean(draftId);
 
-  const totalSteps = 5;
+  const totalSteps = requestType === 'regular_buyer' ? 3 : 5;
 
   // Load draft data if editing
   useEffect(() => {
@@ -235,24 +241,69 @@ const AddSalonForm = () => {
         setSelectedHoursPreset('custom');
       }
 
-      // Use saved current step from draft (defaults to step 1 if not saved)
-      const startStep = documents.current_step && typeof documents.current_step === 'number'
-        ? Math.min(Math.max(documents.current_step, 1), 4) // Cap between 1-4
-        : 1; // Default to step 1 if not saved
+      // Step restoration logic with bounds checking
+      const savedStep = documents.current_step;
+      const startStep = savedStep && typeof savedStep === 'number'
+        ? Math.min(Math.max(savedStep, 1), 5) // Cap between 1-5 (Review step is 5)
+        : 1;
 
       console.log('=== DRAFT LOADING DEBUG ===');
       console.log('Draft ID:', draftId);
-      console.log('Saved Step:', documents.current_step);
+      console.log('Saved Step:', savedStep);
       console.log('Starting at Step:', startStep);
-      console.log('Business Name:', draft.business_name);
-      console.log('Services:', loadedServices.length);
-      console.log('Cover Image:', draft.cover_image_url || documents.cover_image ? 'yes' : 'no');
+      console.log('Draft Request Type:', draft.request_type);
+      console.log('URL Query Type:', typeFromQuery);
+      
+      // Determine request type with priority:
+      // 1. URL Query (explicit intent from Sidebar/Edit link)
+      // 2. Draft data (saved state)
+      // 3. Default 'salon'
+      const finalType = typeFromQuery || draft.request_type || 'salon';
+      
+      console.log('Final Calculated Type:', finalType);
       console.log('==========================');
 
-      setCurrentStep(startStep);
-      showInfoToast(`Draft loaded. Starting from Step ${startStep}...`);
+      setRequestType(finalType);
+      
+      // Normalize step for regular_buyer (skip 2 and 4)
+      let normalizedStep = startStep;
+      if (finalType === 'regular_buyer') {
+        if (normalizedStep === 2) normalizedStep = 3;
+        if (normalizedStep === 4) normalizedStep = 5;
+      }
+      
+      setCurrentStep(normalizedStep);
+      
+      showInfoToast(`Draft loaded as ${finalType === 'regular_buyer' ? 'Regular Buyer' : 'Salon'}. Starting from Step ${normalizedStep}...`);
+    } else if (!draftId && typeFromQuery) {
+      setRequestType(typeFromQuery);
     }
-  }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset]);
+  }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset, typeFromQuery]);
+
+  // CRITICAL: Reset ALL state when navigating to "Add" mode (no draft).
+  // Without this, draft data persists when navigating from edit-salon/:id to add-salon
+  // because React reuses the same component instance and local state stays dirty.
+  useEffect(() => {
+    if (!draftId) {
+      // Reset react-hook-form to clean defaults
+      reset({
+        services: [{ name: '', category_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
+        ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
+      });
+      // Reset all local state
+      setServices([]);
+      setUploadedImages([]);
+      setCoverImage(null);
+      setLogo(null);
+      setAgreementDocument(null);
+      setCurrentStep(1);
+      setSelectedHoursPreset('weekdays-9-6');
+      setRequestType(typeFromQuery || 'salon');
+    }
+    // location.key changes on every navigation, ensuring this fires when
+    // switching between add-salon and add-salon?type=regular_buyer too
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, location.key]);
 
   const handleImageUpload = async (e, type) => {
     const files = Array.from(e.target.files);
@@ -390,7 +441,7 @@ const AddSalonForm = () => {
           setCurrentStep(3);
           return;
         }
-        if (services.length === 0 || !services.some(s => s.name && s.price)) {
+        if (requestType !== 'regular_buyer' && (services.length === 0 || !services.some(s => s.name && s.price))) {
           showErrorToast('At least one service is required for submission');
           setCurrentStep(2);
           return;
@@ -591,6 +642,7 @@ const AddSalonForm = () => {
             sanitized_tools: !!data.facility_sanitized_tools,
           }
         },
+        request_type: requestType,
         facilities: {
           air_conditioner: !!data.facility_air_conditioner,
           car_parking: !!data.facility_car_parking,
@@ -776,57 +828,84 @@ const AddSalonForm = () => {
       }
     }
 
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (currentStep === 1) {
+      if (requestType === 'regular_buyer') {
+        setCurrentStep(3);
+      } else {
+        setCurrentStep(2);
+      }
+    } else if (currentStep === 2) {
+      setCurrentStep(3);
+    } else if (currentStep === 3) {
+      if (requestType === 'regular_buyer') {
+        setCurrentStep(5);
+      } else {
+        setCurrentStep(4);
+      }
+    } else if (currentStep === 4) {
+      setCurrentStep(5);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const prevStep = () => {
-    if (currentStep > 1) {
+    if (currentStep === 5 && requestType === 'regular_buyer') {
+      setCurrentStep(3);
+    } else if (currentStep === 3 && requestType === 'regular_buyer') {
+      setCurrentStep(1);
+    } else if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const renderStepIndicator = () => (
-    <div className="flex items-center justify-center mb-8 px-2">
-      {[1, 2, 3, 4, 5].map((step) => (
-        <React.Fragment key={step}>
-          <div className="flex flex-col items-center flex-1 max-w-[80px]">
-            <div
-              className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-body font-semibold transition-all text-sm sm:text-base ${currentStep >= step
-                  ? 'bg-accent-orange text-white'
-                  : 'bg-gray-200 text-gray-500'
-                }`}
-            >
-              {currentStep > step ? <FiCheck size={16} className="sm:w-5 sm:h-5" /> : step}
+  const renderStepIndicator = () => {
+    // Define steps based on request type
+    const steps = requestType === 'regular_buyer' 
+      ? [
+          { id: 1, label: 'Basic Info', mobileLabel: 'Info' },
+          { id: 3, label: 'Photos', mobileLabel: 'Photos' },
+          { id: 5, label: 'Review', mobileLabel: 'Review' }
+        ]
+      : [
+          { id: 1, label: 'Basic Info', mobileLabel: 'Info' },
+          { id: 2, label: 'Services', mobileLabel: 'Services' },
+          { id: 3, label: 'Photos', mobileLabel: 'Photos' },
+          { id: 4, label: 'Facilities', mobileLabel: 'Facilities' },
+          { id: 5, label: 'Review', mobileLabel: 'Review' }
+        ];
+
+    return (
+      <div className="flex items-center justify-center mb-8 px-2">
+        {steps.map((step, index) => (
+          <React.Fragment key={step.id}>
+            <div className="flex flex-col items-center flex-1 max-w-[80px]">
+              <div
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center font-body font-semibold transition-all text-sm sm:text-base ${currentStep >= step.id
+                    ? 'bg-accent-orange text-white'
+                    : 'bg-gray-200 text-gray-500'
+                  }`}
+              >
+                {currentStep > step.id ? <FiCheck size={16} className="sm:w-5 sm:h-5" /> : index + 1}
+              </div>
+              <span className="text-xs font-body mt-2 text-gray-600 text-center hidden sm:block">
+                {step.label}
+              </span>
+              <span className="text-xs font-body mt-1 text-gray-600 text-center sm:hidden">
+                {step.mobileLabel}
+              </span>
             </div>
-            <span className="text-xs font-body mt-2 text-gray-600 text-center hidden sm:block">
-              {step === 1 && 'Basic Info'}
-              {step === 2 && 'Services'}
-              {step === 3 && 'Photos'}
-              {step === 4 && 'Facilities'}
-              {step === 5 && 'Review'}
-            </span>
-            <span className="text-xs font-body mt-1 text-gray-600 text-center sm:hidden">
-              {step === 1 && 'Info'}
-              {step === 2 && 'Services'}
-              {step === 3 && 'Photos'}
-              {step === 4 && 'Facilities'}
-              {step === 5 && 'Review'}
-            </span>
-          </div>
-          {step < 5 && (
-            <div
-              className={`h-1 flex-1 mx-1 sm:mx-2 transition-all ${currentStep > step ? 'bg-accent-orange' : 'bg-gray-200'
-                }`}
-            />
-          )}
-        </React.Fragment>
-      ))}
-    </div>
-  );
+            {index < steps.length - 1 && (
+              <div
+                className={`h-1 flex-1 mx-1 sm:mx-2 transition-all ${currentStep >= steps[index+1].id ? 'bg-accent-orange' : 'bg-gray-200'
+                  }`}
+              />
+            )}
+          </React.Fragment>
+        ))}
+      </div>
+    );
+  };
 
   // Show loading state while fetching draft
   if (loadingDraft) {
@@ -856,7 +935,9 @@ const AddSalonForm = () => {
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900 mb-2">
-              {isEditMode ? (draftData?.status === 'rejected' ? 'Edit & Resubmit Rejected Salon' : 'Edit Draft Salon') : 'Add New Salon'}
+              {isEditMode 
+                ? (draftData?.status === 'rejected' ? 'Edit & Resubmit Rejected Request' : 'Edit Draft') 
+                : (requestType === 'regular_buyer' ? 'Add Regular Buyer' : 'Add New Salon')}
             </h1>
             <p className="text-gray-600 font-body">
               {isEditMode ? (draftData?.status === 'rejected' ? 'Fix the issues and resubmit for approval' : 'Continue editing your draft or submit for approval') : 'Submit a new salon for approval'}
@@ -918,8 +999,8 @@ const AddSalonForm = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <InputField
-                  label="Salon Name"
-                  {...register('name', { required: 'Salon name is required' })}
+                  label={requestType === 'regular_buyer' ? "Shop Name" : "Salon Name"}
+                  {...register('name', { required: `${requestType === 'regular_buyer' ? 'Shop' : 'Salon'} name is required` })}
                   error={errors.name?.message}
                   placeholder="e.g., Glamour Beauty Salon"
                   required
@@ -1326,143 +1407,147 @@ const AddSalonForm = () => {
                   </div>
                 </div>
 
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-display font-semibold text-gray-900 mb-3">Business Hours</h3>
+                {/* Business Hours - Hidden for Regular Buyers */}
+                {requestType !== 'regular_buyer' && (
+                  <div className="md:col-span-2">
+                    <h3 className="text-lg font-display font-semibold text-gray-900 mb-3">Business Hours</h3>
 
-                  {/* Preset Selection */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                      Choose a schedule preset
-                    </label>
-                    <select
-                      value={selectedHoursPreset}
-                      onChange={(e) => {
-                        const preset = e.target.value;
-                        setSelectedHoursPreset(preset);
+                    {/* Preset Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-body font-medium text-gray-700 mb-2">
+                        Choose a schedule preset
+                      </label>
+                      <select
+                        value={selectedHoursPreset}
+                        onChange={(e) => {
+                          const preset = e.target.value;
+                          setSelectedHoursPreset(preset);
 
-                        // Auto-fill hours if not custom
-                        if (preset !== 'custom' && BUSINESS_HOURS_PRESETS[preset].hours) {
-                          Object.entries(BUSINESS_HOURS_PRESETS[preset].hours).forEach(([day, hours]) => {
-                            setValue(day, hours);
-                          });
-                          showSuccessToast('Business hours applied!');
-                        }
-                      }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                    >
-                      {Object.entries(BUSINESS_HOURS_PRESETS).map(([key, preset]) => (
-                        <option key={key} value={key}>{preset.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Manual Hours (show if custom selected) */}
-                  {selectedHoursPreset === 'custom' && (
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-sm text-gray-600 font-body mb-3">
-                        Set custom hours for each day using the time picker
-                      </p>
-                      <div className="space-y-3">
-                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
-                          const dayValue = watch(day) || '';
-                          const isClosed = dayValue.toLowerCase() === 'closed' || dayValue === '';
-
-                          // Parse existing value if it exists (e.g., "9:00 AM - 8:00 PM")
-                          let openTime = '09:00';
-                          let closeTime = '18:00';
-
-                          if (dayValue && !isClosed) {
-                            const match = dayValue.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-                            if (match) {
-                              let [, openHour, openMin, openAmPm, closeHour, closeMin, closeAmPm] = match;
-
-                              // Convert to 24-hour format
-                              openHour = parseInt(openHour);
-                              closeHour = parseInt(closeHour);
-
-                              if (openAmPm && openAmPm.toUpperCase() === 'PM' && openHour !== 12) openHour += 12;
-                              if (openAmPm && openAmPm.toUpperCase() === 'AM' && openHour === 12) openHour = 0;
-                              if (closeAmPm && closeAmPm.toUpperCase() === 'PM' && closeHour !== 12) closeHour += 12;
-                              if (closeAmPm && closeAmPm.toUpperCase() === 'AM' && closeHour === 12) closeHour = 0;
-
-                              openTime = `${String(openHour).padStart(2, '0')}:${openMin}`;
-                              closeTime = `${String(closeHour).padStart(2, '0')}:${closeMin}`;
-                            }
+                          // Auto-fill hours if not custom
+                          if (preset !== 'custom' && BUSINESS_HOURS_PRESETS[preset].hours) {
+                            Object.entries(BUSINESS_HOURS_PRESETS[preset].hours).forEach(([day, hours]) => {
+                              setValue(day, hours);
+                            });
+                            showSuccessToast('Business hours applied!');
                           }
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                      >
+                        {Object.entries(BUSINESS_HOURS_PRESETS).map(([key, preset]) => (
+                          <option key={key} value={key}>{preset.label}</option>
+                        ))}
+                      </select>
+                    </div>
 
-                          const updateDayHours = (open, close, closed) => {
-                            if (closed) {
-                              setValue(day, 'Closed');
-                            } else {
-                              // Convert 24-hour to 12-hour format for display
-                              const formatTime = (time24) => {
-                                const [hours, minutes] = time24.split(':').map(Number);
-                                const period = hours >= 12 ? 'PM' : 'AM';
-                                const hours12 = hours % 12 || 12;
-                                return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
-                              };
+                    {/* Manual Hours (show if custom selected) */}
+                    {selectedHoursPreset === 'custom' && (
+                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm text-gray-600 font-body mb-3">
+                          Set custom hours for each day using the time picker
+                        </p>
+                        <div className="space-y-3">
+                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                            const dayValue = watch(day) || '';
+                            const isClosed = dayValue.toLowerCase() === 'closed' || dayValue === '';
 
-                              setValue(day, `${formatTime(open)} - ${formatTime(close)}`);
+                            // Parse existing value if it exists (e.g., "9:00 AM - 8:00 PM")
+                            let openTime = '09:00';
+                            let closeTime = '18:00';
+
+                            if (dayValue && !isClosed) {
+                              const match = dayValue.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+                              if (match) {
+                                let [, openHour, openMin, openAmPm, closeHour, closeMin, closeAmPm] = match;
+
+                                // Convert to 24-hour format
+                                openHour = parseInt(openHour);
+                                closeHour = parseInt(closeHour);
+
+                                if (openAmPm && openAmPm.toUpperCase() === 'PM' && openHour !== 12) openHour += 12;
+                                if (openAmPm && openAmPm.toUpperCase() === 'AM' && openHour === 12) openHour = 0;
+                                if (closeAmPm && closeAmPm.toUpperCase() === 'PM' && closeHour !== 12) closeHour += 12;
+                                if (closeAmPm && closeAmPm.toUpperCase() === 'AM' && closeHour === 12) closeHour = 0;
+
+                                openTime = `${String(openHour).padStart(2, '0')}:${openMin}`;
+                                closeTime = `${String(closeHour).padStart(2, '0')}:${closeMin}`;
+                              }
                             }
-                          };
 
-                          return (
-                            <div key={day} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
-                              <span className="text-sm font-body font-semibold text-gray-700 capitalize w-24">{day}</span>
+                            const updateDayHours = (open, close, closed) => {
+                              if (closed) {
+                                setValue(day, 'Closed');
+                              } else {
+                                // Convert 24-hour to 12-hour format for display
+                                const formatTime = (time24) => {
+                                  const [hours, minutes] = time24.split(':').map(Number);
+                                  const period = hours >= 12 ? 'PM' : 'AM';
+                                  const hours12 = hours % 12 || 12;
+                                  return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
+                                };
 
-                              {!isClosed ? (
-                                <>
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <input
-                                      type="time"
-                                      value={openTime}
-                                      onChange={(e) => updateDayHours(e.target.value, closeTime, false)}
-                                      className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                                    />
-                                    <span className="text-gray-500">to</span>
-                                    <input
-                                      type="time"
-                                      value={closeTime}
-                                      onChange={(e) => updateDayHours(openTime, e.target.value, false)}
-                                      className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                                    />
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateDayHours(openTime, closeTime, true)}
-                                    className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
-                                  >
-                                    Closed
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="flex-1 text-sm text-gray-500 italic">Closed</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateDayHours('09:00', '18:00', false)}
-                                    className="px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium"
-                                  >
-                                    Open
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          );
-                        })}
+                                setValue(day, `${formatTime(open)} - ${formatTime(close)}`);
+                              }
+                            };
+
+                            return (
+                              <div key={day} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
+                                <span className="text-sm font-body font-semibold text-gray-700 capitalize w-24">{day}</span>
+
+                                {!isClosed ? (
+                                  <>
+                                    <div className="flex items-center gap-2 flex-1">
+                                      <input
+                                        type="time"
+                                        value={openTime}
+                                        onChange={(e) => updateDayHours(e.target.value, closeTime, false)}
+                                        className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                                      />
+                                      <span className="text-gray-500">to</span>
+                                      <input
+                                        type="time"
+                                        value={closeTime}
+                                        onChange={(e) => updateDayHours(openTime, e.target.value, false)}
+                                        className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                                      />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => updateDayHours(openTime, closeTime, true)}
+                                      className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                                    >
+                                      Closed
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="flex-1 text-sm text-gray-500 italic">Closed</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => updateDayHours('09:00', '18:00', false)}
+                                      className="px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium"
+                                    >
+                                      Open
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Preview of selected hours */}
-                  {selectedHoursPreset !== 'custom' && (
-                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm font-body text-green-800">
-                        ✓ <strong>Applied:</strong> {BUSINESS_HOURS_PRESETS[selectedHoursPreset].label}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                    {/* Preview of selected hours */}
+                    {selectedHoursPreset !== 'custom' && (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm font-body text-green-800">
+                          ✓ <strong>Applied:</strong> {BUSINESS_HOURS_PRESETS[selectedHoursPreset].label}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
             </Card>
           )}
@@ -1978,67 +2063,72 @@ const AddSalonForm = () => {
                   </div>
                 </div>
 
-                {/* Business Hours */}
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
-                    <span className="bg-blue-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">⏰</span>
-                    Business Hours
-                  </h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-body text-sm">
-                      {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                        <div key={day} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
-                          <span className="font-semibold text-gray-700 capitalize">{day}</span>
-                          <span className="text-gray-900">{watch(day) || 'Closed'}</span>
-                        </div>
-                      ))}
+                {/* Business Hours - Hidden for Regular Buyers */}
+                {requestType !== 'regular_buyer' && (
+                  <div className="border-l-4 border-blue-500 pl-4">
+                    <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
+                      <span className="bg-blue-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">⏰</span>
+                      Business Hours
+                    </h3>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-body text-sm">
+                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                          <div key={day} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                            <span className="font-semibold text-gray-700 capitalize">{day}</span>
+                            <span className="text-gray-900">{watch(day) || 'Closed'}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Services */}
-                <div className="border-l-4 border-purple-500 pl-4">
-                  <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
-                    <span className="bg-purple-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">2</span>
-                    Services ({services.filter(s => s.name && s.price).length})
-                  </h3>
-                  {services.filter(s => s.name && s.price).length === 0 ? (
-                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg text-sm font-body">
-                      ⚠️ No services added. Please go back to add at least one service.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {services.filter(s => s.name && s.price).map((service, index) => (
-                        <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-purple-300 transition-all">
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="font-semibold text-gray-900 font-body">{service.name}</span>
-                                <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                                  {service.category}
-                                </span>
-                                {service.gender_category && service.gender_category !== 'both' && (
-                                  <span className={`inline-block px-2 py-1 text-[10px] rounded-full uppercase tracking-wider font-semibold ${
-                                    service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
-                                  }`}>
-                                    {service.gender_category}
+
+                {/* Services - Hidden for Regular Buyers */}
+                {requestType !== 'regular_buyer' && (
+                  <div className="border-l-4 border-purple-500 pl-4">
+                    <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
+                      <span className="bg-purple-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">2</span>
+                      Services ({services.filter(s => s.name && s.price).length})
+                    </h3>
+                    {services.filter(s => s.name && s.price).length === 0 ? (
+                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg text-sm font-body">
+                        ⚠️ No services added. Please go back to add at least one service.
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {services.filter(s => s.name && s.price).map((service, index) => (
+                          <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-purple-300 transition-all">
+                            <div className="flex justify-between items-start">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="font-semibold text-gray-900 font-body">{service.name}</span>
+                                  <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+                                    {service.category}
                                   </span>
+                                  {service.gender_category && service.gender_category !== 'both' && (
+                                    <span className={`inline-block px-2 py-1 text-[10px] rounded-full uppercase tracking-wider font-semibold ${
+                                      service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
+                                    }`}>
+                                      {service.gender_category}
+                                    </span>
+                                  )}
+                                </div>
+                                {service.description && (
+                                  <p className="text-xs text-gray-600 mb-2">{service.description}</p>
                                 )}
-                              </div>
-                              {service.description && (
-                                <p className="text-xs text-gray-600 mb-2">{service.description}</p>
-                              )}
-                              <div className="flex gap-4 text-xs text-gray-600">
-                                <span>💰 ₹{service.price}</span>
-                                <span>⏱️ {service.duration_minutes || service.duration} mins</span>
+                                <div className="flex gap-4 text-xs text-gray-600">
+                                  <span>💰 ₹{service.price}</span>
+                                  <span>⏱️ {service.duration_minutes || service.duration} mins</span>
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Photos */}
                 <div className="border-l-4 border-pink-500 pl-4">
@@ -2211,14 +2301,16 @@ const AddSalonForm = () => {
                       )}
                       <span>Basic information filled (including owner details)</span>
                     </div>
-                    <div className={`flex items-center gap-2 ${services.filter(s => s.name && s.price).length > 0 ? 'text-green-700' : 'text-gray-600'}`}>
-                      {services.filter(s => s.name && s.price).length > 0 ? (
-                        <FiCheck className="text-green-600" size={16} />
-                      ) : (
-                        <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
-                      )}
-                      <span>At least one service added ({services.filter(s => s.name && s.price).length} services)</span>
-                    </div>
+                    {requestType !== 'regular_buyer' && (
+                      <div className={`flex items-center gap-2 ${services.filter(s => s.name && s.price).length > 0 ? 'text-green-700' : 'text-gray-600'}`}>
+                        {services.filter(s => s.name && s.price).length > 0 ? (
+                          <FiCheck className="text-green-600" size={16} />
+                        ) : (
+                          <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
+                        )}
+                        <span>At least one service added ({services.filter(s => s.name && s.price).length} services)</span>
+                      </div>
+                    )}
                     <div className={`flex items-center gap-2 ${coverImage ? 'text-green-700' : 'text-gray-600'}`}>
                       {coverImage ? (
                         <FiCheck className="text-green-600" size={16} />
