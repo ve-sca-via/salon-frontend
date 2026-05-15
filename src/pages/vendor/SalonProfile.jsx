@@ -31,6 +31,7 @@
  */
 
 import React, { useEffect, useState, useRef } from 'react';
+import { useSelector } from 'react-redux';
 import DashboardLayout from '../../components/layout/DashboardLayout';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
@@ -46,6 +47,7 @@ import { uploadSalonImage, uploadAgreementDocument, getAgreementDocumentSignedUr
 import { INDIAN_STATES } from '../../utils/salonFormConstants';
 
 const SalonProfile = () => {
+  const { user } = useSelector((state) => state.auth);
   // RTK Query hooks for fetching and updating salon data
   const { data: salonData, isLoading: profileLoading } = useGetVendorSalonQuery();
   const [updateSalonProfile, { isLoading: isUpdating }] = useUpdateVendorSalonMutation();
@@ -502,7 +504,7 @@ const SalonProfile = () => {
   // Loading state - show skeleton form while fetching profile data
   if (profileLoading && !salonProfile) {
     return (
-      <DashboardLayout role="vendor">
+      <DashboardLayout role={user?.role || "vendor"}>
         <div className="p-4 md:p-6 space-y-6">
           <div className="animate-pulse">
             <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
@@ -532,13 +534,17 @@ const SalonProfile = () => {
   ];
 
   return (
-    <DashboardLayout role="vendor">
+    <DashboardLayout role={user?.role || "vendor"}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">Salon Profile</h1>
-            <p className="text-gray-600 font-body mt-1">Manage your salon information and settings</p>
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">
+              {user?.role === 'regular_buyer' ? 'Business Profile' : 'Salon Profile'}
+            </h1>
+            <p className="text-gray-600 font-body mt-1">
+              Manage your {user?.role === 'regular_buyer' ? 'business' : 'salon'} information and settings
+            </p>
           </div>
         </div>
 
@@ -558,7 +564,9 @@ const SalonProfile = () => {
                     salonProfile.is_active ? 'text-green-900' : 'text-yellow-900'
                   }`}
                 >
-                  {salonProfile.is_active ? 'Salon Active' : 'Salon Inactive'}
+                  {salonProfile.is_active 
+                    ? (user?.role === 'regular_buyer' ? 'Account Active' : 'Salon Active') 
+                    : (user?.role === 'regular_buyer' ? 'Account Inactive' : 'Salon Inactive')}
                 </h3>
                 <p
                   className={`text-sm font-body ${
@@ -566,8 +574,12 @@ const SalonProfile = () => {
                   }`}
                 >
                   {salonProfile.is_active
-                    ? 'Your salon is visible to customers and accepting bookings'
-                    : 'Complete payment to activate your salon'}
+                    ? (user?.role === 'regular_buyer' 
+                        ? 'Your account is active and verified' 
+                        : 'Your salon is visible to customers and accepting bookings')
+                    : (user?.role === 'regular_buyer'
+                        ? 'Complete payment to activate your account'
+                        : 'Complete payment to activate your salon')}
                 </p>
               </div>
               <div
