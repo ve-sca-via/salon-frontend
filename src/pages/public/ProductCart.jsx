@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
+import Footer from "../../components/layout/Footer";
 import { 
   useGetProductCartQuery, 
   useUpdateProductCartItemMutation, 
@@ -158,10 +159,10 @@ export default function ProductCart() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <PublicNavbar />
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <main className="flex-grow max-w-2xl mx-auto px-4 py-6 w-full">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <button 
@@ -239,7 +240,9 @@ export default function ProductCart() {
             </div>
           </div>
         )}
-      </div>
+      </main>
+
+      <Footer />
 
       {showClearConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60] p-4 backdrop-blur-sm">
