@@ -51,6 +51,7 @@ const Login = lazy(() => import('./pages/auth/Login'));
 const RMLogin = lazy(() => import('./pages/auth/RMLogin'));
 const VendorLogin = lazy(() => import('./pages/auth/VendorLogin'));
 const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'));
+const Signup = lazy(() => import('./pages/auth/Signup'));
 const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'));
 
 // Public pages
@@ -233,7 +234,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/rm-login" element={<RMLogin />} />
               <Route path="/vendor-login" element={<VendorLogin />} />
-              <Route path="/signup" element={<Navigate to="/login" replace />} />
+              <Route path="/signup" element={<Signup />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               

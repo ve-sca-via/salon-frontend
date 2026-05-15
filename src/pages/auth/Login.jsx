@@ -659,7 +659,7 @@ const Login = () => {
                     Sign In
                   </Button>
 
-                  <div className="text-center mt-2">
+                  <div className="text-center mt-6 space-y-2">
                     <button
                       type="button"
                       onClick={() => switchLoginMethod('phone')}
@@ -667,6 +667,15 @@ const Login = () => {
                     >
                       Login with Phone instead
                     </button>
+                    
+                    <div className="pt-4 border-t border-gray-100">
+                      <p className="font-body text-sm text-neutral-gray-500">
+                        Don't have an account?{" "}
+                        <Link to="/signup" className="text-accent-orange font-semibold hover:underline">
+                          Create an Account
+                        </Link>
+                      </p>
+                    </div>
                   </div>
                 </form>
               )}
@@ -811,7 +820,7 @@ const Login = () => {
                         Continue with Phone
                       </Button>
 
-                      <div className="text-center mt-3">
+                      <div className="text-center mt-3 space-y-4">
                         <button
                           type="button"
                           onClick={() => switchLoginMethod('email')}
@@ -819,6 +828,15 @@ const Login = () => {
                         >
                           Login with Email instead
                         </button>
+                        
+                        <div className="pt-4 border-t border-gray-100">
+                          <p className="font-body text-sm text-neutral-gray-500">
+                            Don't have an account?{" "}
+                            <Link to="/signup" className="text-accent-orange font-semibold hover:underline">
+                              Create an Account
+                            </Link>
+                          </p>
+                        </div>
                       </div>
                     </form>
                   ) : (
