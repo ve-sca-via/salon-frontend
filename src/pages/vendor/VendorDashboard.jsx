@@ -361,8 +361,9 @@ const VendorDashboard = () => {
         {/* Quick Actions Section */}
         <Card>
           <h2 className="text-xl font-display font-bold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {!isRegularBuyer ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Standard Vendor Actions */}
+            {!isRegularBuyer && (
               <>
                 <Link
                   to="/vendor/services"
@@ -390,35 +391,34 @@ const VendorDashboard = () => {
                   <FiArrowRight className="text-green-600" />
                 </Link>
               </>
-            ) : (
-              <>
-                <Link
-                  to="/products"
-                  className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-                >
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                      <FiShoppingBag className="text-white" size={20} />
-                    </div>
-                    <span className="font-body font-semibold text-gray-900">Browse Products</span>
-                  </div>
-                  <FiArrowRight className="text-blue-600" />
-                </Link>
-
-                <Link
-                  to="/customer/my-orders"
-                  className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200"
-                >
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
-                      <FiPackage className="text-white" size={20} />
-                    </div>
-                    <span className="font-body font-semibold text-gray-900">View My Orders</span>
-                  </div>
-                  <FiArrowRight className="text-purple-600" />
-                </Link>
-              </>
             )}
+
+            {/* Product Actions (Available to both Vendors and Regular Buyers) */}
+            <Link
+              to="/products"
+              className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
+            >
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                  <FiShoppingBag className="text-white" size={20} />
+                </div>
+                <span className="font-body font-semibold text-gray-900">Browse Products</span>
+              </div>
+              <FiArrowRight className="text-blue-600" />
+            </Link>
+
+            <Link
+              to="/customer/my-orders"
+              className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200"
+            >
+              <div className="flex items-center">
+                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
+                  <FiPackage className="text-white" size={20} />
+                </div>
+                <span className="font-body font-semibold text-gray-900">View My Orders</span>
+              </div>
+              <FiArrowRight className="text-purple-600" />
+            </Link>
           </div>
         </Card>
 
