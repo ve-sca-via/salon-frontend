@@ -117,7 +117,7 @@ const AddSalonForm = () => {
   // Edit mode derived from URL param
   const isEditMode = Boolean(draftId);
 
-  const totalSteps = 5;
+  const totalSteps = requestType === 'regular_buyer' ? 3 : 5;
 
   // Load draft data if editing
   useEffect(() => {
@@ -241,27 +241,69 @@ const AddSalonForm = () => {
         setSelectedHoursPreset('custom');
       }
 
-      // Use saved current step from draft (defaults to step 1 if not saved)
-      const startStep = documents.current_step && typeof documents.current_step === 'number'
-        ? Math.min(Math.max(documents.current_step, 1), 4) // Cap between 1-4
-        : 1; // Default to step 1 if not saved
+      // Step restoration logic with bounds checking
+      const savedStep = documents.current_step;
+      const startStep = savedStep && typeof savedStep === 'number'
+        ? Math.min(Math.max(savedStep, 1), 5) // Cap between 1-5 (Review step is 5)
+        : 1;
 
       console.log('=== DRAFT LOADING DEBUG ===');
       console.log('Draft ID:', draftId);
-      console.log('Saved Step:', documents.current_step);
+      console.log('Saved Step:', savedStep);
       console.log('Starting at Step:', startStep);
-      console.log('Business Name:', draft.business_name);
-      console.log('Services:', loadedServices.length);
-      console.log('Cover Image:', draft.cover_image_url || documents.cover_image ? 'yes' : 'no');
+      console.log('Draft Request Type:', draft.request_type);
+      console.log('URL Query Type:', typeFromQuery);
+      
+      // Determine request type with priority:
+      // 1. URL Query (explicit intent from Sidebar/Edit link)
+      // 2. Draft data (saved state)
+      // 3. Default 'salon'
+      const finalType = typeFromQuery || draft.request_type || 'salon';
+      
+      console.log('Final Calculated Type:', finalType);
       console.log('==========================');
 
-      setCurrentStep(startStep);
-      setRequestType(draft.request_type || 'salon');
-      showInfoToast(`Draft loaded. Starting from Step ${startStep}...`);
-    } else if (!draftId) {
-      setRequestType(typeFromQuery || 'salon');
+      setRequestType(finalType);
+      
+      // Normalize step for regular_buyer (skip 2 and 4)
+      let normalizedStep = startStep;
+      if (finalType === 'regular_buyer') {
+        if (normalizedStep === 2) normalizedStep = 3;
+        if (normalizedStep === 4) normalizedStep = 5;
+      }
+      
+      setCurrentStep(normalizedStep);
+      
+      showInfoToast(`Draft loaded as ${finalType === 'regular_buyer' ? 'Regular Buyer' : 'Salon'}. Starting from Step ${normalizedStep}...`);
+    } else if (!draftId && typeFromQuery) {
+      setRequestType(typeFromQuery);
     }
   }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset, typeFromQuery]);
+
+  // CRITICAL: Reset ALL state when navigating to "Add" mode (no draft).
+  // Without this, draft data persists when navigating from edit-salon/:id to add-salon
+  // because React reuses the same component instance and local state stays dirty.
+  useEffect(() => {
+    if (!draftId) {
+      // Reset react-hook-form to clean defaults
+      reset({
+        services: [{ name: '', category_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
+        ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
+      });
+      // Reset all local state
+      setServices([]);
+      setUploadedImages([]);
+      setCoverImage(null);
+      setLogo(null);
+      setAgreementDocument(null);
+      setCurrentStep(1);
+      setSelectedHoursPreset('weekdays-9-6');
+      setRequestType(typeFromQuery || 'salon');
+    }
+    // location.key changes on every navigation, ensuring this fires when
+    // switching between add-salon and add-salon?type=regular_buyer too
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, location.key]);
 
   const handleImageUpload = async (e, type) => {
     const files = Array.from(e.target.files);
@@ -1365,143 +1407,147 @@ const AddSalonForm = () => {
                   </div>
                 </div>
 
-                <div className="md:col-span-2">
-                  <h3 className="text-lg font-display font-semibold text-gray-900 mb-3">Business Hours</h3>
+                {/* Business Hours - Hidden for Regular Buyers */}
+                {requestType !== 'regular_buyer' && (
+                  <div className="md:col-span-2">
+                    <h3 className="text-lg font-display font-semibold text-gray-900 mb-3">Business Hours</h3>
 
-                  {/* Preset Selection */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-body font-medium text-gray-700 mb-2">
-                      Choose a schedule preset
-                    </label>
-                    <select
-                      value={selectedHoursPreset}
-                      onChange={(e) => {
-                        const preset = e.target.value;
-                        setSelectedHoursPreset(preset);
+                    {/* Preset Selection */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-body font-medium text-gray-700 mb-2">
+                        Choose a schedule preset
+                      </label>
+                      <select
+                        value={selectedHoursPreset}
+                        onChange={(e) => {
+                          const preset = e.target.value;
+                          setSelectedHoursPreset(preset);
 
-                        // Auto-fill hours if not custom
-                        if (preset !== 'custom' && BUSINESS_HOURS_PRESETS[preset].hours) {
-                          Object.entries(BUSINESS_HOURS_PRESETS[preset].hours).forEach(([day, hours]) => {
-                            setValue(day, hours);
-                          });
-                          showSuccessToast('Business hours applied!');
-                        }
-                      }}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                    >
-                      {Object.entries(BUSINESS_HOURS_PRESETS).map(([key, preset]) => (
-                        <option key={key} value={key}>{preset.label}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Manual Hours (show if custom selected) */}
-                  {selectedHoursPreset === 'custom' && (
-                    <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                      <p className="text-sm text-gray-600 font-body mb-3">
-                        Set custom hours for each day using the time picker
-                      </p>
-                      <div className="space-y-3">
-                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
-                          const dayValue = watch(day) || '';
-                          const isClosed = dayValue.toLowerCase() === 'closed' || dayValue === '';
-
-                          // Parse existing value if it exists (e.g., "9:00 AM - 8:00 PM")
-                          let openTime = '09:00';
-                          let closeTime = '18:00';
-
-                          if (dayValue && !isClosed) {
-                            const match = dayValue.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
-                            if (match) {
-                              let [, openHour, openMin, openAmPm, closeHour, closeMin, closeAmPm] = match;
-
-                              // Convert to 24-hour format
-                              openHour = parseInt(openHour);
-                              closeHour = parseInt(closeHour);
-
-                              if (openAmPm && openAmPm.toUpperCase() === 'PM' && openHour !== 12) openHour += 12;
-                              if (openAmPm && openAmPm.toUpperCase() === 'AM' && openHour === 12) openHour = 0;
-                              if (closeAmPm && closeAmPm.toUpperCase() === 'PM' && closeHour !== 12) closeHour += 12;
-                              if (closeAmPm && closeAmPm.toUpperCase() === 'AM' && closeHour === 12) closeHour = 0;
-
-                              openTime = `${String(openHour).padStart(2, '0')}:${openMin}`;
-                              closeTime = `${String(closeHour).padStart(2, '0')}:${closeMin}`;
-                            }
+                          // Auto-fill hours if not custom
+                          if (preset !== 'custom' && BUSINESS_HOURS_PRESETS[preset].hours) {
+                            Object.entries(BUSINESS_HOURS_PRESETS[preset].hours).forEach(([day, hours]) => {
+                              setValue(day, hours);
+                            });
+                            showSuccessToast('Business hours applied!');
                           }
+                        }}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg font-body focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                      >
+                        {Object.entries(BUSINESS_HOURS_PRESETS).map(([key, preset]) => (
+                          <option key={key} value={key}>{preset.label}</option>
+                        ))}
+                      </select>
+                    </div>
 
-                          const updateDayHours = (open, close, closed) => {
-                            if (closed) {
-                              setValue(day, 'Closed');
-                            } else {
-                              // Convert 24-hour to 12-hour format for display
-                              const formatTime = (time24) => {
-                                const [hours, minutes] = time24.split(':').map(Number);
-                                const period = hours >= 12 ? 'PM' : 'AM';
-                                const hours12 = hours % 12 || 12;
-                                return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
-                              };
+                    {/* Manual Hours (show if custom selected) */}
+                    {selectedHoursPreset === 'custom' && (
+                      <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <p className="text-sm text-gray-600 font-body mb-3">
+                          Set custom hours for each day using the time picker
+                        </p>
+                        <div className="space-y-3">
+                          {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => {
+                            const dayValue = watch(day) || '';
+                            const isClosed = dayValue.toLowerCase() === 'closed' || dayValue === '';
 
-                              setValue(day, `${formatTime(open)} - ${formatTime(close)}`);
+                            // Parse existing value if it exists (e.g., "9:00 AM - 8:00 PM")
+                            let openTime = '09:00';
+                            let closeTime = '18:00';
+
+                            if (dayValue && !isClosed) {
+                              const match = dayValue.match(/(\d{1,2}):(\d{2})\s*(AM|PM)?\s*-\s*(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+                              if (match) {
+                                let [, openHour, openMin, openAmPm, closeHour, closeMin, closeAmPm] = match;
+
+                                // Convert to 24-hour format
+                                openHour = parseInt(openHour);
+                                closeHour = parseInt(closeHour);
+
+                                if (openAmPm && openAmPm.toUpperCase() === 'PM' && openHour !== 12) openHour += 12;
+                                if (openAmPm && openAmPm.toUpperCase() === 'AM' && openHour === 12) openHour = 0;
+                                if (closeAmPm && closeAmPm.toUpperCase() === 'PM' && closeHour !== 12) closeHour += 12;
+                                if (closeAmPm && closeAmPm.toUpperCase() === 'AM' && closeHour === 12) closeHour = 0;
+
+                                openTime = `${String(openHour).padStart(2, '0')}:${openMin}`;
+                                closeTime = `${String(closeHour).padStart(2, '0')}:${closeMin}`;
+                              }
                             }
-                          };
 
-                          return (
-                            <div key={day} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
-                              <span className="text-sm font-body font-semibold text-gray-700 capitalize w-24">{day}</span>
+                            const updateDayHours = (open, close, closed) => {
+                              if (closed) {
+                                setValue(day, 'Closed');
+                              } else {
+                                // Convert 24-hour to 12-hour format for display
+                                const formatTime = (time24) => {
+                                  const [hours, minutes] = time24.split(':').map(Number);
+                                  const period = hours >= 12 ? 'PM' : 'AM';
+                                  const hours12 = hours % 12 || 12;
+                                  return `${hours12}:${String(minutes).padStart(2, '0')} ${period}`;
+                                };
 
-                              {!isClosed ? (
-                                <>
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <input
-                                      type="time"
-                                      value={openTime}
-                                      onChange={(e) => updateDayHours(e.target.value, closeTime, false)}
-                                      className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                                    />
-                                    <span className="text-gray-500">to</span>
-                                    <input
-                                      type="time"
-                                      value={closeTime}
-                                      onChange={(e) => updateDayHours(openTime, e.target.value, false)}
-                                      className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                                    />
-                                  </div>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateDayHours(openTime, closeTime, true)}
-                                    className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
-                                  >
-                                    Closed
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <span className="flex-1 text-sm text-gray-500 italic">Closed</span>
-                                  <button
-                                    type="button"
-                                    onClick={() => updateDayHours('09:00', '18:00', false)}
-                                    className="px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium"
-                                  >
-                                    Open
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          );
-                        })}
+                                setValue(day, `${formatTime(open)} - ${formatTime(close)}`);
+                              }
+                            };
+
+                            return (
+                              <div key={day} className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200">
+                                <span className="text-sm font-body font-semibold text-gray-700 capitalize w-24">{day}</span>
+
+                                {!isClosed ? (
+                                  <>
+                                    <div className="flex items-center gap-2 flex-1">
+                                      <input
+                                        type="time"
+                                        value={openTime}
+                                        onChange={(e) => updateDayHours(e.target.value, closeTime, false)}
+                                        className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                                      />
+                                      <span className="text-gray-500">to</span>
+                                      <input
+                                        type="time"
+                                        value={closeTime}
+                                        onChange={(e) => updateDayHours(openTime, e.target.value, false)}
+                                        className="px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
+                                      />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => updateDayHours(openTime, closeTime, true)}
+                                      className="px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"
+                                    >
+                                      Closed
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span className="flex-1 text-sm text-gray-500 italic">Closed</span>
+                                    <button
+                                      type="button"
+                                      onClick={() => updateDayHours('09:00', '18:00', false)}
+                                      className="px-3 py-2 text-sm text-green-600 hover:bg-green-50 rounded-lg transition-colors font-medium"
+                                    >
+                                      Open
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
 
-                  {/* Preview of selected hours */}
-                  {selectedHoursPreset !== 'custom' && (
-                    <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm font-body text-green-800">
-                        ✓ <strong>Applied:</strong> {BUSINESS_HOURS_PRESETS[selectedHoursPreset].label}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                    {/* Preview of selected hours */}
+                    {selectedHoursPreset !== 'custom' && (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-sm font-body text-green-800">
+                          ✓ <strong>Applied:</strong> {BUSINESS_HOURS_PRESETS[selectedHoursPreset].label}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
               </div>
             </Card>
           )}
@@ -2017,23 +2063,26 @@ const AddSalonForm = () => {
                   </div>
                 </div>
 
-                {/* Business Hours */}
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
-                    <span className="bg-blue-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">⏰</span>
-                    Business Hours
-                  </h3>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-body text-sm">
-                      {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
-                        <div key={day} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
-                          <span className="font-semibold text-gray-700 capitalize">{day}</span>
-                          <span className="text-gray-900">{watch(day) || 'Closed'}</span>
-                        </div>
-                      ))}
+                {/* Business Hours - Hidden for Regular Buyers */}
+                {requestType !== 'regular_buyer' && (
+                  <div className="border-l-4 border-blue-500 pl-4">
+                    <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
+                      <span className="bg-blue-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">⏰</span>
+                      Business Hours
+                    </h3>
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-body text-sm">
+                        {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((day) => (
+                          <div key={day} className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                            <span className="font-semibold text-gray-700 capitalize">{day}</span>
+                            <span className="text-gray-900">{watch(day) || 'Closed'}</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
+
 
                 {/* Services - Hidden for Regular Buyers */}
                 {requestType !== 'regular_buyer' && (

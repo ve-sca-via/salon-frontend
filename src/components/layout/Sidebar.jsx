@@ -18,14 +18,6 @@ const Sidebar = ({ role, isOpen, onClose, isCollapsed }) => {
           { path: '/product-cart', icon: <FiShoppingBag />, label: 'My Products' },
           { path: '/customer/my-orders', icon: <FiPackage />, label: 'My Orders' },
         ];
-      case 'salon':
-        return [
-          { path: '/salon/dashboard', icon: <FiHome />, label: 'Dashboard' },
-          { path: '/salon/bookings', icon: <FiCalendar />, label: 'Bookings' },
-          { path: '/salon/calendar', icon: <FiCalendar />, label: 'Calendar' },
-          { path: '/salon/services', icon: <FiShoppingBag />, label: 'Services' },
-          { path: '/salon/profile', icon: <FiSettings />, label: 'Profile' },
-        ];
       case 'vendor':
         return [
           { path: '/vendor/dashboard', icon: <FiHome />, label: 'Dashboard' },

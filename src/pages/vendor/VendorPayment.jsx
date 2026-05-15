@@ -47,8 +47,9 @@ import { showSuccessToast, showInfoToast, showErrorToast } from '../../utils/toa
 import { IS_PRODUCTION } from '../../utils/constants';
 import { 
   FiCreditCard, FiCheckCircle, FiLock, FiShield, 
-  FiCalendar, FiInfo, FiAlertTriangle
+  FiCalendar, FiInfo, FiAlertTriangle, FiPackage, FiUsers, FiTrendingUp
 } from 'react-icons/fi';
+import { useSelector } from 'react-redux';
 import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import { 
@@ -69,10 +70,13 @@ const VendorPayment = () => {
   
   // RTK Query hooks for fetching and updating payment status
   const { data: salonData, isLoading: salonLoading } = useGetVendorSalonQuery();
+  // Get user role from auth state
+  const { user } = useSelector((state) => state.auth);
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateVendorRegistrationOrderMutation();
   const [verifyPayment, { isLoading: isVerifying }] = useVerifyVendorRegistrationPaymentMutation();
   
   const salonProfile = salonData?.salon;
+  const isRegularBuyer = user?.role === 'regular_buyer' || salonProfile?.salon_type === 'regular_buyer';
   const registrationFee = salonProfile?.registration_fee_amount ?? 0; // Dynamic from backend
   
   // DEBUG: Log the data to see what's being received
@@ -167,8 +171,8 @@ const VendorPayment = () => {
         amount: orderData.amount_paise,
         currency: 'INR',
         order_id: orderData.order_id,
-        name: 'Salon Platform',
-        description: 'Salon Registration Fee',
+        name: isRegularBuyer ? 'Business Partner Portal' : 'Salon Platform',
+        description: isRegularBuyer ? 'Registration Fee' : 'Salon Registration Fee',
         handler: async function (response) {
           try {
             // Step 3: Verify payment
@@ -223,7 +227,7 @@ const VendorPayment = () => {
       
       // Show success screen, then redirect to dashboard after 2 seconds
       redirectTimeoutRef.current = setTimeout(() => {
-        showSuccessToast('🎉 Payment successful! Your salon is now active!');
+        showSuccessToast(`🎉 Payment successful! Your ${isRegularBuyer ? 'business partner account' : 'salon'} is now active!`);
         navigate('/vendor/dashboard');
       }, PAYMENT_CONFIG.SUCCESS_SCREEN_DURATION);
     } catch (error) {
@@ -294,7 +298,7 @@ const VendorPayment = () => {
               Payment Successful! 🎉
             </h2>
             <p className="text-gray-600 font-body mb-2">
-              Your salon account is now active!
+              Your {isRegularBuyer ? 'business partner account' : 'salon account'} is now active!
             </p>
             <p className="text-sm text-gray-500 font-body" role="status" aria-live="polite">
               Redirecting to dashboard...
@@ -318,7 +322,7 @@ const VendorPayment = () => {
             Complete Your Payment
           </h1>
           <p className="text-gray-600 font-body text-lg">
-            One-time registration fee to activate your salon account
+            One-time registration fee to activate your {isRegularBuyer ? 'business partner' : 'salon'} account
           </p>
         </div>
 
@@ -377,7 +381,7 @@ const VendorPayment = () => {
                     <FiShield className="text-[#F89C02] text-3xl mr-4" />
                     <div>
                       <h3 className="font-heading font-bold text-gray-900 text-lg">
-                        Salon Registration
+                        {isRegularBuyer ? 'Partner Registration' : 'Salon Registration'}
                       </h3>
                       <p className="text-sm text-gray-600 font-body">One-time activation fee</p>
                     </div>
@@ -401,24 +405,40 @@ const VendorPayment = () => {
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <FiCheckCircle className="text-green-600 mt-1 mr-3 flex-shrink-0" size={20} />
+                    {isRegularBuyer ? (
+                      <FiPackage className="text-green-600 mt-1 mr-3 flex-shrink-0" size={20} />
+                    ) : (
+                      <FiCalendar className="text-green-600 mt-1 mr-3 flex-shrink-0" size={20} />
+                    )}
                     <div>
-                      <p className="font-body font-semibold text-gray-900">Online Booking System</p>
-                      <p className="text-sm text-gray-600">Accept bookings 24/7 from customers</p>
+                      <p className="font-body font-semibold text-gray-900">
+                        {isRegularBuyer ? 'Wholesale Catalog' : 'Online Booking System'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {isRegularBuyer ? 'Order products at B2B discounted prices' : 'Accept bookings 24/7 from customers'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <FiCheckCircle className="text-green-600 mt-1 mr-3 flex-shrink-0" size={20} />
+                    <FiTrendingUp className="text-green-600 mt-1 mr-3 flex-shrink-0" size={20} />
                     <div>
                       <p className="font-body font-semibold text-gray-900">Analytics & Reports</p>
-                      <p className="text-sm text-gray-600">Track revenue, bookings, and performance</p>
+                      <p className="text-sm text-gray-600">Track {isRegularBuyer ? 'orders' : 'revenue'}, spending, and performance</p>
                     </div>
                   </div>
                   <div className="flex items-start">
-                    <FiCheckCircle className="text-green-600 mt-1 mr-3 flex-shrink-0" size={20} />
+                    {isRegularBuyer ? (
+                      <FiUsers className="text-green-600 mt-1 mr-3 flex-shrink-0" size={20} />
+                    ) : (
+                      <FiCheckCircle className="text-green-600 mt-1 mr-3 flex-shrink-0" size={20} />
+                    )}
                     <div>
-                      <p className="font-body font-semibold text-gray-900">Customer Management</p>
-                      <p className="text-sm text-gray-600">Manage customers, reviews, and feedback</p>
+                      <p className="font-body font-semibold text-gray-900">
+                        {isRegularBuyer ? 'Business Growth' : 'Customer Management'}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {isRegularBuyer ? 'Access tools to scale your supply chain' : 'Manage customers, reviews, and feedback'}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-start">

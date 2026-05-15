@@ -81,7 +81,7 @@ export function MobileMenu({ isOpen, onClose }) {
       case 'customer':
         return '/customer/dashboard';
       case 'vendor':
-      case 'salon':
+      case 'regular_buyer':
         return '/vendor/dashboard';
       case 'relationship_manager':
         return '/hmr/dashboard';

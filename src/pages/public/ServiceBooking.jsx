@@ -657,6 +657,8 @@ export default function ServiceBooking() {
           </div>
         </div>
       )}
+
+      <Footer />
     </div>
   );
 }

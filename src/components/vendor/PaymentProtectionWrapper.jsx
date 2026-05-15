@@ -20,6 +20,7 @@
 
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { useGetVendorSalonQuery } from '../../services/api/vendorApi';
 import { FiCreditCard, FiLock, FiCheckCircle, FiShoppingBag, FiUsers, FiCalendar, FiStar } from 'react-icons/fi';
 import Button from '../shared/Button';
@@ -29,6 +30,7 @@ import { SkeletonStatCard } from '../shared/Skeleton';
 const PaymentProtectionWrapper = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useSelector((state) => state.auth);
   
   // Fetch salon profile to check payment status
   const { data: salonData, isLoading } = useGetVendorSalonQuery();
@@ -45,7 +47,7 @@ const PaymentProtectionWrapper = ({ children }) => {
   // Loading state
   if (isLoading) {
     return (
-      <DashboardLayout role="vendor">
+      <DashboardLayout role={user?.role || 'vendor'}>
         <div className="p-4 md:p-6 space-y-6">
           <div className="animate-pulse">
             <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
@@ -71,7 +73,7 @@ const PaymentProtectionWrapper = ({ children }) => {
   // If payment pending and NOT on dashboard or payment page, show modal
   if (isPaymentPending && !isDashboard && !isPaymentPage) {
     return (
-      <DashboardLayout role="vendor">
+      <DashboardLayout role={user?.role || 'vendor'}>
         <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
           <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-12 border border-gray-100">
           {/* Icon */}
@@ -88,7 +90,7 @@ const PaymentProtectionWrapper = ({ children }) => {
           
           {/* Description */}
           <p className="text-gray-600 font-body text-center text-lg mb-8">
-            Your salon has been verified! Complete your registration payment to unlock all features and start managing your salon.
+            Your {user?.role === 'regular_buyer' ? 'business' : 'salon'} has been verified! Complete your registration payment to unlock all features and start managing your account.
           </p>
 
           {/* Payment Details Card */}
@@ -131,7 +133,7 @@ const PaymentProtectionWrapper = ({ children }) => {
               </li>
               <li className="flex items-center gap-2">
                 <FiStar className="text-gray-400" />
-                Update Salon Profile
+                Update {user?.role === 'regular_buyer' ? 'Business' : 'Salon'} Profile
               </li>
             </ul>
           </div>

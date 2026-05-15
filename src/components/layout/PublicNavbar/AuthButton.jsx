@@ -77,7 +77,7 @@ export function AuthButton() {
       case 'customer':
         return '/customer/dashboard';
       case 'vendor':
-      case 'salon':
+      case 'regular_buyer':
         return '/vendor/dashboard';
       case 'relationship_manager':
         return '/hmr/dashboard';
@@ -129,7 +129,7 @@ export function AuthButton() {
         ];
 
       case 'vendor':
-      case 'salon':
+      case 'regular_buyer':
         return [
           {
             label: 'Dashboard',
