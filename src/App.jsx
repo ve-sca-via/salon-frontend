@@ -26,7 +26,7 @@
  */
 
 import React, { useEffect, lazy, Suspense } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch } from 'react-redux';
@@ -92,6 +92,14 @@ const Drafts = lazy(() => import('./pages/hmr/Drafts'));
 const SubmissionHistory = lazy(() => import('./pages/hmr/SubmissionHistory'));
 const RMProfile = lazy(() => import('./pages/hmr/RMProfile'));
 const RMLeaderboard = lazy(() => import('./pages/hmr/RMLeaderboard'));
+
+// Wrapper to force full remount of AddSalonForm on every navigation.
+// Without this, React reuses the component instance and draft data
+// leaks when navigating between edit-salon, add-salon, and add-regular-buyer.
+const AddSalonFormKeyed = () => {
+  const location = useLocation();
+  return <AddSalonForm key={location.key} />;
+};
 
 // Vendor pages
 const VendorDashboard = lazy(() => import('./pages/vendor/VendorDashboard'));
@@ -300,14 +308,14 @@ function App() {
               <Route path="/hmr/add-salon" element={
                 <RMProtectedRoute>
                   <ErrorBoundary fallback="page">
-                    <AddSalonForm />
+                    <AddSalonFormKeyed />
                   </ErrorBoundary>
                 </RMProtectedRoute>
               } />
               <Route path="/hmr/edit-salon/:draftId" element={
                 <RMProtectedRoute>
                   <ErrorBoundary fallback="page">
-                    <AddSalonForm />
+                    <AddSalonFormKeyed />
                   </ErrorBoundary>
                 </RMProtectedRoute>
               } />

@@ -280,6 +280,31 @@ const AddSalonForm = () => {
     }
   }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset, typeFromQuery]);
 
+  // CRITICAL: Reset ALL state when navigating to "Add" mode (no draft).
+  // Without this, draft data persists when navigating from edit-salon/:id to add-salon
+  // because React reuses the same component instance and local state stays dirty.
+  useEffect(() => {
+    if (!draftId) {
+      // Reset react-hook-form to clean defaults
+      reset({
+        services: [{ name: '', category_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
+        ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
+      });
+      // Reset all local state
+      setServices([]);
+      setUploadedImages([]);
+      setCoverImage(null);
+      setLogo(null);
+      setAgreementDocument(null);
+      setCurrentStep(1);
+      setSelectedHoursPreset('weekdays-9-6');
+      setRequestType(typeFromQuery || 'salon');
+    }
+    // location.key changes on every navigation, ensuring this fires when
+    // switching between add-salon and add-salon?type=regular_buyer too
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, location.key]);
+
   const handleImageUpload = async (e, type) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
