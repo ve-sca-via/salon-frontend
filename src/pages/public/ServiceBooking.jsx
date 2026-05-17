@@ -252,7 +252,10 @@ export default function ServiceBooking() {
       service_id: service.id,
       service_name: service.name,
       plan_name: service.plan_name || 'Standard',
-      category: service.category_name || 'Other',
+      category: service.service_subcategories?.name 
+        ? `${service.service_categories?.name || 'Category'} > ${service.service_subcategories.name}`
+        : (service.service_categories?.name || service.category_name || 'Other'),
+      subcategory_id: service.subcategory_id || null,
       duration: service.duration_minutes || 0,
       price: parseFloat(service.price) || 0,
       description: service.description || `${service.duration_minutes} minutes`,
