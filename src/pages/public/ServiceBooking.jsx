@@ -680,6 +680,7 @@ export default function ServiceBooking() {
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Fixed Bottom Checkout Bar — appears when cart has items */}
