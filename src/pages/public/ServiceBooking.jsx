@@ -570,8 +570,9 @@ export default function ServiceBooking() {
                   if (s.subcategory_id) {
                     const subcatId = s.subcategory_id;
                     const subcatName = s.service_subcategories?.name || 'Other';
+                    const subcatIcon = s.service_subcategories?.icon_url || null;
                     if (!subcatGroups[subcatId]) {
-                      subcatGroups[subcatId] = { name: subcatName, services: [] };
+                      subcatGroups[subcatId] = { name: subcatName, icon: subcatIcon, services: [] };
                     }
                     subcatGroups[subcatId].services.push(s);
                   } else {
@@ -653,9 +654,22 @@ export default function ServiceBooking() {
                   <>
                     {Object.values(subcatGroups).map((group, idx) => (
                       <div key={idx} className="mb-6">
-                        <h3 className="font-body font-semibold text-[16px] text-gray-800 mb-3 pl-3 border-l-4 border-accent-orange">
-                          {group.name}
-                        </h3>
+                        <div className="flex items-center mb-3">
+                          {group.icon && (
+                            <img 
+                              src={group.icon} 
+                              alt={group.name} 
+                              className="w-8 h-8 rounded-full bg-orange-50 p-1.5 mr-2 object-contain"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <h3 className="font-body font-semibold text-[18px] text-gray-800">
+                            {group.name}
+                          </h3>
+                        </div>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                           {group.services.map(renderServiceItem)}
                         </div>
