@@ -204,14 +204,11 @@ export default function ServiceBooking() {
   }, [services]);
 
   /**
-   * ✅ OPTIMIZED: Set default selected category only when categories change
-   * Replaces setting state inside data processing useEffect
+   * ✅ OPTIMIZED: Removed auto-selection of first category so we start on View 1
    */
   useEffect(() => {
-    if (serviceCategories.length > 0 && !selectedCategory) {
-      setSelectedCategory(serviceCategories[0].name);
-    }
-  }, [serviceCategories, selectedCategory]);
+    // Intentionally blank to prevent auto-selection
+  }, []);
 
   /**
    * handleAddToCart - Adds service to cart with validation
@@ -252,7 +249,10 @@ export default function ServiceBooking() {
       service_id: service.id,
       service_name: service.name,
       plan_name: service.plan_name || 'Standard',
-      category: service.category_name || 'Other',
+      category: service.service_subcategories?.name 
+        ? `${service.service_categories?.name || 'Category'} > ${service.service_subcategories.name}`
+        : (service.service_categories?.name || service.category_name || 'Other'),
+      subcategory_id: service.subcategory_id || null,
       duration: service.duration_minutes || 0,
       price: parseFloat(service.price) || 0,
       description: service.description || `${service.duration_minutes} minutes`,
@@ -454,107 +454,101 @@ export default function ServiceBooking() {
               </button>
             )}
           </div>
-          <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black mb-1">
-            Select Services
-          </h1>
-          <p className="font-body text-[13px] sm:text-[15px] text-neutral-gray-500 mb-4">
-            Choose from our wide range of services at {salon.name}
-          </p>
-
-          {/* Gender Filter Tabs */}
-          <div className="flex bg-neutral-gray-100 p-1 rounded-lg w-full max-w-[400px]">
-             {['all', 'male', 'female'].map(gender => (
-               <button
-                 key={gender}
-                 onClick={() => setFilterGender(gender)}
-                 className={`flex-1 py-1.5 sm:py-2 px-3 rounded-md font-body text-[13px] sm:text-[14px] font-medium capitalize transition-all ${
-                   filterGender === gender 
-                     ? 'bg-white text-neutral-black shadow-sm' 
-                     : 'text-neutral-gray-500 hover:text-neutral-black'
-                 }`}
-               >
-                 {gender === 'all' ? 'All Genders' : gender}
-               </button>
-             ))}
-          </div>
-        </div>
-
-        {/* Service Categories with Navigation Arrows */}
-        <div className="py-3 mb-4 sm:mb-6">
-          <div className="relative">
-            <div className="flex items-center justify-between gap-1 sm:gap-4">
-              <button
-                type="button"
-                onClick={() => handleCategoryNavigation("left")}
-                className="flex-shrink-0 w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-white border border-neutral-gray-600 rounded-full shadow-sm hover:bg-neutral-gray-600 transition-all active:scale-95 disabled:opacity-30"
-                aria-label="Previous category"
-              >
-                <svg
-                  className="w-5 h-5 text-neutral-black"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+          {!selectedCategory ? (
+            <>
+              <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black mb-1">
+                Select Services
+              </h1>
+              <p className="font-body text-[13px] sm:text-[15px] text-neutral-gray-500 mb-4">
+                Choose from our wide range of services at {salon.name}
+              </p>
+            </>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <nav className="flex items-center gap-2 text-sm font-body text-gray-500">
+                <button 
+                  onClick={() => setSelectedCategory(null)}
+                  className="hover:text-accent-orange font-medium transition-colors"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2.5}
-                    d="M15 19l-7-7 7-7"
-                  />
-                </svg>
-              </button>
+                  Categories
+                </button>
+                <span className="text-gray-400 text-xs">▶</span>
+                <span className="text-neutral-black font-semibold">
+                  {selectedCategory}
+                </span>
+                <span className="text-gray-400 text-xs">▶</span>
+                <span className="text-neutral-black font-semibold">
+                  Services
+                </span>
+              </nav>
 
-              <div
-                ref={categoryScrollRef}
-                className="flex flex-1 gap-4 sm:gap-8 overflow-x-auto py-2 px-2 scrollbar-hide [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                style={{ msOverflowStyle: "none", scrollbarWidth: "none" }}
+              <button
+                onClick={() => setSelectedCategory(null)}
+                className="flex items-center w-fit text-accent-orange font-body font-medium hover:opacity-80 transition-opacity mb-2"
               >
-                {serviceCategories.map((category) => (
-                  <ServiceCategoryCard
-                    key={category.id}
-                    category={category}
-                    isSelected={selectedCategory === category.name}
-                    onClick={() => setSelectedCategory(category.name)}
-                  />
-                ))}
+                <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Categories
+              </button>
+              
+              <div className="flex items-center justify-between mb-4">
+                <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black">
+                  {selectedCategory} Services
+                </h1>
+                <span className="font-body text-[12px] sm:text-[14px] text-neutral-gray-500">
+                  {currentServices.length} services available
+                </span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleCategoryNavigation("right")}
-                className="flex-shrink-0 w-9 h-9 sm:w-11 sm:h-11 flex items-center justify-center bg-white border border-neutral-gray-600 rounded-full shadow-sm hover:bg-neutral-gray-600 transition-all active:scale-95 disabled:opacity-30"
-                aria-label="Next category"
-              >
-                <svg
-                  className="w-5 h-5 text-neutral-black"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2.5}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
-              </button>
+              {/* Gender Filter Tabs */}
+              <div className="flex bg-neutral-gray-100 p-1 rounded-lg w-full max-w-[400px]">
+                {['all', 'male', 'female'].map(gender => (
+                  <button
+                    key={gender}
+                    onClick={() => setFilterGender(gender)}
+                    className={`flex-1 py-1.5 sm:py-2 px-3 rounded-md font-body text-[13px] sm:text-[14px] font-medium capitalize transition-all ${
+                      filterGender === gender 
+                        ? 'bg-white text-neutral-black shadow-sm' 
+                        : 'text-neutral-gray-500 hover:text-neutral-black'
+                    }`}
+                  >
+                    {gender === 'all' ? 'All Genders' : gender}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Selected Category Services */}
-        <div className="py-3 sm:p-6">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="font-display font-bold text-[20px] sm:text-[24px] text-neutral-black">
-              {selectedCategory}
-            </h2>
-            <span className="font-body text-[12px] sm:text-[14px] text-neutral-gray-500">
-              {currentServices.length} services available
-            </span>
+        {!selectedCategory ? (
+          /* View 1: Category Grid */
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-6 justify-items-center mb-12">
+            {serviceCategories.map((category) => (
+              <div
+                key={category.id}
+                className="flex flex-col items-center text-center group cursor-pointer w-full max-w-[120px]"
+                onClick={() => setSelectedCategory(category.name)}
+              >
+                <div className="relative w-full aspect-square rounded-2xl overflow-hidden mb-3 shadow-md border-2 border-transparent group-hover:border-accent-orange group-hover:shadow-xl transition-all">
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                </div>
+                <h4 className="font-body font-semibold text-[13px] sm:text-[15px] text-neutral-black group-hover:text-accent-orange transition-colors">
+                  {category.name}
+                </h4>
+                <span className="font-body text-[11px] text-neutral-gray-500 mt-1">
+                  {category.count} {category.count === 1 ? 'Service' : 'Services'}
+                </span>
+              </div>
+            ))}
           </div>
-
-          {/* Services Grid */}
+        ) : (
+          /* View 2: Subcategories and Services */
+          <div className="py-3 sm:p-6 animate-fade-in">
           {servicesLoading ? (
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-orange"></div>
@@ -566,79 +560,141 @@ export default function ServiceBooking() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 px-2">
-              {currentServices.map((service) => (
-                <div
-                  key={service.id}
-                  className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 hover:shadow-md transition-all flex items-center justify-between"
-                >
-                  {/* Left: Name and Duration */}
-                  <div className="flex flex-col pr-3">
-                    <h3 className="font-display font-bold text-[14px] text-neutral-black leading-tight line-clamp-2 mb-1" title={service.name}>
-                      {service.name}
-                    </h3>
-                    
-                    <div className="flex flex-wrap items-center gap-2 mt-1">
-                      <div className="flex items-center gap-1 text-neutral-gray-500">
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <span className="font-body text-[12px] whitespace-nowrap">
-                          {service.duration_minutes}m
-                        </span>
-                      </div>
-                      {service.gender_category && service.gender_category !== 'both' && (
-                        <span className={`px-1.5 py-0.5 text-[9px] rounded-sm uppercase tracking-wider font-semibold ${
-                          service.gender_category === 'male' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-pink-50 text-pink-600 border border-pink-200'
-                        }`}>
-                          {service.gender_category}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+            <div className="space-y-8 px-2">
+              {(() => {
+                // Group currentServices by subcategory_id
+                const subcatGroups = {};
+                const noSubcatServices = [];
+                
+                currentServices.forEach(s => {
+                  if (s.subcategory_id) {
+                    const subcatId = s.subcategory_id;
+                    const subcatName = s.service_subcategories?.name || 'Other';
+                    const subcatIcon = s.service_subcategories?.icon_url || null;
+                    if (!subcatGroups[subcatId]) {
+                      subcatGroups[subcatId] = { name: subcatName, icon: subcatIcon, services: [] };
+                    }
+                    subcatGroups[subcatId].services.push(s);
+                  } else {
+                    noSubcatServices.push(s);
+                  }
+                });
 
-                  {/* Right: Price and Add Button */}
-                  <div className="flex flex-col items-end shrink-0 ml-2 gap-1.5">
-                    {service.discounted_price !== null && service.discounted_price !== undefined ? (
-                      <div className="flex flex-col items-end leading-tight">
-                        <span className="font-display font-extrabold text-[14px] text-accent-orange">
-                          ₹{service.discounted_price}
-                        </span>
-                        <span className="font-body text-[11px] text-neutral-gray-500 line-through">
-                          ₹{service.price}
-                        </span>
-                        {service.discount_percentage !== null && service.discount_percentage !== undefined && (
-                          <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-body font-semibold text-[9px] uppercase tracking-wide mt-0.5">
-                            {service.discount_percentage}% off
+                const renderServiceItem = (service) => (
+                  <div
+                    key={service.id}
+                    className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 hover:shadow-md transition-all flex items-center justify-between"
+                  >
+                    {/* Left: Name and Duration */}
+                    <div className="flex flex-col pr-3">
+                      <h3 className="font-display font-bold text-[14px] text-neutral-black leading-tight line-clamp-2 mb-1" title={service.name}>
+                        {service.name}
+                      </h3>
+                      
+                      <div className="flex flex-wrap items-center gap-2 mt-1">
+                        <div className="flex items-center gap-1 text-neutral-gray-500">
+                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="font-body text-[12px] whitespace-nowrap">
+                            {service.duration_minutes}m
+                          </span>
+                        </div>
+                        {service.gender_category && service.gender_category !== 'both' && (
+                          <span className={`px-1.5 py-0.5 text-[9px] rounded-sm uppercase tracking-wider font-semibold ${
+                            service.gender_category === 'male' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-pink-50 text-pink-600 border border-pink-200'
+                          }`}>
+                            {service.gender_category}
                           </span>
                         )}
                       </div>
-                    ) : (
-                      <span className="font-display font-extrabold text-[14px] text-accent-orange">
-                        ₹{service.price}
-                      </span>
-                    )}
-                      {isServiceInCart(service) ? (
-                        <button
-                          disabled
-                          className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-[5px] font-body font-bold text-[10px] cursor-not-allowed uppercase tracking-wide"
-                        >
-                          Added
-                        </button>
+                    </div>
+
+                    {/* Right: Price and Add Button */}
+                    <div className="flex flex-col items-end shrink-0 ml-2 gap-1.5">
+                      {service.discounted_price !== null && service.discounted_price !== undefined ? (
+                        <div className="flex flex-col items-end leading-tight">
+                          <span className="font-display font-extrabold text-[14px] text-accent-orange">
+                            ₹{service.discounted_price}
+                          </span>
+                          <span className="font-body text-[11px] text-neutral-gray-500 line-through">
+                            ₹{service.price}
+                          </span>
+                          {service.discount_percentage !== null && service.discount_percentage !== undefined && (
+                            <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-body font-semibold text-[9px] uppercase tracking-wide mt-0.5">
+                              {service.discount_percentage}% off
+                            </span>
+                          )}
+                        </div>
                       ) : (
-                        <button
-                          onClick={() => handleAddToCart(service)}
-                          className="px-3 py-1.5 bg-accent-orange/10 text-accent-orange border border-accent-orange/20 rounded-[5px] font-body font-bold text-[10px] hover:bg-accent-orange hover:text-white transition-colors uppercase tracking-wide"
-                        >
-                          + Add
-                        </button>
+                        <span className="font-display font-extrabold text-[14px] text-accent-orange">
+                          ₹{service.price}
+                        </span>
                       )}
+                        {isServiceInCart(service) ? (
+                          <button
+                            disabled
+                            className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-[5px] font-body font-bold text-[10px] cursor-not-allowed uppercase tracking-wide"
+                          >
+                            Added
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleAddToCart(service)}
+                            className="px-3 py-1.5 bg-accent-orange/10 text-accent-orange border border-accent-orange/20 rounded-[5px] font-body font-bold text-[10px] hover:bg-accent-orange hover:text-white transition-colors uppercase tracking-wide"
+                          >
+                            + Add
+                          </button>
+                        )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+
+                return (
+                  <>
+                    {Object.values(subcatGroups).map((group, idx) => (
+                      <div key={idx} className="mb-6">
+                        <div className="flex items-center mb-3">
+                          {group.icon && (
+                            <img 
+                              src={group.icon} 
+                              alt={group.name} 
+                              className="w-8 h-8 rounded-full bg-orange-50 p-1.5 mr-2 object-contain"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                          )}
+                          <h3 className="font-body font-semibold text-[18px] text-gray-800">
+                            {group.name}
+                          </h3>
+                        </div>
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                          {group.services.map(renderServiceItem)}
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {noSubcatServices.length > 0 && (
+                      <div className="mb-6">
+                        {Object.keys(subcatGroups).length > 0 && (
+                          <h3 className="font-body font-semibold text-[16px] text-gray-800 mb-3 pl-3 border-l-4 border-accent-orange">
+                            More Services
+                          </h3>
+                        )}
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                          {noSubcatServices.map(renderServiceItem)}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
         </div>
+        )}
       </div>
 
       {/* Fixed Bottom Checkout Bar — appears when cart has items */}

@@ -288,6 +288,7 @@ export default function SalonDetail() {
 
   // Local UI state
   const [activeTab, setActiveTab] = useState("services");
+  const [selectedParentCategory, setSelectedParentCategory] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -911,15 +912,139 @@ export default function SalonDetail() {
                         ))}
                       </div>
                     ) : serviceCategories.length > 0 ? (
-                      <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4">
-                        {serviceCategories.map((category) => (
-                          <CategoryCard
-                            key={category.id}
-                            category={category}
-                            onClick={() => navigate(`/salons/${id}/book`, { state: { selectedCategory: category.name } })}
-                          />
-                        ))}
-                      </div>
+                      !selectedParentCategory ? (
+                        /* View 1: Parent Categories */
+                        <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 transition-opacity duration-300">
+                          {serviceCategories.map((category) => (
+                            <CategoryCard
+                              key={category.id}
+                              category={category}
+                              onClick={() => setSelectedParentCategory(category)}
+                            />
+                          ))}
+                        </div>
+                      ) : (
+                        /* View 2: Subcategories and Services */
+                        <div className="animate-fade-in">
+                          <div className="mb-6 flex flex-col gap-4">
+                            <nav className="flex items-center gap-2 text-sm font-body text-gray-500">
+                              <button 
+                                onClick={() => setSelectedParentCategory(null)}
+                                className="hover:text-accent-orange font-medium transition-colors"
+                              >
+                                Categories
+                              </button>
+                              <span className="text-gray-400 text-xs">▶</span>
+                              <span className="text-neutral-black font-semibold">
+                                {selectedParentCategory.name}
+                              </span>
+                              <span className="text-gray-400 text-xs">▶</span>
+                              <span className="text-neutral-black font-semibold">
+                                Services
+                              </span>
+                            </nav>
+
+                            <button
+                              onClick={() => setSelectedParentCategory(null)}
+                              className="flex items-center w-fit text-accent-orange font-body font-medium hover:opacity-80 transition-opacity"
+                            >
+                              <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                              </svg>
+                              Back to Categories
+                            </button>
+                          </div>
+                          
+                          <div className="flex items-center mb-6">
+                            {selectedParentCategory.icon_url && (
+                              <img 
+                                src={selectedParentCategory.icon_url} 
+                                alt={selectedParentCategory.name} 
+                                className="w-10 h-10 rounded-full bg-orange-50 p-2 mr-3 object-contain"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                            )}
+                            <h3 className="text-2xl font-display font-bold text-neutral-black">
+                              {selectedParentCategory.name} Services
+                            </h3>
+                          </div>
+
+                          {/* Render Services grouped by Subcategory */}
+                          {(() => {
+                            const categoryServices = services.filter(s => s.category_id === selectedParentCategory.id);
+                            
+                            // Group by subcategory_id
+                            const subcatGroups = {};
+                            const noSubcatServices = [];
+                            
+                            categoryServices.forEach(s => {
+                              if (s.subcategory_id) {
+                                const subcatId = s.subcategory_id;
+                                const subcatName = s.service_subcategories?.name || 'Other';
+                                if (!subcatGroups[subcatId]) {
+                                  subcatGroups[subcatId] = { name: subcatName, services: [] };
+                                }
+                                subcatGroups[subcatId].services.push(s);
+                              } else {
+                                noSubcatServices.push(s);
+                              }
+                            });
+
+                            return (
+                              <div className="space-y-8">
+                                {Object.values(subcatGroups).map((group, idx) => (
+                                  <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
+                                      <h4 className="font-body font-semibold text-[16px] text-gray-800">
+                                        {group.name}
+                                      </h4>
+                                    </div>
+                                    <div className="p-4 flex flex-wrap gap-4">
+                                      {group.services.map(service => (
+                                        <ServiceCard 
+                                          key={service.id} 
+                                          service={service} 
+                                          onBook={handleBookService} 
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                ))}
+                                
+                                {noSubcatServices.length > 0 && (
+                                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    {Object.keys(subcatGroups).length > 0 && (
+                                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
+                                        <h4 className="font-body font-semibold text-[16px] text-gray-800">
+                                          More Services
+                                        </h4>
+                                      </div>
+                                    )}
+                                    <div className="p-4 flex flex-wrap gap-4">
+                                      {noSubcatServices.map(service => (
+                                        <ServiceCard 
+                                          key={service.id} 
+                                          service={service} 
+                                          onBook={handleBookService} 
+                                        />
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {categoryServices.length === 0 && (
+                                  <div className="text-center py-8 text-gray-500 font-body">
+                                    No services available in this category.
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+                        </div>
+                      )
                     ) : (
                       <div className="text-center py-12 bg-neutral-gray-100 rounded-xl">
                         <p className="text-neutral-gray-600 font-body text-[15px]">
