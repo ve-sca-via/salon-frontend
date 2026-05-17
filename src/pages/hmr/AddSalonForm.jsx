@@ -79,7 +79,7 @@ const AddSalonForm = () => {
   // React Hook Form setup
   const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm({
     defaultValues: {
-      services: [{ name: '', category_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
+      services: [{ name: '', category_id: '', subcategory_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
       // Initialize with default business hours preset
       ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
     }
@@ -287,7 +287,7 @@ const AddSalonForm = () => {
     if (!draftId) {
       // Reset react-hook-form to clean defaults
       reset({
-        services: [{ name: '', category_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
+        services: [{ name: '', category_id: '', subcategory_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
         ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
       });
       // Reset all local state
@@ -345,7 +345,7 @@ const AddSalonForm = () => {
   };
 
   const addService = () => {
-    setServices([...services, { name: '', category_id: '', price: '', duration_minutes: '', description: '', gender_category: 'both' }]);
+    setServices([...services, { name: '', category_id: '', subcategory_id: '', price: '', duration_minutes: '', description: '', gender_category: 'both' }]);
   };
 
   const removeService = (index) => {
@@ -360,6 +360,10 @@ const AddSalonForm = () => {
   const updateService = (index, field, value) => {
     const updated = [...services];
     updated[index][field] = value;
+    // When Category 1 changes, reset Category 2
+    if (field === 'category_id') {
+      updated[index]['subcategory_id'] = '';
+    }
     setServices(updated);
   };
 
@@ -539,6 +543,7 @@ const AddSalonForm = () => {
           .map(s => ({
             name: s.name,
             category_id: s.category_id,
+            subcategory_id: s.subcategory_id || null,
             price: parseFloat(s.price),
             duration_minutes: parseInt(s.duration_minutes) || 30,
             description: s.description || '',
@@ -555,6 +560,8 @@ const AddSalonForm = () => {
           // Find category name from serviceCategories
           const category = serviceCategories.find(cat => cat.id === service.category_id);
           const categoryName = category ? category.name : 'Uncategorized';
+          const subcategory = category?.subcategories?.find(sub => sub.id === service.subcategory_id);
+          const subcategoryName = subcategory ? subcategory.name : '';
 
           if (!grouped[categoryName]) {
             grouped[categoryName] = [];
@@ -562,6 +569,7 @@ const AddSalonForm = () => {
 
           grouped[categoryName].push({
             name: service.name,
+            subcategory_name: subcategoryName,
             price: service.price,
             duration_minutes: service.duration_minutes,
             description: service.description,
@@ -1624,7 +1632,7 @@ const AddSalonForm = () => {
 
                           <div>
                             <label className="block text-xs font-body font-medium text-gray-700 mb-1">
-                              Category <span className="text-red-500">*</span>
+                              Category (Level 1) <span className="text-red-500">*</span>
                             </label>
                             <select
                               value={service.category_id || ''}
@@ -1635,6 +1643,22 @@ const AddSalonForm = () => {
                               <option value="">Select category</option>
                               {serviceCategories.map(cat => (
                                 <option key={cat.id} value={cat.id}>{cat.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-body font-medium text-gray-700 mb-1">
+                              Subcategory (Level 2)
+                            </label>
+                            <select
+                              value={service.subcategory_id || ''}
+                              onChange={(e) => updateService(index, 'subcategory_id', e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange disabled:bg-gray-100 disabled:text-gray-400"
+                              disabled={!service.category_id}
+                            >
+                              <option value="">Select subcategory</option>
+                              {service.category_id && serviceCategories.find(c => c.id === service.category_id)?.subcategories?.map(sub => (
+                                <option key={sub.id} value={sub.id}>{sub.name}</option>
                               ))}
                             </select>
                           </div>
@@ -2104,8 +2128,13 @@ const AddSalonForm = () => {
                                 <div className="flex items-center gap-2 mb-2">
                                   <span className="font-semibold text-gray-900 font-body">{service.name}</span>
                                   <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                                    {service.category}
+                                    {serviceCategories.find(c => c.id === service.category_id)?.name || service.category || 'Uncategorized'}
                                   </span>
+                                  {service.subcategory_id && (
+                                    <span className="inline-block px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">
+                                      {serviceCategories.find(c => c.id === service.category_id)?.subcategories?.find(s => s.id === service.subcategory_id)?.name || 'Subcategory'}
+                                    </span>
+                                  )}
                                   {service.gender_category && service.gender_category !== 'both' && (
                                     <span className={`inline-block px-2 py-1 text-[10px] rounded-full uppercase tracking-wider font-semibold ${
                                       service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
