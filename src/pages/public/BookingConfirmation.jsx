@@ -14,6 +14,7 @@
 import React, { useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
+import Footer from "../../components/layout/Footer";
 import { toast } from "react-toastify";
 
 export default function BookingConfirmation() {
@@ -192,6 +193,8 @@ export default function BookingConfirmation() {
           Go to Homepage
         </button>
       </div>
+
+      <Footer />
     </div>
   );
 }

@@ -91,6 +91,7 @@ const ServicesManagement = () => {
     discount_percentage: '',
     duration: '',
     category_id: '',
+    subcategory_id: '',
     gender_category: 'both',
     is_active: true,
   });
@@ -114,6 +115,7 @@ const ServicesManagement = () => {
         // Handle API inconsistency: duration_minutes is canonical, but may receive 'duration'
         duration: service.duration_minutes || service.duration || '',
         category_id: service.category_id || (categories.length > 0 ? categories[0].id : ''),
+        subcategory_id: service.subcategory_id || '',
         gender_category: service.gender_category || 'both',
         is_active: service.is_active !== undefined ? service.is_active : true,
       });
@@ -127,6 +129,7 @@ const ServicesManagement = () => {
         discount_percentage: '',
         duration: '',
         category_id: categories.length > 0 ? categories[0].id : '',
+        subcategory_id: '',
         gender_category: 'both',
         is_active: true,
       });
@@ -147,6 +150,7 @@ const ServicesManagement = () => {
       discount_percentage: '',
       duration: '',
       category_id: categories.length > 0 ? categories[0].id : '',
+      subcategory_id: '',
       gender_category: 'both',
       is_active: true,
     });
@@ -158,9 +162,15 @@ const ServicesManagement = () => {
    */
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: type === 'checkbox' ? checked : value,
+    setFormData((prev) => {
+      const updated = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+      };
+      if (name === 'category_id') {
+        updated.subcategory_id = '';
+      }
+      return updated;
     });
   };
 
@@ -213,6 +223,7 @@ const ServicesManagement = () => {
             : parseFloat(formData.discount_percentage),
         duration_minutes: parseInt(formData.duration),
         category_id: formData.category_id || null,
+        subcategory_id: formData.subcategory_id || null,
         gender_category: formData.gender_category,
         is_active: formData.is_active,
       };
@@ -245,6 +256,7 @@ const ServicesManagement = () => {
         // Handle API inconsistency: duration_minutes is canonical
         duration_minutes: service.duration_minutes || service.duration,
         category_id: service.category_id,
+        subcategory_id: service.subcategory_id || null,
         gender_category: service.gender_category,
         is_active: !service.is_active,
       }).unwrap();
@@ -406,6 +418,11 @@ const ServicesManagement = () => {
                           {service.category}
                         </span>
                       )}
+                      {service.subcategory_id && (
+                        <span className="inline-block px-2 py-1 mt-1 mr-2 text-[10px] uppercase tracking-wider font-semibold rounded-full bg-indigo-100 text-indigo-700 font-body">
+                          {categories.find(c => c.id === service.category_id)?.subcategories?.find(s => s.id === service.subcategory_id)?.name || 'Subcategory'}
+                        </span>
+                      )}
                       {/* Gender Category Badge */}
                       <span className={`inline-block px-2 py-1 mt-1 text-[10px] rounded-full uppercase tracking-wider font-semibold font-body ${
                         (!service.gender_category || service.gender_category === 'both') ? 'bg-gray-100 text-gray-700' : 
@@ -519,10 +536,10 @@ const ServicesManagement = () => {
             disabled={isCreating || isUpdating}
           />
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
               <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
-                Category
+                Category (Level 1)
               </label>
               <select
                 name="category_id"
@@ -532,9 +549,9 @@ const ServicesManagement = () => {
                 disabled={categoriesLoading || isCreating || isUpdating}
               >
                 {categoriesLoading ? (
-                  <option>Loading categories...</option>
+                  <option>Loading...</option>
                 ) : categories.length === 0 ? (
-                  <option>No categories available</option>
+                  <option>No categories</option>
                 ) : (
                   categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
@@ -542,6 +559,23 @@ const ServicesManagement = () => {
                     </option>
                   ))
                 )}
+              </select>
+            </div>
+            <div>
+              <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
+                Subcategory (Level 2)
+              </label>
+              <select
+                name="subcategory_id"
+                value={formData.subcategory_id}
+                onChange={handleChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body disabled:bg-gray-100 disabled:text-gray-400"
+                disabled={!formData.category_id || isCreating || isUpdating}
+              >
+                <option value="">Select subcategory</option>
+                {formData.category_id && categories.find(c => c.id === formData.category_id)?.subcategories?.map(sub => (
+                  <option key={sub.id} value={sub.id}>{sub.name}</option>
+                ))}
               </select>
             </div>
             <div>

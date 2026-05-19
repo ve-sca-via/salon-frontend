@@ -41,7 +41,7 @@
  */
 
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../store/slices/authSlice";
 import {
@@ -98,6 +98,8 @@ const Login = () => {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/';
 
   // RTK Query mutation hooks
   const [login, { isLoading: isEmailLoginLoading }] = useLoginMutation();
@@ -259,7 +261,7 @@ const Login = () => {
 
       // Slight delay to ensure toast displays before navigation
       setTimeout(() => {
-        navigate('/');
+        navigate(from, { replace: true });
       }, 500);
 
     } catch (error) {
@@ -420,7 +422,7 @@ const Login = () => {
 
         showSuccessToast('Login successful! Welcome back! 🎉');
 
-        setTimeout(() => navigate('/'), 500);
+        setTimeout(() => navigate(from, { replace: true }), 500);
       }
     } catch (error) {
       const errorMessage = error.data?.detail || error.message || 'OTP verification failed';
@@ -462,7 +464,7 @@ const Login = () => {
       dispatch(setUser(response.user));
 
       showSuccessToast('Account created successfully! Welcome 🎉');
-      setTimeout(() => navigate('/'), 500);
+      setTimeout(() => navigate(from, { replace: true }), 500);
     } catch (error) {
       const errorMessage = error.data?.detail || error.message || 'Failed to create account';
       showErrorToast(errorMessage);
@@ -657,7 +659,7 @@ const Login = () => {
                     Sign In
                   </Button>
 
-                  <div className="text-center mt-2">
+                  <div className="text-center mt-6 space-y-2">
                     <button
                       type="button"
                       onClick={() => switchLoginMethod('phone')}
@@ -665,6 +667,15 @@ const Login = () => {
                     >
                       Login with Phone instead
                     </button>
+                    
+                    <div className="pt-4 border-t border-gray-100">
+                      <p className="font-body text-sm text-neutral-gray-500">
+                        Don't have an account?{" "}
+                        <Link to="/signup" className="text-accent-orange font-semibold hover:underline">
+                          Create an Account
+                        </Link>
+                      </p>
+                    </div>
                   </div>
                 </form>
               )}
@@ -809,7 +820,7 @@ const Login = () => {
                         Continue with Phone
                       </Button>
 
-                      <div className="text-center mt-3">
+                      <div className="text-center mt-3 space-y-4">
                         <button
                           type="button"
                           onClick={() => switchLoginMethod('email')}
@@ -817,6 +828,15 @@ const Login = () => {
                         >
                           Login with Email instead
                         </button>
+                        
+                        <div className="pt-4 border-t border-gray-100">
+                          <p className="font-body text-sm text-neutral-gray-500">
+                            Don't have an account?{" "}
+                            <Link to="/signup" className="text-accent-orange font-semibold hover:underline">
+                              Create an Account
+                            </Link>
+                          </p>
+                        </div>
                       </div>
                     </form>
                   ) : (

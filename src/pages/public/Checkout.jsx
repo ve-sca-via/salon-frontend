@@ -54,6 +54,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
+import Footer from "../../components/layout/Footer";
 import { useGetCartQuery, useCheckoutCartMutation } from "../../services/api/cartApi";
 import { useCreateCartPaymentOrderMutation } from "../../services/api/paymentApi";
 import { useGetPublicConfigsQuery } from "../../services/api/configApi";
@@ -501,6 +502,8 @@ export default function Checkout() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

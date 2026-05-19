@@ -19,7 +19,7 @@ const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
   const [logoutApi] = useLogoutMutation();
   
   // Vendor-specific: Get salon data and update mutation
-  const isVendor = role === 'vendor' || user?.role === 'vendor' || user?.role === 'salon';
+  const isVendor = role === 'vendor' || user?.role === 'vendor' || user?.role === 'regular_buyer';
   const { data: salonData } = useGetVendorSalonQuery(undefined, { skip: !isVendor });
   const [updateSalon, { isLoading: isUpdating }] = useUpdateVendorSalonMutation();
   const salonProfile = salonData?.salon || salonData;
@@ -63,7 +63,7 @@ const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
       case 'customer':
         return '/customer/dashboard';
       case 'vendor':
-      case 'salon':
+      case 'regular_buyer':
         return '/vendor/dashboard';
       case 'relationship_manager':
         return '/hmr/dashboard';
@@ -79,7 +79,7 @@ const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
       case 'customer':
         return '/customer/profile';
       case 'vendor':
-      case 'salon':
+      case 'regular_buyer':
         return '/vendor/profile';
       case 'relationship_manager':
         return '/hmr/profile';

@@ -29,6 +29,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
+import Footer from "../../components/layout/Footer";
 import { useCreateBookingMutation } from "../../services/api/bookingApi";
 import { useClearCartMutation } from "../../services/api/cartApi";
 import { useCreateBookingOrderMutation, useVerifyBookingPaymentMutation } from "../../services/api/paymentApi";
@@ -318,6 +319,8 @@ export default function Payment() {
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
