@@ -18,9 +18,8 @@ export const INITIAL_SERVICE_FORM = {
   duration: '',
   category_id: '',
   subcategory_id: '',
-  /** Vendor-typed label when subcategory is "Others" */
+  custom_category_name: '',
   custom_subcategory_name: '',
-  is_custom_subcategory: false,
   gender_category: '',
   is_active: true,
   image_url: '',

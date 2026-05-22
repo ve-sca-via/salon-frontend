@@ -45,11 +45,9 @@ const VendorServiceWizardStep2Category = ({
           onClick={onCustomService}
           compact={Boolean(formData.category_id)}
         />
-        {!formData.category_id && (
-          <p className="text-center font-vendor text-xs text-[#9CA3AF]">
-            Select a category above, then use custom service to name your own offering
-          </p>
-        )}
+        <p className="text-center font-vendor text-xs text-[#9CA3AF]">
+          Or create a custom service and enter category, subcategory, and name yourself
+        </p>
 
         {categoriesLoading ? (
           <div className="flex justify-center py-12">

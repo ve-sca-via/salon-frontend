@@ -9,11 +9,6 @@ import { uploadSalonImage } from '../../../services/api/uploadApi';
 import { showErrorToast, showInfoToast } from '../../../utils/toastConfig';
 import { ServiceWizardProgress } from './ServiceWizardUI';
 import { TOTAL_WIZARD_STEPS } from './serviceWizardConstants';
-import {
-  findOthersSubcategory,
-  isOthersSubcategory,
-  orderSubcategoriesForDisplay,
-} from './serviceWizardUtils';
 
 const DESCRIPTION_MAX = 250;
 
@@ -60,7 +55,7 @@ const VendorConfigureService = ({
   hideGenderField = false,
   hideCategoryField = false,
   hideSubcategoryField = false,
-  forceOthersSubcategory = false,
+  useTextCategoryFields = false,
   submitLabel,
 }) => {
   const fileInputRef = useRef(null);
@@ -76,31 +71,7 @@ const VendorConfigureService = ({
   const primaryActionLabel =
     submitLabel || (editingService ? 'Update Service' : 'Save Service');
   const selectedCategory = categories.find((c) => c.id === formData.category_id);
-  const subcategories = orderSubcategoriesForDisplay(selectedCategory?.subcategories || []);
-  const othersSubcategory = findOthersSubcategory(selectedCategory);
-
-  const handleSubcategoryChange = (e) => {
-    const subId = e.target.value;
-    const sub = subcategories.find((s) => s.id === subId);
-    if (sub && isOthersSubcategory(sub)) {
-      setFormData((prev) => ({
-        ...prev,
-        subcategory_id: subId,
-        is_custom_subcategory: true,
-        name: prev.custom_subcategory_name?.trim() || prev.name || '',
-      }));
-    } else if (sub) {
-      setFormData((prev) => ({
-        ...prev,
-        subcategory_id: subId,
-        is_custom_subcategory: false,
-        custom_subcategory_name: '',
-        name: sub.name || prev.name,
-      }));
-    } else {
-      handleChange(e);
-    }
-  };
+  const subcategories = selectedCategory?.subcategories || [];
 
   const handleGenderSelect = (value) => {
     setFormData((prev) => ({ ...prev, gender_category: value }));
@@ -188,7 +159,44 @@ const VendorConfigureService = ({
               />
             </div>
 
-            {!hideCategoryField && (
+            {useTextCategoryFields && (
+              <>
+                <div>
+                  <label className={fieldLabelClass} htmlFor="custom_category_name">
+                    Category
+                  </label>
+                  <input
+                    id="custom_category_name"
+                    type="text"
+                    name="custom_category_name"
+                    value={formData.custom_category_name || ''}
+                    onChange={handleChange}
+                    required
+                    placeholder="e.g. Hair"
+                    className={fieldInputClass}
+                    disabled={isSaving}
+                  />
+                </div>
+                <div>
+                  <label className={fieldLabelClass} htmlFor="custom_subcategory_name">
+                    Subcategory
+                  </label>
+                  <input
+                    id="custom_subcategory_name"
+                    type="text"
+                    name="custom_subcategory_name"
+                    value={formData.custom_subcategory_name || ''}
+                    onChange={handleChange}
+                    required
+                    placeholder="e.g. Haircut & Styling"
+                    className={fieldInputClass}
+                    disabled={isSaving}
+                  />
+                </div>
+              </>
+            )}
+
+            {!useTextCategoryFields && !hideCategoryField && (
               <div>
                 <label className={fieldLabelClass} htmlFor="category_id">
                   Category
@@ -224,7 +232,7 @@ const VendorConfigureService = ({
               </div>
             )}
 
-            {!hideSubcategoryField && (
+            {!useTextCategoryFields && !hideSubcategoryField && (
               <div>
                 <label className={fieldLabelClass} htmlFor="subcategory_id">
                   Subcategory
@@ -233,18 +241,10 @@ const VendorConfigureService = ({
                   <select
                     id="subcategory_id"
                     name="subcategory_id"
-                    value={
-                      forceOthersSubcategory && othersSubcategory?.id
-                        ? othersSubcategory.id
-                        : formData.subcategory_id
-                    }
-                    onChange={handleSubcategoryChange}
+                    value={formData.subcategory_id}
+                    onChange={handleChange}
                     className={`${fieldInputClass} appearance-none pr-10 disabled:bg-[#E8E8E8]`}
-                    disabled={
-                      !formData.category_id ||
-                      isSaving ||
-                      (forceOthersSubcategory && Boolean(othersSubcategory?.id))
-                    }
+                    disabled={!formData.category_id || isSaving}
                   >
                     <option value="">Select subcategory</option>
                     {subcategories.map((sub) => (
@@ -258,11 +258,6 @@ const VendorConfigureService = ({
                     size={16}
                   />
                 </div>
-                {forceOthersSubcategory && (
-                  <p className="mt-1 font-vendor text-xs text-[#865300]">
-                    Custom services are filed under &quot;Others&quot;
-                  </p>
-                )}
               </div>
             )}
 

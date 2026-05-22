@@ -10,6 +10,7 @@ export function loadServiceWizardDraft() {
       step: parsed.step || 1,
       formData: { ...INITIAL_SERVICE_FORM, ...(parsed.formData || {}) },
       customMode: Boolean(parsed.customMode),
+      customEntryStep: parsed.customEntryStep || 2,
       draftServiceId: parsed.draftServiceId || null,
       savedAt: parsed.savedAt || null,
     };
@@ -18,7 +19,13 @@ export function loadServiceWizardDraft() {
   }
 }
 
-export function saveServiceWizardDraft({ step, formData, customMode, draftServiceId }) {
+export function saveServiceWizardDraft({
+  step,
+  formData,
+  customMode,
+  customEntryStep,
+  draftServiceId,
+}) {
   try {
     localStorage.setItem(
       DRAFT_STORAGE_KEY,
@@ -26,6 +33,7 @@ export function saveServiceWizardDraft({ step, formData, customMode, draftServic
         step,
         formData,
         customMode: Boolean(customMode),
+        customEntryStep: customEntryStep || null,
         draftServiceId: draftServiceId || null,
         savedAt: new Date().toISOString(),
       })

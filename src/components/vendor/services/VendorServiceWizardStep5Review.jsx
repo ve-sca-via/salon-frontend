@@ -6,7 +6,6 @@ import {
   ServiceWizardGhostButton,
 } from './ServiceWizardUI';
 import { WIZARD_STEPS } from './serviceWizardConstants';
-import { isOthersSubcategory } from './serviceWizardUtils';
 
 const formatDuration = (minutes) => {
   const m = parseInt(minutes, 10);
@@ -37,6 +36,7 @@ const VendorServiceWizardStep5Review = ({
   salonName,
   formData,
   categories,
+  isCustomServiceFlow = false,
   onBack,
   onPublish,
   onSaveDraft,
@@ -44,23 +44,26 @@ const VendorServiceWizardStep5Review = ({
   isSaving,
 }) => {
   const { categoryName, subcategoryName } = useMemo(() => {
-    const cat = categories.find((c) => c.id === formData.category_id);
-    let subName = '';
-    if (cat && formData.subcategory_id) {
-      const sub = cat.subcategories?.find((s) => s.id === formData.subcategory_id);
-      if (formData.is_custom_subcategory && formData.custom_subcategory_name?.trim()) {
-        subName = `Others — ${formData.custom_subcategory_name.trim()}`;
-      } else if (sub && !isOthersSubcategory(sub)) {
-        subName = sub.name || '';
-      } else {
-        subName = sub?.name || '';
-      }
+    if (isCustomServiceFlow) {
+      return {
+        categoryName: formData.custom_category_name?.trim() || '—',
+        subcategoryName: formData.custom_subcategory_name?.trim() || '',
+      };
     }
+    const cat = categories.find((c) => c.id === formData.category_id);
+    const sub = cat?.subcategories?.find((s) => s.id === formData.subcategory_id);
     return {
       categoryName: cat?.name || '—',
-      subcategoryName: subName,
+      subcategoryName: sub?.name || '',
     };
-  }, [categories, formData.category_id, formData.subcategory_id]);
+  }, [
+    categories,
+    formData.category_id,
+    formData.subcategory_id,
+    formData.custom_category_name,
+    formData.custom_subcategory_name,
+    isCustomServiceFlow,
+  ]);
 
   return (
     <ServiceWizardShell salonName={salonName} onBack={onBack} currentStep={WIZARD_STEPS.REVIEW}>
@@ -80,9 +83,7 @@ const VendorServiceWizardStep5Review = ({
             <dl className="space-y-3">
               <ReviewRow label="Service name" value={formData.name || '—'} />
               <ReviewRow label="Category" value={categoryName} />
-              {subcategoryName && (
-                <ReviewRow label="Service type" value={subcategoryName} />
-              )}
+              <ReviewRow label="Subcategory" value={subcategoryName || '—'} />
               <ReviewRow label="Preference" value={genderLabel(formData.gender_category)} />
               <ReviewRow
                 label="Description"
