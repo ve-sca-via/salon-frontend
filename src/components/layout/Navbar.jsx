@@ -5,8 +5,8 @@ import { clearUser } from '../../store/slices/authSlice';
 import { useLogoutMutation } from '../../services/api/authApi';
 import { useGetVendorSalonQuery, useUpdateVendorSalonMutation } from '../../services/api/vendorApi';
 import { FiMenu, FiUser, FiLogOut, FiCheckCircle, FiXCircle, FiMapPin } from 'react-icons/fi';
-import { showSuccessToast } from '../../utils/toastConfig';
 import { getUserLocation } from '../../store/slices/locationSlice';
+import VendorBookingStatusOverlay from '../vendor/dashboard/VendorBookingStatusOverlay';
 
 const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
   const { user } = useSelector((state) => state.auth);
@@ -14,6 +14,7 @@ const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [showUserMenu, setShowUserMenu] = React.useState(false);
+  const [bookingStatusOverlay, setBookingStatusOverlay] = React.useState(null);
   
   // RTK Query logout mutation
   const [logoutApi] = useLogoutMutation();
@@ -29,12 +30,7 @@ const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
     try {
       const newStatus = !salonProfile.accepting_bookings;
       await updateSalon({ accepting_bookings: newStatus }).unwrap();
-      showSuccessToast(
-        newStatus 
-          ? '✅ Bookings enabled! Customers can now book your services.' 
-          : '🔒 Bookings disabled temporarily.',
-        { position: 'top-center' }
-      );
+      setBookingStatusOverlay({ enabled: newStatus });
     } catch (error) {
       // Toggle failed
     }
@@ -91,13 +87,19 @@ const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
   };
 
   return (
+    <>
+    <VendorBookingStatusOverlay
+      open={bookingStatusOverlay != null}
+      enabled={bookingStatusOverlay?.enabled ?? true}
+      onClose={() => setBookingStatusOverlay(null)}
+    />
     <nav className={`${
       isVendor && salonProfile
         ? salonProfile.accepting_bookings
           ? 'bg-gradient-to-r from-green-50 via-white to-green-50 border-b-2 border-green-200'
           : 'bg-gradient-to-r from-red-50 via-white to-red-50 border-b-2 border-red-200'
         : 'bg-white border-b border-gray-100'
-    } fixed top-0 left-0 right-0 z-50 shadow-sm transition-all duration-300`}>
+    } fixed top-0 left-0 right-0 z-[120] shadow-sm transition-all duration-300`}>
       <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left side */}
@@ -224,6 +226,7 @@ const Navbar = ({ onMenuClick, onSidebarToggle, role }) => {
         </div>
       </div>
     </nav>
+    </>
   );
 };
 

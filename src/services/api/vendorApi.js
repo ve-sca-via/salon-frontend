@@ -10,7 +10,7 @@ import axiosBaseQuery from './baseQuery';
 export const vendorApi = createApi({
   reducerPath: 'vendorApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['VendorSalon', 'VendorServices', 'VendorBookings', 'VendorAnalytics', 'ServiceCategories'],
+  tagTypes: ['VendorSalon', 'VendorServices', 'VendorBookings', 'VendorAnalytics', 'ServiceCategories', 'VendorPromotions'],
   endpoints: (builder) => ({
     // Get vendor's salon
     getVendorSalon: builder.query({
@@ -142,6 +142,24 @@ export const vendorApi = createApi({
       invalidatesTags: ['VendorSalon'],
     }),
 
+    getActiveVendorPromotion: builder.query({
+      query: () => ({
+        url: '/api/v1/vendors/promotions/active',
+        method: 'get',
+      }),
+      providesTags: ['VendorPromotions'],
+      keepUnusedDataFor: 60,
+    }),
+
+    applyVendorPromotion: builder.mutation({
+      query: (data) => ({
+        url: '/api/v1/vendors/promotions/apply',
+        method: 'post',
+        data,
+      }),
+      invalidatesTags: ['VendorPromotions', { type: 'VendorServices', id: 'LIST' }],
+    }),
+
     // Complete vendor registration
     completeVendorRegistration: builder.mutation({
       query: (data) => ({
@@ -166,6 +184,8 @@ export const {
   useGetVendorAnalyticsQuery,
   useProcessVendorPaymentMutation,
   useCompleteVendorRegistrationMutation,
+  useGetActiveVendorPromotionQuery,
+  useApplyVendorPromotionMutation,
 } = vendorApi;
 
 export default vendorApi;
