@@ -33,14 +33,24 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import Card from '../../components/shared/Card';
-import Button from '../../components/shared/Button';
-import InputField from '../../components/shared/InputField';
+import {
+  FIGMA_PROFILE_BG,
+  SalonProfilePageHeader,
+  SalonProfileStatusCard,
+  SalonProfileSection,
+  SalonProfileSectionHeader,
+  SalonProfileField,
+  SalonProfileSaveButton,
+  SalonProfileStatRow,
+  inputClass,
+  selectClass,
+  textareaClass,
+} from '../../components/vendor/profile/SalonProfileFigmaUI';
 import { 
   useGetVendorSalonQuery, 
   useUpdateVendorSalonMutation 
 } from '../../services/api/vendorApi';
-import { FiEdit2, FiSave, FiX, FiMapPin, FiPhone, FiMail, FiClock, FiImage, FiUpload, FiTrash2, FiNavigation, FiFileText } from 'react-icons/fi';
+import { FiEdit2, FiClock, FiImage, FiUpload, FiTrash2, FiNavigation, FiFileText } from 'react-icons/fi';
 import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../../utils/toastConfig';
 import { SkeletonFormField } from '../../components/shared/Skeleton';
 import { uploadSalonImage, uploadAgreementDocument, getAgreementDocumentSignedUrl } from '../../services/api/uploadApi';
@@ -505,22 +515,27 @@ const SalonProfile = () => {
   if (profileLoading && !salonProfile) {
     return (
       <DashboardLayout role={user?.role || "vendor"}>
-        <div className="p-4 md:p-6 space-y-6">
-          <div className="animate-pulse">
-            <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
-            <div className="h-4 w-64 bg-gray-200 rounded"></div>
-          </div>
-          <Card>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <SkeletonFormField key={i} />
-              ))}
+        <div className={`${FIGMA_PROFILE_BG} px-4 py-6 space-y-6 max-w-4xl`}>
+          <div className="animate-pulse space-y-4">
+            <div className="h-9 w-48 rounded-lg bg-[#F3F3F3]" />
+            <div className="h-4 w-64 rounded-lg bg-[#F3F3F3]" />
+            <div className="h-20 rounded-2xl bg-[#DCFCE7]/60" />
+            <div className="rounded-3xl bg-white p-6 shadow-[0_4px_24px_rgba(34,26,17,0.06)]">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <SkeletonFormField key={i} />
+                ))}
+              </div>
             </div>
-          </Card>
+          </div>
         </div>
       </DashboardLayout>
     );
   }
+
+  const isRegularBuyer = user?.role === 'regular_buyer';
+  const profileTitle = isRegularBuyer ? 'Business Profile' : 'Salon Profile';
+  const profileSubtitle = `Manage your ${isRegularBuyer ? 'business' : 'salon'} information and settings`;
 
   // Days of week for business hours section
   const days = [
@@ -535,323 +550,256 @@ const SalonProfile = () => {
 
   return (
     <DashboardLayout role={user?.role || "vendor"}>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">
-              {user?.role === 'regular_buyer' ? 'Business Profile' : 'Salon Profile'}
-            </h1>
-            <p className="text-gray-600 font-body mt-1">
-              Manage your {user?.role === 'regular_buyer' ? 'business' : 'salon'} information and settings
-            </p>
-          </div>
-        </div>
+      <div className={`${FIGMA_PROFILE_BG} px-4 py-6 lg:px-0 space-y-6 max-w-4xl mx-auto`}>
+        <SalonProfilePageHeader title={profileTitle} subtitle={profileSubtitle} />
 
-        {/* Status Banner */}
         {salonProfile && (
-          <div
-            className={`rounded-lg p-4 ${
-              salonProfile.is_active
-                ? 'bg-green-50 border border-green-200'
-                : 'bg-yellow-50 border border-yellow-200'
-            }`}
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <h3
-                  className={`text-sm font-body font-semibold ${
-                    salonProfile.is_active ? 'text-green-900' : 'text-yellow-900'
-                  }`}
-                >
-                  {salonProfile.is_active 
-                    ? (user?.role === 'regular_buyer' ? 'Account Active' : 'Salon Active') 
-                    : (user?.role === 'regular_buyer' ? 'Account Inactive' : 'Salon Inactive')}
-                </h3>
-                <p
-                  className={`text-sm font-body ${
-                    salonProfile.is_active ? 'text-green-700' : 'text-yellow-700'
-                  }`}
-                >
-                  {salonProfile.is_active
-                    ? (user?.role === 'regular_buyer' 
-                        ? 'Your account is active and verified' 
-                        : 'Your salon is visible to customers and accepting bookings')
-                    : (user?.role === 'regular_buyer'
-                        ? 'Complete payment to activate your account'
-                        : 'Complete payment to activate your salon')}
-                </p>
-              </div>
-              <div
-                className={`w-3 h-3 rounded-full ${
-                  salonProfile.is_active ? 'bg-green-500' : 'bg-yellow-500'
-                }`}
-              ></div>
-            </div>
-          </div>
+          <SalonProfileStatusCard
+            isActive={salonProfile.is_active}
+            activeTitle={isRegularBuyer ? 'Account Active' : 'Active Status'}
+            activeMessage={
+              isRegularBuyer
+                ? 'Your account is active and verified'
+                : 'Your salon is visible to customers and accepting bookings'
+            }
+            inactiveTitle={isRegularBuyer ? 'Account Inactive' : 'Salon Inactive'}
+            inactiveMessage={
+              isRegularBuyer
+                ? 'Complete payment to activate your account'
+                : 'Complete payment to activate your salon'
+            }
+          />
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Main Profile Card */}
-          <div className="lg:col-span-2">
-            <Card>
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-display font-bold text-gray-900">Basic Information</h2>
-                {!isEditing ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsEditing(true)}
-                    className="text-accent-orange hover:bg-orange-50"
-                  >
-                    <FiEdit2 className="mr-2" />
-                    Edit Profile
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCancel}
-                      className="text-gray-600 hover:bg-gray-100"
-                      disabled={isUpdating}
-                    >
-                      <FiX className="mr-2" />
-                      Cancel
-                    </Button>
-                    <Button
-                      variant="primary"
-                      size="sm"
-                      onClick={handleSave}
-                      disabled={isUpdating}
-                    >
-                      <FiSave className="mr-2" />
-                      {isUpdating ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                  </div>
-                )}
-              </div>
+        <SalonProfileSection>
+          <SalonProfileSectionHeader
+            title="Basic Information"
+            isEditing={isEditing}
+            onEdit={() => setIsEditing(true)}
+            onCancel={handleCancel}
+            onSave={handleSave}
+            isUpdating={isUpdating}
+          />
 
-              <div className="space-y-5">
-                <InputField
-                  label="Business Name"
-                  name="business_name"
-                  value={formData.business_name}
+          <div className="space-y-5">
+            <SalonProfileField label="Business Name">
+              <input
+                type="text"
+                name="business_name"
+                value={formData.business_name}
+                onChange={handleChange}
+                disabled={!isEditing}
+                placeholder="Enter business name"
+                required
+                className={inputClass}
+              />
+            </SalonProfileField>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SalonProfileField label="Email (Linked to Account)">
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
                   onChange={handleChange}
-                  icon={<FiMapPin />}
-                  disabled={!isEditing}
-                  placeholder="Enter business name"
-                  required
+                  disabled
+                  placeholder="contact@salon.com"
+                  className={`${inputClass} opacity-60 cursor-not-allowed`}
                 />
+              </SalonProfileField>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <InputField
-                    label="Email (Linked to Account)"
-                    type="email"
-                    name="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    icon={<FiMail />}
-                    disabled={true}
-                    placeholder="contact@salon.com"
-                    className="opacity-60 cursor-not-allowed"
-                  />
-
-                  <InputField
-                    label="Phone"
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    icon={<FiPhone />}
-                    disabled={!isEditing}
-                    placeholder="+91 XXXXXXXXXX"
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                      Outlet Type
-                    </label>
-                    <select
-                      name="outlet"
-                      value={formData.outlet || ''}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
-                    >
-                      <option value="">Select Outlet Type</option>
-                      <option value="Company owned">Company Owned</option>
-                      <option value="franchisee">Franchisee</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                      Are you GST registered?
-                    </label>
-                    <select
-                      name="is_gst"
-                      value={formData.is_gst ? 'true' : 'false'}
-                      onChange={(e) => setFormData({...formData, is_gst: e.target.value === 'true'})}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
-                    >
-                      <option value="true">Yes</option>
-                      <option value="false">No</option>
-                    </select>
-                  </div>
-                </div>
-
-                <InputField
-                  label="Address"
-                  name="address"
-                  value={formData.address}
+              <SalonProfileField label="Phone">
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
                   onChange={handleChange}
-                  icon={<FiMapPin />}
                   disabled={!isEditing}
-                  placeholder="Complete address"
+                  placeholder="+91 XXXXXXXXXX"
+                  className={inputClass}
                 />
+              </SalonProfileField>
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <InputField
-                    label="City"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    placeholder="Mumbai"
-                  />
+            <SalonProfileField label="Website">
+              <input
+                type="url"
+                name="website"
+                value={formData.website}
+                onChange={handleChange}
+                disabled={!isEditing}
+                placeholder="https://www.yoursalon.com"
+                className={inputClass}
+              />
+            </SalonProfileField>
 
-                  <div>
-                    <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                      State
-                    </label>
-                    <select
-                      name="state"
-                      value={formData.state}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
-                    >
-                      <option value="">Select State</option>
-                      {INDIAN_STATES.map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SalonProfileField label="Outlet Type">
+                <select
+                  name="outlet"
+                  value={formData.outlet || ''}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  className={selectClass}
+                >
+                  <option value="">Select Outlet Type</option>
+                  <option value="Company owned">Company Owned</option>
+                  <option value="franchisee">Franchisee</option>
+                </select>
+              </SalonProfileField>
+              <SalonProfileField label="Are you GST registered?">
+                <select
+                  name="is_gst"
+                  value={formData.is_gst ? 'true' : 'false'}
+                  onChange={(e) => setFormData({ ...formData, is_gst: e.target.value === 'true' })}
+                  disabled={!isEditing}
+                  className={selectClass}
+                >
+                  <option value="true">Yes</option>
+                  <option value="false">No</option>
+                </select>
+              </SalonProfileField>
+            </div>
 
-                  <InputField
-                    label="Pincode"
-                    name="pincode"
-                    value={formData.pincode}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    placeholder="400001"
-                  />
-                </div>
+            <SalonProfileField label="Address">
+              <input
+                type="text"
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                disabled={!isEditing}
+                placeholder="Complete address"
+                className={inputClass}
+              />
+            </SalonProfileField>
 
-                {/* Location Coordinates */}
-                <div>
-                  <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                    Location Coordinates
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <InputField
-                      label="Latitude"
-                      name="latitude"
-                      type="number"
-                      step="any"
-                      value={formData.latitude}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      placeholder="e.g., 28.4926"
-                    />
-                    <InputField
-                      label="Longitude"
-                      name="longitude"
-                      type="number"
-                      step="any"
-                      value={formData.longitude}
-                      onChange={handleChange}
-                      disabled={!isEditing}
-                      placeholder="e.g., 77.0920"
-                    />
-                  </div>
-                  {isEditing && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleFetchLocation}
-                      disabled={fetchingLocation}
-                      className="mt-2"
-                    >
-                      <FiNavigation className="mr-2" />
-                      {fetchingLocation ? 'Fetching...' : 'Fetch My Location'}
-                    </Button>
-                  )}
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <SalonProfileField label="City">
+                <input
+                  type="text"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  placeholder="Mumbai"
+                  className={inputClass}
+                />
+              </SalonProfileField>
+              <SalonProfileField label="State">
+                <select
+                  name="state"
+                  value={formData.state}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  className={selectClass}
+                >
+                  <option value="">Select State</option>
+                  {INDIAN_STATES.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+              </SalonProfileField>
+              <SalonProfileField label="Pincode">
+                <input
+                  type="text"
+                  name="pincode"
+                  value={formData.pincode}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  placeholder="400001"
+                  className={inputClass}
+                />
+              </SalonProfileField>
+            </div>
 
-                {/* Opening and Closing Times */}
-                <div>
-                  <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                    Business Hours
-                  </label>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-body text-gray-600 mb-1 block">
-                        Opening Time
-                      </label>
-                      <input
-                        type="time"
-                        name="opening_time"
-                        value={formData.opening_time}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-body text-gray-600 mb-1 block">
-                        Closing Time
-                      </label>
-                      <input
-                        type="time"
-                        name="closing_time"
-                        value={formData.closing_time}
-                        onChange={handleChange}
-                        disabled={!isEditing}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                    Description
-                  </label>
-                  <textarea
-                    name="description"
-                    value={formData.description}
-                    onChange={handleChange}
-                    disabled={!isEditing}
-                    rows={4}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body"
-                    placeholder="Tell customers about your salon..."
-                  />
-                </div>
+            <SalonProfileField label="Location Coordinates">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="number"
+                  name="latitude"
+                  step="any"
+                  value={formData.latitude}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  placeholder="Latitude e.g. 28.4926"
+                  className={inputClass}
+                />
+                <input
+                  type="number"
+                  name="longitude"
+                  step="any"
+                  value={formData.longitude}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  placeholder="Longitude e.g. 77.0920"
+                  className={inputClass}
+                />
               </div>
-            </Card>
+              {isEditing && (
+                <button
+                  type="button"
+                  onClick={handleFetchLocation}
+                  disabled={fetchingLocation}
+                  className="mt-3 inline-flex items-center gap-2 rounded-lg border border-[#F89E07] px-4 py-2 font-vendor text-sm font-semibold text-[#F89E07] hover:bg-[#FFF1E6] disabled:opacity-50"
+                >
+                  <FiNavigation size={16} />
+                  {fetchingLocation ? 'Fetching...' : 'Fetch My Location'}
+                </button>
+              )}
+            </SalonProfileField>
 
-            {/* Business Hours Card */}
-            <Card className="mt-6">
-              <h2 className="text-xl font-display font-bold text-gray-900 mb-4 flex items-center">
-                <FiClock className="mr-2 text-accent-orange" />
-                Business Hours
-              </h2>
+            <SalonProfileField label="Default Opening & Closing Time">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  type="time"
+                  name="opening_time"
+                  value={formData.opening_time}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                  aria-label="Opening time"
+                />
+                <input
+                  type="time"
+                  name="closing_time"
+                  value={formData.closing_time}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  className={inputClass}
+                  aria-label="Closing time"
+                />
+              </div>
+            </SalonProfileField>
+
+            <SalonProfileField label="Description">
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleChange}
+                disabled={!isEditing}
+                rows={4}
+                className={textareaClass}
+                placeholder="Tell customers about your salon..."
+              />
+            </SalonProfileField>
+          </div>
+
+          {isEditing && (
+            <SalonProfileSaveButton
+              onClick={handleSave}
+              disabled={isUpdating}
+              loading={isUpdating}
+            />
+          )}
+        </SalonProfileSection>
+
+        <SalonProfileSection title="Business Hours">
+          <div className="flex items-center gap-2 mb-4 -mt-2">
+            <FiClock className="text-[#F89E07]" size={20} />
+            <p className="font-vendor text-sm text-[#7A7A7A]">Set hours for each day of the week</p>
+          </div>
               <div className="space-y-3">
                 {days.map((day) => {
                   const dayHours = formData.business_hours[day.key] || '';
@@ -871,21 +819,21 @@ const SalonProfile = () => {
                   }
                   
                   return (
-                    <div key={day.key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <div key={day.key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 py-2 border-b border-[#F3F3F3] last:border-0">
                       <div className="w-full sm:w-28">
-                        <span className="text-sm font-body font-semibold text-gray-700">
+                        <span className="font-vendor text-sm font-semibold text-[#2C2C2C]">
                           {day.label}
                         </span>
                       </div>
                       <div className="flex-1 flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         {isClosed ? (
-                          <div className="flex-1 px-4 py-2 bg-gray-100 rounded-lg flex items-center justify-between">
-                            <span className="text-sm text-gray-600 font-body">Closed</span>
+                          <div className="flex flex-1 items-center justify-between rounded-lg bg-[#F3F3F3] px-4 py-2">
+                            <span className="font-vendor text-sm text-[#7A7A7A]">Closed</span>
                             {isEditing && (
                               <button
                                 type="button"
                                 onClick={() => handleBusinessHoursChange(day.key, '9:00 AM - 6:00 PM')}
-                                className="text-xs text-accent-orange hover:text-orange-700 font-body"
+                                className="font-vendor text-xs font-semibold text-[#F89E07] hover:text-[#E08F06]"
                                 aria-label={`Set hours for ${day.label}`}
                               >
                                 Set Hours
@@ -893,7 +841,7 @@ const SalonProfile = () => {
                             )}
                           </div>
                         ) : (
-                          <div className="flex items-center gap-2 flex-1">
+                          <div className="flex flex-1 flex-wrap items-center gap-2">
                             <input
                               type="time"
                               value={convertTo24Hour(startTime12)}
@@ -902,10 +850,10 @@ const SalonProfile = () => {
                                 handleBusinessHoursChange(day.key, `${newStartTime} - ${endTime12}`);
                               }}
                               disabled={!isEditing}
-                              className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body text-sm"
+                              className={`${inputClass} flex-1 sm:flex-none sm:w-36`}
                               aria-label={`Opening time for ${day.label}`}
                             />
-                            <span className="text-gray-600 text-sm">to</span>
+                            <span className="font-vendor text-sm text-[#7A7A7A]">to</span>
                             <input
                               type="time"
                               value={convertTo24Hour(endTime12)}
@@ -914,14 +862,14 @@ const SalonProfile = () => {
                                 handleBusinessHoursChange(day.key, `${startTime12} - ${newEndTime}`);
                               }}
                               disabled={!isEditing}
-                              className="flex-1 sm:flex-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent disabled:bg-gray-50 font-body text-sm"
+                              className={`${inputClass} flex-1 sm:flex-none sm:w-36`}
                               aria-label={`Closing time for ${day.label}`}
                             />
                             {isEditing && (
                               <button
                                 type="button"
                                 onClick={() => handleBusinessHoursChange(day.key, 'Closed')}
-                                className="px-3 py-2 text-sm font-body text-red-600 hover:bg-red-50 rounded-lg transition-colors whitespace-nowrap"
+                                className="whitespace-nowrap rounded-lg px-3 py-2 font-vendor text-sm font-medium text-red-600 hover:bg-red-50"
                               >
                                 Closed
                               </button>
@@ -933,66 +881,54 @@ const SalonProfile = () => {
                   );
                 })}
               </div>
-            </Card>
+        </SalonProfileSection>
 
-            {/* Facilities Card */}
-            <Card className="mt-6">
-              <h2 className="text-xl font-display font-bold text-gray-900 mb-4 flex items-center">
-                <svg className="mr-2 text-accent-orange w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                Facilities
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {[
-                  { id: 'air_conditioner', label: 'Air Conditioner' },
-                  { id: 'car_parking', label: 'Car Parking' },
-                  { id: 'free_wifi', label: 'Free WiFi' },
-                  { id: 'shower_facility', label: 'Shower Facility' },
-                  { id: 'steam_room', label: 'Steam Room' },
-                  { id: 'hygienic_environment', label: 'Hygienic environment' },
-                  { id: 'comfortable_seating', label: 'Comfortable seating' },
-                  { id: 'sanitized_tools', label: 'Sanitized Tools' }
-                ].map((facility) => (
-                  <label key={facility.id} className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${isEditing ? 'hover:bg-gray-50' : ''} ${formData.facilities?.[`facility_${facility.id}`] ? 'bg-orange-50 border-accent-orange' : 'border-gray-200 bg-white'}`}>
-                    <input
-                      type="checkbox"
-                      checked={!!formData.facilities?.[`facility_${facility.id}`]}
-                      onChange={(e) => {
-                        if (isEditing) {
-                          setFormData({
-                            ...formData,
-                            facilities: {
-                              ...formData.facilities,
-                              [`facility_${facility.id}`]: e.target.checked
-                            }
-                          });
-                        }
-                      }}
-                      disabled={!isEditing}
-                      className="w-4 h-4 text-accent-orange bg-gray-100 border-gray-300 rounded focus:ring-accent-orange"
-                    />
-                    <span className="ml-3 text-sm font-body font-medium text-gray-700">{facility.label}</span>
-                  </label>
-                ))}
-              </div>
-            </Card>
+        <SalonProfileSection title="Facilities">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { id: 'air_conditioner', label: 'Air Conditioner' },
+              { id: 'car_parking', label: 'Car Parking' },
+              { id: 'free_wifi', label: 'Free WiFi' },
+              { id: 'shower_facility', label: 'Shower Facility' },
+              { id: 'steam_room', label: 'Steam Room' },
+              { id: 'hygienic_environment', label: 'Hygienic environment' },
+              { id: 'comfortable_seating', label: 'Comfortable seating' },
+              { id: 'sanitized_tools', label: 'Sanitized Tools' },
+            ].map((facility) => (
+              <label
+                key={facility.id}
+                className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${
+                  formData.facilities?.[`facility_${facility.id}`]
+                    ? 'border-[#F89E07] bg-[#FFF1E6]'
+                    : 'border-[#F3F3F3] bg-[#FAFAFA]'
+                } ${isEditing ? 'hover:border-[#F89E07]/50' : ''}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={!!formData.facilities?.[`facility_${facility.id}`]}
+                  onChange={(e) => {
+                    if (isEditing) {
+                      setFormData({
+                        ...formData,
+                        facilities: {
+                          ...formData.facilities,
+                          [`facility_${facility.id}`]: e.target.checked,
+                        },
+                      });
+                    }
+                  }}
+                  disabled={!isEditing}
+                  className="h-4 w-4 rounded border-[#D4D4D4] text-[#F89E07] focus:ring-[#F89E07]"
+                />
+                <span className="font-vendor text-sm font-medium text-[#2C2C2C]">{facility.label}</span>
+              </label>
+            ))}
           </div>
+        </SalonProfileSection>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Images Card */}
-            <Card>
-              <h3 className="text-lg font-display font-bold text-gray-900 mb-4 flex items-center">
-                <FiImage className="mr-2 text-accent-orange" />
-                Salon Images
-              </h3>
-              
-              {/* Cover Image */}
-              <div className="mb-4">
-                <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                  Cover Image
-                </label>
+        <SalonProfileSection title="Salon Images">
+          <div className="mb-4">
+            <SalonProfileField label="Cover Image">
                 {formData.cover_images && formData.cover_images.length > 0 ? (
                   <div className="relative">
                     <img
@@ -1022,14 +958,14 @@ const SalonProfile = () => {
                     )}
                   </div>
                 ) : (
-                  <div 
-                    className={`w-full h-32 bg-gray-100 rounded-lg flex items-center justify-center ${isEditing ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+                  <div
+                    className={`flex h-32 w-full items-center justify-center rounded-xl bg-[#F3F3F3] ${isEditing ? 'cursor-pointer hover:bg-[#E8E8E8]' : ''}`}
                     onClick={() => isEditing && coverInputRef.current?.click()}
                   >
                     <div className="text-center">
-                      <FiImage className="text-gray-400 text-3xl mx-auto mb-2" />
-                      <p className="text-sm text-gray-600 font-body">No cover image</p>
-                      {isEditing && <p className="text-xs text-gray-500 font-body mt-1">Click to upload</p>}
+                      <FiImage className="mx-auto mb-2 text-3xl text-[#7A7A7A]" />
+                      <p className="font-vendor text-sm text-[#7A7A7A]">No cover image</p>
+                      {isEditing && <p className="mt-1 font-vendor text-xs text-[#7A7A7A]">Click to upload</p>}
                     </div>
                     {isEditing && (
                       <input
@@ -1042,13 +978,11 @@ const SalonProfile = () => {
                     )}
                   </div>
                 )}
-              </div>
+            </SalonProfileField>
+          </div>
 
-              {/* Logo */}
-              <div className="mb-4">
-                <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                  Logo
-                </label>
+          <div className="mb-4">
+            <SalonProfileField label="Logo">
                 {formData.logo_url ? (
                   <div className="relative inline-block">
                     <img
@@ -1078,13 +1012,13 @@ const SalonProfile = () => {
                     )}
                   </div>
                 ) : (
-                  <div 
-                    className={`w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center ${isEditing ? 'cursor-pointer hover:bg-gray-200' : ''}`}
+                  <div
+                    className={`flex h-24 w-24 items-center justify-center rounded-xl bg-[#F3F3F3] ${isEditing ? 'cursor-pointer hover:bg-[#E8E8E8]' : ''}`}
                     onClick={() => isEditing && logoInputRef.current?.click()}
                   >
                     <div className="text-center">
-                      <FiImage className="text-gray-400 text-2xl" />
-                      {isEditing && <p className="text-xs text-gray-500 font-body mt-1">Upload</p>}
+                      <FiImage className="text-2xl text-[#7A7A7A]" />
+                      {isEditing && <p className="mt-1 font-vendor text-xs text-[#7A7A7A]">Upload</p>}
                     </div>
                     {isEditing && (
                       <input
@@ -1097,13 +1031,12 @@ const SalonProfile = () => {
                     )}
                   </div>
                 )}
-              </div>
+            </SalonProfileField>
+          </div>
 
-              {/* Gallery Images */}
-              <div>
-                <label className="text-sm font-body font-semibold text-gray-700 mb-2 block">
-                  Salon Gallery ({formData.cover_images?.length > 1 ? formData.cover_images.length - 1 : 0} images)
-                </label>
+          <SalonProfileField
+            label={`Salon Gallery (${formData.cover_images?.length > 1 ? formData.cover_images.length - 1 : 0} images)`}
+          >
                 {formData.cover_images && formData.cover_images.length > 1 ? (
                   <div className="grid grid-cols-2 gap-2">
                     {formData.cover_images.slice(1).map((image, index) => (
@@ -1129,150 +1062,126 @@ const SalonProfile = () => {
                     ))}
                   </div>
                 ) : (
-                  <div className="w-full h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+                  <div className="flex h-24 w-full items-center justify-center rounded-xl bg-[#F3F3F3]">
                     <div className="text-center">
-                      <FiImage className="text-gray-400 text-2xl mx-auto mb-1" />
-                      <p className="text-xs text-gray-600 font-body">No images</p>
+                      <FiImage className="mx-auto mb-1 text-2xl text-[#7A7A7A]" />
+                      <p className="font-vendor text-xs text-[#7A7A7A]">No images</p>
                     </div>
                   </div>
                 )}
-              </div>
+          </SalonProfileField>
 
+          {isEditing && (
+            <>
+              <input
+                type="file"
+                ref={galleryInputRef}
+                onChange={handleGalleryUpload}
+                accept="image/*"
+                multiple
+                className="hidden"
+              />
+              <button
+                type="button"
+                className="mt-4 flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#F89E07] font-vendor text-sm font-semibold text-[#F89E07] hover:bg-[#FFF1E6] disabled:opacity-50"
+                onClick={() => galleryInputRef.current?.click()}
+                disabled={uploadingGallery}
+              >
+                <FiUpload size={16} />
+                {uploadingGallery ? 'Uploading...' : 'Add Gallery Images'}
+              </button>
+            </>
+          )}
+        </SalonProfileSection>
+
+        <SalonProfileSection title="Agreement Document">
+          {formData.agreement_document_url ? (
+            <div className="space-y-3">
+              <div className="rounded-xl border border-[#BBF7D0] bg-[#DCFCE7] p-3">
+                <p className="font-vendor text-sm font-medium text-[#22C55E]">Document uploaded</p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={handleViewAgreement}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#F89E07] py-2.5 font-vendor text-sm font-semibold text-[#F89E07] hover:bg-[#FFF1E6]"
+                >
+                  <FiFileText size={16} />
+                  View Document
+                </button>
+                {isEditing && (
+                  <>
+                    <input
+                      type="file"
+                      ref={agreementInputRef}
+                      onChange={handleAgreementUpload}
+                      accept=".pdf,image/*"
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => agreementInputRef.current?.click()}
+                      disabled={uploadingAgreement}
+                      className="flex flex-1 items-center justify-center gap-2 rounded-xl border border-[#F3F3F3] bg-[#F3F3F3] py-2.5 font-vendor text-sm font-semibold text-[#2C2C2C] hover:bg-[#E8E8E8] disabled:opacity-50"
+                    >
+                      <FiUpload size={16} />
+                      {uploadingAgreement ? 'Uploading...' : 'Replace'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="mb-3 rounded-xl bg-[#F3F3F3] p-3">
+                <p className="font-vendor text-sm text-[#7A7A7A]">No agreement document uploaded</p>
+              </div>
               {isEditing && (
                 <>
                   <input
                     type="file"
-                    ref={galleryInputRef}
-                    onChange={handleGalleryUpload}
-                    accept="image/*"
-                    multiple
+                    ref={agreementInputRef}
+                    onChange={handleAgreementUpload}
+                    accept=".pdf,image/*"
                     className="hidden"
                   />
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full mt-4"
-                    onClick={() => galleryInputRef.current?.click()}
-                    disabled={uploadingGallery}
+                  <button
+                    type="button"
+                    onClick={() => agreementInputRef.current?.click()}
+                    disabled={uploadingAgreement}
+                    className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#F89E07] font-vendor text-sm font-semibold text-[#F89E07] hover:bg-[#FFF1E6] disabled:opacity-50"
                   >
-                    <FiUpload className="mr-2" />
-                    {uploadingGallery ? 'Uploading...' : 'Add Gallery Images'}
-                  </Button>
+                    <FiUpload size={16} />
+                    {uploadingAgreement ? 'Uploading...' : 'Upload Document'}
+                  </button>
                 </>
               )}
-            </Card>
+            </div>
+          )}
+        </SalonProfileSection>
 
-            {/* Agreement Document Card */}
-            <Card>
-              <h3 className="text-lg font-display font-bold text-gray-900 mb-4 flex items-center">
-                <FiFileText className="mr-2 text-accent-orange" />
-                Agreement Document
-              </h3>
-              
-              {formData.agreement_document_url ? (
-                <div className="space-y-2">
-                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                    <p className="text-sm text-green-800 font-body">✓ Document uploaded</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleViewAgreement}
-                      className="flex-1"
-                    >
-                      <FiFileText className="mr-2" />
-                      View Document
-                    </Button>
-                    {isEditing && (
-                      <>
-                        <input
-                          type="file"
-                          ref={agreementInputRef}
-                          onChange={handleAgreementUpload}
-                          accept=".pdf,image/*"
-                          className="hidden"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => agreementInputRef.current?.click()}
-                          disabled={uploadingAgreement}
-                          className="flex-1"
-                        >
-                          <FiUpload className="mr-2" />
-                          {uploadingAgreement ? 'Uploading...' : 'Replace'}
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg mb-2">
-                    <p className="text-sm text-gray-600 font-body">No agreement document uploaded</p>
-                  </div>
-                  {isEditing && (
-                    <>
-                      <input
-                        type="file"
-                        ref={agreementInputRef}
-                        onChange={handleAgreementUpload}
-                        accept=".pdf,image/*"
-                        className="hidden"
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => agreementInputRef.current?.click()}
-                        disabled={uploadingAgreement}
-                        className="w-full"
-                      >
-                        <FiUpload className="mr-2" />
-                        {uploadingAgreement ? 'Uploading...' : 'Upload Document'}
-                      </Button>
-                    </>
-                  )}
-                </div>
-              )}
-            </Card>
-
-            {/* Quick Stats */}
-            <Card>
-              <h3 className="text-lg font-display font-bold text-gray-900 mb-4">Quick Stats</h3>
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 font-body">Registration Status</span>
-                  <span
-                    className={`text-sm font-body font-semibold ${
-                      salonProfile?.registration_fee_paid ? 'text-green-600' : 'text-yellow-600'
-                    }`}
-                  >
-                    {salonProfile?.registration_fee_paid ? 'Paid' : 'Pending'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 font-body">Account Status</span>
-                  <span
-                    className={`text-sm font-body font-semibold ${
-                      salonProfile?.is_active ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {salonProfile?.is_active ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm text-gray-600 font-body">Member Since</span>
-                  <span className="text-sm text-gray-900 font-body">
-                    {salonProfile?.created_at
-                      ? new Date(salonProfile.created_at).toLocaleDateString('en-US')
-                      : 'N/A'}
-                  </span>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </div>
+        <SalonProfileSection title="Quick Stats">
+          <SalonProfileStatRow
+            label="Registration Status"
+            value={salonProfile?.registration_fee_paid ? 'Paid' : 'Pending'}
+            valueClassName={
+              salonProfile?.registration_fee_paid ? 'text-[#22C55E]' : 'text-[#EAB308]'
+            }
+          />
+          <SalonProfileStatRow
+            label="Account Status"
+            value={salonProfile?.is_active ? 'Active' : 'Inactive'}
+            valueClassName={salonProfile?.is_active ? 'text-[#22C55E]' : 'text-red-600'}
+          />
+          <SalonProfileStatRow
+            label="Member Since"
+            value={
+              salonProfile?.created_at
+                ? new Date(salonProfile.created_at).toLocaleDateString('en-US')
+                : 'N/A'
+            }
+          />
+        </SalonProfileSection>
       </div>
     </DashboardLayout>
   );
