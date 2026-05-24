@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Marcellus&family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Marcellus&family=DM+Sans:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap");
 
 
 @tailwind base;
@@ -81,6 +81,12 @@
   body {
     @apply bg-white text-black;
     font-family: var(--font-body);
+  }
+
+  /* Vendor dashboard — Figma canvas #F3EEE7 (frame 79:2) */
+  html.vendor-portal,
+  html.vendor-portal body {
+    background-color: #f3eee7;
   }
 
   h1,
