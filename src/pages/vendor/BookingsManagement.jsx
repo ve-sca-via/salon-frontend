@@ -32,6 +32,7 @@ import DashboardLayout from '../../components/layout/DashboardLayout';
 import Button from '../../components/shared/Button';
 import VendorBookingManagementCard from '../../components/vendor/bookings/VendorBookingManagementCard';
 import VendorBookingDetails from '../../components/vendor/bookings/VendorBookingDetails';
+import VendorPageShell from '../../components/vendor/VendorPageShell';
 import {
   BOOKINGS_PAGE_BG,
   BOOKINGS_CANVAS_BG,
@@ -395,15 +396,16 @@ const BookingsManagement = () => {
 
   return (
     <DashboardLayout role="vendor">
-      <div className={`${BOOKINGS_PAGE_BG} px-4 py-6 lg:px-0 max-w-4xl mx-auto space-y-6`}>
+      <VendorPageShell bgClass={BOOKINGS_PAGE_BG}>
+      <div className={`${BOOKINGS_PAGE_BG} space-y-6 px-4 py-6 max-lg:min-h-[calc(100dvh-4rem)] lg:space-y-8`}>
         <BookingsPageHeader
           title="Bookings Management"
           subtitle="View and manage all salon bookings"
           action={exportButton}
         />
 
-        <div className={`${BOOKINGS_CANVAS_BG} rounded-3xl p-4 sm:p-5 space-y-5 -mx-1 sm:mx-0`}>
-          <div className="grid grid-cols-2 gap-3">
+        <div className={`${BOOKINGS_CANVAS_BG} -mx-1 space-y-5 rounded-3xl p-4 sm:mx-0 sm:p-5 lg:p-6`}>
+          <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
             <BookingsStatCard label="Total" value={stats.total} valueClassName="text-[#F89E07]" />
             <BookingsStatCard
               label="Confirmed"
@@ -537,7 +539,7 @@ const BookingsManagement = () => {
           </div>
         ) : (
           <>
-            <div className="space-y-3 xl:hidden">
+            <div className="space-y-3 lg:hidden">
               {filteredBookings.map((booking) => (
                 <VendorBookingManagementCard
                   key={booking.id}
@@ -550,52 +552,52 @@ const BookingsManagement = () => {
               ))}
             </div>
 
-            <div className="hidden xl:block overflow-x-auto rounded-3xl bg-white shadow-[0_4px_24px_rgba(34,26,17,0.06)]">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b">
+            <div className="hidden lg:block overflow-x-auto rounded-3xl bg-white shadow-[0_4px_24px_rgba(34,26,17,0.06)]">
+              <table className="w-full min-w-[800px]">
+                <thead className="border-b bg-[#FFF8F4]">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
+                    <th className="px-4 py-3 text-left font-vendor text-xs font-bold uppercase tracking-wide text-[#534433]">
                       Booking ID
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
+                    <th className="px-4 py-3 text-left font-vendor text-xs font-bold uppercase tracking-wide text-[#534433]">
                       Customer
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
+                    <th className="px-4 py-3 text-left font-vendor text-xs font-bold uppercase tracking-wide text-[#534433]">
                       Service
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
+                    <th className="px-4 py-3 text-left font-vendor text-xs font-bold uppercase tracking-wide text-[#534433]">
                       Date & Time
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
+                    <th className="px-4 py-3 text-left font-vendor text-xs font-bold uppercase tracking-wide text-[#534433]">
                       Amount
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
+                    <th className="px-4 py-3 text-left font-vendor text-xs font-bold uppercase tracking-wide text-[#534433]">
                       Status
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase">
+                    <th className="px-4 py-3 text-left font-vendor text-xs font-bold uppercase tracking-wide text-[#534433]">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-[#F0E0D1]/60">
                   {filteredBookings.map((booking) => (
-                    <tr key={booking.id} className="hover:bg-gray-50">
+                    <tr key={booking.id} className="hover:bg-[#FFFAF5]">
                       <td className="px-4 py-3">
-                        <span className="text-sm font-body text-gray-900 font-mono">
+                        <span className="font-vendor text-sm font-mono text-[#221A11]">
                           {booking.booking_number || `#${booking.id?.substring(0, 8)}`}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center">
-                          <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mr-3">
-                            <FiUser className="text-accent-orange text-sm" />
+                          <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-[#FFF1E6]">
+                            <FiUser className="text-[#F89E07] text-sm" />
                           </div>
                           <div>
-                            <p className="text-sm font-body font-semibold text-gray-900">
+                            <p className="font-vendor text-sm font-semibold text-[#221A11]">
                               {booking.customer_name || 'N/A'}
                             </p>
                             {booking.customer_phone && (
-                              <p className="text-xs text-gray-500 font-body">
+                              <p className="font-vendor text-xs text-[#867461]">
                                 {booking.customer_phone}
                               </p>
                             )}
@@ -603,33 +605,31 @@ const BookingsManagement = () => {
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <span className="text-sm font-body text-gray-900">
+                        <span className="font-vendor text-sm text-[#221A11]">
                           {formatServicesDisplay(booking)}
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center text-sm font-body text-gray-900">
-                          <FiCalendar className="mr-2 text-gray-400" />
+                        <div className="flex items-center font-vendor text-sm text-[#221A11]">
+                          <FiCalendar className="mr-2 text-[#867461]" />
                           <div>
                             <p>{formatDate(booking.booking_date)}</p>
-                            <p className="text-xs text-gray-500">
-                              <FiClock className="inline mr-1" />
+                            <p className="font-vendor text-xs text-[#867461]">
+                              <FiClock className="mr-1 inline" />
                               {formatTimeDisplay(booking)}
                             </p>
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div>
-                          <div className="text-sm font-body font-semibold text-green-600">
-                            ₹{booking.service_price?.toLocaleString() || 0}
-                          </div>
-                          <p className="text-xs text-gray-500 mt-0.5">To collect</p>
+                        <div className="font-vendor text-sm font-semibold text-[#22C55E]">
+                          ₹{booking.service_price?.toLocaleString() || 0}
                         </div>
+                        <p className="font-vendor text-xs text-[#867461]">To collect</p>
                       </td>
                       <td className="px-4 py-3">
                         <span
-                          className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-body font-semibold border ${getStatusColor(
+                          className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 font-vendor text-xs font-semibold ${getStatusColor(
                             booking.status
                           )}`}
                         >
@@ -654,6 +654,7 @@ const BookingsManagement = () => {
           </>
         )}
       </div>
+      </VendorPageShell>
 
       {isDetailsModalOpen && selectedBooking && (
         <VendorBookingDetails

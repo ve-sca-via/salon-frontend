@@ -7,6 +7,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { FiArrowLeft, FiCalendar, FiPercent, FiTag } from 'react-icons/fi';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import VendorPageShell from '../../components/vendor/VendorPageShell';
 import {
   useApplyVendorPromotionMutation,
   useGetActiveVendorPromotionQuery,
@@ -148,7 +149,8 @@ const VendorRunPromo = () => {
 
   return (
     <DashboardLayout role="vendor">
-      <div className="fixed inset-0 z-[120] flex flex-col bg-[#FFF8F4] font-vendor lg:static lg:z-auto lg:min-h-[calc(100dvh-4rem)]">
+      <VendorPageShell bgClass="bg-[#FFF8F4]">
+      <div className="flex flex-col bg-[#FFF8F4] font-vendor w-full max-lg:min-h-[calc(100dvh-4rem)]">
         <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[#F0E0D1]/60 bg-white px-4 py-3">
           <button
             type="button"
@@ -389,6 +391,7 @@ const VendorRunPromo = () => {
           </div>
         </form>
       </div>
+      </VendorPageShell>
     </DashboardLayout>
   );
 };

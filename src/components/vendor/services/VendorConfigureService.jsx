@@ -9,6 +9,10 @@ import { uploadSalonImage } from '../../../services/api/uploadApi';
 import { showErrorToast, showInfoToast } from '../../../utils/toastConfig';
 import { ServiceWizardProgress } from './ServiceWizardUI';
 import { TOTAL_WIZARD_STEPS } from './serviceWizardConstants';
+import {
+  VENDOR_FULLSCREEN_ROOT,
+  VendorFullscreenBackdrop,
+} from '../VendorPageShell';
 
 const DESCRIPTION_MAX = 250;
 
@@ -111,7 +115,9 @@ const VendorConfigureService = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[130] flex flex-col bg-[#FFF8F4] font-vendor">
+    <>
+      <VendorFullscreenBackdrop onClick={onClose} />
+      <div className={VENDOR_FULLSCREEN_ROOT}>
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[#F0E0D1]/60 bg-white px-4 py-3">
         <button
           type="button"
@@ -502,6 +508,7 @@ const VendorConfigureService = ({
         </div>
       </form>
     </div>
+    </>
   );
 };
 

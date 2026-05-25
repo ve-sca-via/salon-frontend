@@ -26,6 +26,7 @@ import VendorHeroBanner from '../../components/vendor/dashboard/VendorHeroBanner
 import VendorQuickActions from '../../components/vendor/dashboard/VendorQuickActions';
 import VendorMetricCard from '../../components/vendor/dashboard/VendorMetricCard';
 import VendorBookingCard from '../../components/vendor/dashboard/VendorBookingCard';
+import VendorPageShell from '../../components/vendor/VendorPageShell';
 
 const mapBookingStatus = (status) => {
   if (status === 'confirmed') return 'in_progress';
@@ -83,8 +84,6 @@ const VendorDashboard = () => {
 
   const userRole = user?.role || user?.user_role || 'vendor';
   const isRegularBuyer = userRole === 'regular_buyer';
-  const pageShell =
-    'font-vendor min-h-[calc(100dvh-4rem)] bg-[#F3EEE7] max-lg:mx-0 lg:-mx-8 lg:pb-8';
 
   const metrics = useMemo(() => {
     if (isRegularBuyer) {
@@ -137,24 +136,24 @@ const VendorDashboard = () => {
   if ((analyticsLoading && !analytics) || (salonLoading && !salonProfile)) {
     return (
       <DashboardLayout role={userRole}>
-        <div className={pageShell}>
-          <div className="animate-pulse w-full max-w-[390px] mx-auto lg:max-w-[1200px] px-5 pt-5 space-y-8">
-            <div className="w-full aspect-[350/220] rounded-[32px] bg-vendor-border" />
+        <VendorPageShell>
+          <div className="animate-pulse w-full px-5 pt-5 space-y-8">
+            <div className="aspect-[350/220] w-full rounded-[32px] bg-vendor-border lg:aspect-auto lg:min-h-[220px]" />
             <div className="space-y-8">
               <div className="h-4 w-32 bg-vendor-border rounded" />
-              <div className="grid grid-cols-3 gap-2 w-full">
-                {[1, 2, 3, 4, 5].map((i) => (
+              <div className="grid w-full grid-cols-3 gap-2 lg:grid-cols-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="h-[118px] bg-vendor-surface rounded-[24px]" />
                 ))}
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
                 {[1, 2, 3, 4].map((i) => (
                   <div key={i} className="h-[112px] bg-vendor-surface rounded-[16px]" />
                 ))}
               </div>
             </div>
           </div>
-        </div>
+        </VendorPageShell>
       </DashboardLayout>
     );
   }
@@ -162,7 +161,8 @@ const VendorDashboard = () => {
   if (salonError || analyticsError) {
     return (
       <DashboardLayout role={userRole}>
-        <div className={`${pageShell} flex items-center justify-center min-h-[60vh] px-5`}>
+        <VendorPageShell>
+        <div className="flex items-center justify-center min-h-[60vh] px-5">
           <div className="bg-vendor-surface rounded-[16px] shadow-vendor-card p-6 max-w-md text-center w-full">
             <FiAlertCircle className="text-vendor-danger text-5xl mx-auto mb-4" />
             <h2 className="font-vendor text-[20px] font-bold text-vendor-text-primary mb-2">
@@ -182,6 +182,7 @@ const VendorDashboard = () => {
             </button>
           </div>
         </div>
+        </VendorPageShell>
       </DashboardLayout>
     );
   }
@@ -194,10 +195,8 @@ const VendorDashboard = () => {
   return (
     <DashboardLayout role={userRole}>
       {!isPaymentPending && (
-        <div className={pageShell}>
-          <div className="w-full max-w-[390px] mx-auto lg:max-w-[1200px]">
-            {/* Figma: 390px frame, 20px horizontal padding, 32px section gap */}
-            <main className="px-5 pt-5 pb-6 flex flex-col gap-8 w-full">
+        <VendorPageShell>
+            <main className="flex w-full flex-col gap-8 px-5 pb-6 pt-5 max-lg:mx-auto lg:gap-10 lg:px-0 lg:pt-0 lg:pb-0">
               <VendorHeroBanner />
               <VendorQuickActions isRegularBuyer={isRegularBuyer} />
 
@@ -205,7 +204,7 @@ const VendorDashboard = () => {
                 <h2 className="font-vendor text-[14px] font-bold leading-5 text-vendor-text-primary uppercase tracking-wide mb-4">
                   Overall Performance
                 </h2>
-                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
                   {metrics.map((m) => (
                     <VendorMetricCard key={m.label} {...m} />
                   ))}
@@ -230,7 +229,7 @@ const VendorDashboard = () => {
                     <div className="w-10 h-10 border-2 border-vendor-orange border-t-transparent rounded-full animate-spin" />
                   </div>
                 ) : recentBookings.length > 0 ? (
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4">
                     {recentBookings.map((booking, index) => (
                       <VendorBookingCard
                         key={booking.id}
@@ -249,13 +248,12 @@ const VendorDashboard = () => {
                 )}
               </section>
             </main>
-          </div>
-
-        </div>
+        </VendorPageShell>
       )}
 
       {isPaymentPending && (
-        <div className={`${pageShell} flex items-center justify-center min-h-[calc(100vh-200px)] px-5`}>
+        <VendorPageShell>
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-5">
           <div className="bg-vendor-surface rounded-[16px] shadow-vendor-card-lg p-6 max-w-lg w-full text-center border border-vendor-border">
             <div className="w-20 h-20 bg-gradient-vendor rounded-full flex items-center justify-center mx-auto mb-6">
               <FiLock className="text-white" size={36} />
@@ -294,6 +292,7 @@ const VendorDashboard = () => {
             </Button>
           </div>
         </div>
+        </VendorPageShell>
       )}
     </DashboardLayout>
   );
