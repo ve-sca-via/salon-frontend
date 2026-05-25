@@ -33,6 +33,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import DashboardLayout from '../../components/layout/DashboardLayout';
+import VendorPageShell from '../../components/vendor/VendorPageShell';
 import {
   FIGMA_PROFILE_BG,
   SalonProfilePageHeader,
@@ -515,7 +516,8 @@ const SalonProfile = () => {
   if (profileLoading && !salonProfile) {
     return (
       <DashboardLayout role={user?.role || "vendor"}>
-        <div className={`${FIGMA_PROFILE_BG} px-4 py-6 space-y-6 max-w-4xl`}>
+        <VendorPageShell bgClass={FIGMA_PROFILE_BG}>
+        <div className={`${FIGMA_PROFILE_BG} px-4 py-6 space-y-6`}>
           <div className="animate-pulse space-y-4">
             <div className="h-9 w-48 rounded-lg bg-[#F3F3F3]" />
             <div className="h-4 w-64 rounded-lg bg-[#F3F3F3]" />
@@ -529,6 +531,7 @@ const SalonProfile = () => {
             </div>
           </div>
         </div>
+        </VendorPageShell>
       </DashboardLayout>
     );
   }
@@ -550,7 +553,8 @@ const SalonProfile = () => {
 
   return (
     <DashboardLayout role={user?.role || "vendor"}>
-      <div className={`${FIGMA_PROFILE_BG} px-4 py-6 lg:px-0 space-y-6 max-w-4xl mx-auto`}>
+      <VendorPageShell bgClass={FIGMA_PROFILE_BG}>
+      <div className={`${FIGMA_PROFILE_BG} space-y-6 px-4 py-6 max-lg:min-h-[calc(100dvh-4rem)] lg:space-y-8`}>
         <SalonProfilePageHeader title={profileTitle} subtitle={profileSubtitle} />
 
         {salonProfile && (
@@ -1183,6 +1187,7 @@ const SalonProfile = () => {
           />
         </SalonProfileSection>
       </div>
+      </VendorPageShell>
     </DashboardLayout>
   );
 };

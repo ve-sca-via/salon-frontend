@@ -46,6 +46,7 @@ import VendorAddServiceWizard, {
   loadServiceWizardDraft,
 } from '../../components/vendor/services/VendorAddServiceWizard';
 import { clearServiceWizardDraft } from '../../components/vendor/services/serviceWizardDraft';
+import VendorPageShell from '../../components/vendor/VendorPageShell';
 import {
   SERVICES_PAGE_BG,
   ServicesPageHeader,
@@ -357,7 +358,8 @@ const ServicesManagement = () => {
 
   return (
     <DashboardLayout role="vendor">
-      <div className={`${SERVICES_PAGE_BG} px-4 py-6 lg:px-0 max-w-4xl mx-auto space-y-5`}>
+      <VendorPageShell bgClass={SERVICES_PAGE_BG}>
+      <div className={`${SERVICES_PAGE_BG} space-y-5 px-4 py-6 max-lg:min-h-[calc(100dvh-4rem)] lg:space-y-6`}>
         <ServicesPageHeader
           title="Services Management"
           subtitle="Manage your salon services and pricing"
@@ -365,7 +367,7 @@ const ServicesManagement = () => {
 
         <ServicesAddButton onClick={handleOpenAdd} />
 
-        <div className="space-y-4 rounded-2xl bg-white/60 p-4 shadow-[0_2px_12px_rgba(34,26,17,0.04)]">
+        <div className="space-y-4 rounded-2xl bg-white/60 p-4 shadow-[0_2px_12px_rgba(34,26,17,0.04)] lg:p-6">
           <ServicesSearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -445,7 +447,7 @@ const ServicesManagement = () => {
                 <ServicesCategoryHeading>
                   {categoryName.toUpperCase()}
                 </ServicesCategoryHeading>
-                <div className="space-y-4">
+                <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 xl:grid-cols-3">
                   {categoryServices.map((service) => (
                     <VendorServiceCard
                       key={service.id}
@@ -463,6 +465,7 @@ const ServicesManagement = () => {
           </div>
         )}
       </div>
+      </VendorPageShell>
 
       <VendorAddServiceWizard
         isOpen={isWizardOpen}
