@@ -1,6 +1,7 @@
 import React from 'react';
 import { FiArrowLeft } from 'react-icons/fi';
 import { TOTAL_WIZARD_STEPS } from './serviceWizardConstants';
+import { VENDOR_FULLSCREEN_ROOT, VendorFullscreenBackdrop } from '../VendorPageShell';
 
 /** Figma progress indicator — 5 steps */
 export const ServiceWizardProgress = ({ currentStep }) => (
@@ -43,7 +44,9 @@ export const ServiceWizardShell = ({
   children,
   footer,
 }) => (
-  <div className="fixed inset-0 z-[130] flex flex-col bg-[#FFF8F4] font-vendor">
+  <>
+    <VendorFullscreenBackdrop onClick={onBack} />
+    <div className={VENDOR_FULLSCREEN_ROOT}>
     <header className="sticky top-0 z-10 border-b border-[#F0E0D1]/60 bg-white px-4 py-3">
       <div className="flex items-center gap-3">
         <button
@@ -73,6 +76,7 @@ export const ServiceWizardShell = ({
       </div>
     )}
   </div>
+  </>
 );
 
 export const ServiceWizardPrimaryButton = ({ children, onClick, disabled, type = 'button' }) => (
@@ -142,20 +146,38 @@ export const ServiceWizardSelectableCard = ({
   <button
     type="button"
     onClick={onClick}
-    className={`flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all ${
+    className={`relative flex w-full items-center gap-4 overflow-hidden rounded-2xl border-2 p-4 text-left transition-all ${
       selected
-        ? 'border-[#F89E07] bg-[#FFF1E6] shadow-[0_4px_16px_rgba(248,158,7,0.15)]'
-        : 'border-[#F0E0D1] bg-white shadow-[0_2px_12px_rgba(34,26,17,0.04)] hover:border-[#F89E07]/40'
+        ? 'border-[#F89E07] bg-[#FFF1E6] shadow-[0_4px_20px_rgba(248,158,7,0.22)]'
+        : 'border-[#F0E0D1] bg-white shadow-[0_2px_14px_rgba(34,26,17,0.07)] hover:border-[#F89E07]/40 hover:shadow-[0_4px_18px_rgba(34,26,17,0.1)]'
     }`}
   >
-    <span className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#F3F3F3] text-2xl">
+    {/* Right-edge gradient — depth / shadow */}
+    <span
+      className={`pointer-events-none absolute inset-y-0 right-0 w-[42%] rounded-r-[14px] ${
+        selected
+          ? 'bg-gradient-to-l from-[#F89E07]/25 via-[#FDBA4D]/12 to-transparent'
+          : 'bg-gradient-to-l from-[#534433]/10 via-[#F89E07]/[0.06] to-transparent'
+      }`}
+      aria-hidden
+    />
+    <span
+      className={`pointer-events-none absolute inset-y-0 right-0 w-20 ${
+        selected
+          ? 'bg-gradient-to-l from-[#E08F06]/15 to-transparent'
+          : 'bg-gradient-to-l from-black/[0.05] to-transparent'
+      }`}
+      aria-hidden
+    />
+
+    <span className="relative z-10 flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-[#F3F3F3] text-2xl shadow-sm">
       {iconUrl ? (
         <img src={iconUrl} alt="" className="h-full w-full object-cover" />
       ) : (
         iconFallback || '✦'
       )}
     </span>
-    <span className="min-w-0 flex-1">
+    <span className="relative z-10 min-w-0 flex-1">
       <span className="flex items-center gap-2">
         <span className="font-vendor text-base font-bold text-[#111827]">{title}</span>
         {badge && (

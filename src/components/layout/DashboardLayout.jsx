@@ -48,7 +48,7 @@ const DashboardLayout = ({ children, role }) => {
         <main
           className={`flex-1 w-full transition-all duration-300 ${pageBg} ${
             isVendorPortal
-              ? 'max-lg:!p-0 max-lg:!pb-[132px] lg:p-8'
+              ? 'max-lg:!p-0 max-lg:!pb-[132px] lg:!p-0 lg:pb-8'
               : 'p-4 sm:p-6 lg:p-8'
           } ${
             sidebarCollapsed

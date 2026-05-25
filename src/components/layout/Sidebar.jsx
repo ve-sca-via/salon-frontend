@@ -16,6 +16,7 @@ import {
   FiSave,
   FiAward,
   FiPackage,
+  FiGrid,
 } from 'react-icons/fi';
 import { useLogoutMutation } from '../../services/api/authApi';
 import { useGetVendorSalonQuery } from '../../services/api/vendorApi';
@@ -23,7 +24,6 @@ import { clearUser } from '../../store/slices/authSlice';
 
 /** Figma node 3:4 — Sidebar - Refined List Layout */
 const VENDOR_SIDEBAR_ICONS = {
-  dashboard: '/vendor/sidebar/dashboard.png',
   profile: '/vendor/sidebar/salon-profile.png',
   services: '/vendor/sidebar/services.png',
   bookings: '/vendor/sidebar/bookings.png',
@@ -31,7 +31,7 @@ const VENDOR_SIDEBAR_ICONS = {
 };
 
 const VENDOR_NAV_ITEMS = [
-  { path: '/vendor/dashboard', label: 'Dashboard', icon: VENDOR_SIDEBAR_ICONS.dashboard, w: 18, h: 18 },
+  { path: '/vendor/dashboard', label: 'Dashboard', icon: null, Icon: FiGrid, w: 18, h: 18 },
   { path: '/vendor/profile', label: 'Salon Profile', icon: VENDOR_SIDEBAR_ICONS.profile, w: 20, h: 18 },
   { path: '/vendor/services', label: 'Services', icon: VENDOR_SIDEBAR_ICONS.services, w: 20, h: 20 },
   { path: '/vendor/bookings', label: 'Bookings', icon: VENDOR_SIDEBAR_ICONS.bookings, w: 18, h: 20 },
@@ -47,7 +47,7 @@ const VENDOR_NAV_ITEMS = [
 ];
 
 const REGULAR_BUYER_NAV_ITEMS = [
-  { path: '/vendor/dashboard', label: 'Dashboard', icon: VENDOR_SIDEBAR_ICONS.dashboard, w: 18, h: 18 },
+  { path: '/vendor/dashboard', label: 'Dashboard', icon: null, Icon: FiGrid, w: 18, h: 18 },
   { path: '/vendor/profile', label: 'My Profile', icon: VENDOR_SIDEBAR_ICONS.profile, w: 20, h: 18 },
   { path: '/products', label: 'Product Catalog', icon: null, Icon: FiPackage, w: 20, h: 20 },
   {
@@ -59,12 +59,6 @@ const REGULAR_BUYER_NAV_ITEMS = [
     h: 20,
   },
 ];
-
-const NavDivider = () => (
-  <li className="py-2 px-4" aria-hidden>
-    <div className="h-px w-full max-w-[240px] mx-auto bg-[#D9C3AD]" />
-  </li>
-);
 
 const VendorNavIcon = ({ item, active }) => {
   if (item.icon) {
@@ -155,31 +149,28 @@ const VendorRefinedSidebar = ({ role, isOpen, onClose, isCollapsed }) => {
 
         <nav className="flex-1 overflow-y-auto px-8 py-2">
           <ul
-            className={`rounded-xl bg-[#FFF8F4] py-2 ${
-              isCollapsed ? 'px-1' : 'px-2'
+            className={`rounded-xl bg-[#FFF8F4] py-1 ${
+              isCollapsed ? 'px-1' : 'divide-y divide-[#D9C3AD] px-2'
             }`}
           >
-            {navItems.map((item, index) => {
+            {navItems.map((item) => {
               const isActive = currentPath === item.path;
               return (
-                <React.Fragment key={item.path}>
-                  {index > 0 && !isCollapsed && <NavDivider />}
-                  <li>
-                    <NavLink
-                      to={item.path}
-                      onClick={onClose}
-                      title={isCollapsed ? item.label : undefined}
-                      className={`flex items-center gap-3 rounded-xl px-4 py-3 font-vendor text-[16px] leading-6 transition-colors ${
-                        isActive
-                          ? 'bg-[#865300] text-white shadow-md'
-                          : 'text-[#534433] hover:bg-[#FFF1E6]'
-                      } ${isCollapsed ? 'justify-center px-2' : ''}`}
-                    >
-                      <VendorNavIcon item={item} active={isActive} />
-                      {!isCollapsed && <span className="font-medium">{item.label}</span>}
-                    </NavLink>
-                  </li>
-                </React.Fragment>
+                <li key={item.path}>
+                  <NavLink
+                    to={item.path}
+                    onClick={onClose}
+                    title={isCollapsed ? item.label : undefined}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 font-vendor text-[16px] leading-6 transition-colors ${
+                      isActive
+                        ? 'bg-[#865300] text-white'
+                        : 'text-[#534433] hover:bg-[#FFF1E6]'
+                    } ${isCollapsed ? 'justify-center px-2' : 'mx-1 my-0.5'}`}
+                  >
+                    <VendorNavIcon item={item} active={isActive} />
+                    {!isCollapsed && <span className="font-medium">{item.label}</span>}
+                  </NavLink>
+                </li>
               );
             })}
           </ul>

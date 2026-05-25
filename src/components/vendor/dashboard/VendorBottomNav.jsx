@@ -8,19 +8,30 @@ import { NavLink, useLocation } from 'react-router-dom';
 export const VENDOR_NAV_ICONS = {
   dashboard: '/vendor/nav/dashboard.png',
   salonProfile: '/vendor/nav/salon-profile.png',
-  servicesScissors: '/vendor/nav/services-scissors.png',
+  services: '/vendor/sidebar/services.png',
   bookings: '/vendor/nav/bookings.png',
 };
 
 const NAV_ITEMS = [
   { path: '/vendor/dashboard', label: 'Dashboard', icon: VENDOR_NAV_ICONS.dashboard, w: 18, h: 18, slot: 63 },
   { path: '/vendor/profile', label: 'Salon Profile', icon: VENDOR_NAV_ICONS.salonProfile, w: 20, h: 18, slot: 72 },
-  { path: '/vendor/services', label: 'Services', elevated: true, slot: 51 },
+  {
+    path: '/vendor/services',
+    label: 'Services',
+    icon: VENDOR_NAV_ICONS.services,
+    w: 20,
+    h: 20,
+    slot: 51,
+    elevatedWhenActive: true,
+  },
   { path: '/vendor/bookings', label: 'Bookings', icon: VENDOR_NAV_ICONS.bookings, w: 18, h: 20, slot: 53 },
 ];
 
 /** Dock + 94px pill + services bump + safe area */
 export const VENDOR_BOTTOM_NAV_SPACE = 132;
+
+const ORANGE_CIRCLE_SHADOW =
+  '0 4px 6px -4px rgba(254, 215, 170, 1), 0 10px 15px -3px rgba(254, 215, 170, 0.6)';
 
 const labelClass = (active) =>
   `font-vendor text-[12px] leading-[18px] whitespace-nowrap ${
@@ -39,6 +50,14 @@ const TabIcon = ({ src, width, height }) => (
   />
 );
 
+const isNavItemActive = (pathname, item) => {
+  if (pathname === item.path) return true;
+  if (item.path === '/vendor/services' && pathname.startsWith('/vendor/promo')) {
+    return true;
+  }
+  return false;
+};
+
 const VendorBottomNav = () => {
   const { pathname } = useLocation();
 
@@ -52,34 +71,8 @@ const VendorBottomNav = () => {
         aria-label="Vendor navigation"
       >
         {NAV_ITEMS.map((item) => {
-          const active = pathname === item.path;
-
-          if (item.elevated) {
-            return (
-              <NavLink
-                key={item.path}
-                to={item.path}
-                className="flex flex-col items-center justify-end"
-                style={{ width: item.slot, minHeight: 62, paddingBottom: 1 }}
-              >
-                <div
-                  className="mb-1 flex items-center justify-center"
-                  style={{ marginTop: -4 }}
-                >
-                  <div
-                    className="flex h-12 w-12 items-center justify-center rounded-full bg-[#F89E07]"
-                    style={{
-                      boxShadow:
-                        '0 4px 6px -4px rgba(254, 215, 170, 1), 0 10px 15px -3px rgba(254, 215, 170, 0.6)',
-                    }}
-                  >
-                    <TabIcon src={VENDOR_NAV_ICONS.servicesScissors} width={20} height={20} />
-                  </div>
-                </div>
-                <span className={labelClass(active)}>{item.label}</span>
-              </NavLink>
-            );
-          }
+          const active = isNavItemActive(pathname, item);
+          const showElevatedBump = active && item.elevatedWhenActive;
 
           return (
             <NavLink
@@ -88,8 +81,20 @@ const VendorBottomNav = () => {
               className="flex flex-col items-center justify-end gap-1"
               style={{ width: item.slot, minHeight: 62, paddingBottom: 1 }}
             >
-              <div className="flex h-10 w-10 items-center justify-center">
-                <TabIcon src={item.icon} width={item.w} height={item.h} />
+              <div
+                className={showElevatedBump ? 'mb-1 flex items-center justify-center' : 'flex items-center justify-center'}
+                style={showElevatedBump ? { marginTop: -4 } : undefined}
+              >
+                <div
+                  className={`flex items-center justify-center ${
+                    active
+                      ? 'h-12 w-12 rounded-full bg-[#F89E07]'
+                      : 'h-10 w-10'
+                  }`}
+                  style={active ? { boxShadow: ORANGE_CIRCLE_SHADOW } : undefined}
+                >
+                  <TabIcon src={item.icon} width={item.w} height={item.h} />
+                </div>
               </div>
               <span className={labelClass(active)}>{item.label}</span>
             </NavLink>

@@ -107,7 +107,7 @@ const VendorQuickActions = ({ isRegularBuyer }) => {
       <h2 className="font-vendor text-[14px] font-bold leading-5 text-[#2D3748] uppercase tracking-wide mb-4">
         Quick Actions
       </h2>
-      <div className="grid grid-cols-3 gap-2 w-full">
+      <div className="grid w-full grid-cols-3 gap-2 lg:grid-cols-6 lg:gap-4">
         {actions.map((action) => (
           <Link
             key={action.key}

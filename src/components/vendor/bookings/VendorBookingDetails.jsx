@@ -18,6 +18,10 @@ import {
   formatStatusLabel,
   STATUS_BADGE_STYLES,
 } from './bookingDetailsUtils';
+import {
+  VENDOR_FULLSCREEN_ROOT,
+  VendorFullscreenBackdrop,
+} from '../VendorPageShell';
 
 const SectionTitle = ({ children, className = 'text-[#534433]' }) => (
   <h2 className={`font-vendor text-xs font-bold uppercase tracking-wide ${className}`}>
@@ -65,7 +69,9 @@ const VendorBookingDetails = ({
     null;
 
   return (
-    <div className="fixed inset-0 z-[130] flex flex-col bg-[#FFF8F4] font-vendor">
+    <>
+      <VendorFullscreenBackdrop onClick={onClose} />
+      <div className={VENDOR_FULLSCREEN_ROOT}>
       {/* Header */}
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b border-[#F0E0D1]/60 bg-white px-4 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <button
@@ -329,6 +335,7 @@ const VendorBookingDetails = ({
         </div>
       </div>
     </div>
+    </>
   );
 };
 
