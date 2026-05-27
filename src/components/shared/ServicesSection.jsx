@@ -75,7 +75,7 @@ function Header() {
         </div>
 
         {/* Description */}
-        <p className="hidden md:block font-body font-medium text-[15px] md:text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px]">
+        <p className="hidden md:block font-body font-medium text-[15px] md:text-[16px] leading-[24px] text-neutral-black/70 text-center max-w-[510px]">
           A featured services marketplace typically offers a platform where
           various service providers
         </p>

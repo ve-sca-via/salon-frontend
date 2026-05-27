@@ -697,21 +697,50 @@ export default function ServiceBooking() {
         )}
       </div>
 
-      {/* Fixed Bottom Checkout Bar — appears when cart has items */}
       {cart?.item_count > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0px_-2px_16px_rgba(0,0,0,0.12)] z-40">
-          <div className="max-w-7xl mx-auto">
-            <button
-              onClick={() => navigate('/checkout')}
-              className="w-full bg-accent-orange hover:opacity-90 active:opacity-80 text-white font-body font-semibold text-[16px] py-3.5 rounded-lg transition-opacity shadow-md flex items-center justify-center gap-2"
-            >
-              Proceed to Checkout
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+        <>
+          {/* Desktop: move checkout CTA into right-side empty space */}
+          <div className="hidden lg:block fixed right-6 bottom-6 z-40 w-[320px]">
+            <div className="bg-white border border-gray-200 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.12)] p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-body text-[12px] text-neutral-black/60">Cart</p>
+                  <p className="font-body font-semibold text-[16px] text-neutral-black leading-tight">
+                    {cart?.item_count} {cart?.item_count === 1 ? 'service' : 'services'}
+                  </p>
+                </div>
+                <p className="font-body font-bold text-[16px] text-neutral-black">
+                  ₹{cart?.total_amount || 0}
+                </p>
+              </div>
+
+              <button
+                onClick={() => navigate('/checkout')}
+                className="mt-3 w-full bg-accent-orange hover:opacity-90 active:opacity-80 text-white font-body font-semibold text-[15px] py-3 rounded-xl transition-opacity shadow-sm flex items-center justify-center gap-2"
+              >
+                Proceed to Checkout
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
-        </div>
+
+          {/* Mobile: keep fixed bottom checkout bar */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0px_-2px_16px_rgba(0,0,0,0.12)] z-40">
+            <div className="max-w-7xl mx-auto">
+              <button
+                onClick={() => navigate('/checkout')}
+                className="w-full bg-accent-orange hover:opacity-90 active:opacity-80 text-white font-body font-semibold text-[16px] py-3.5 rounded-lg transition-opacity shadow-md flex items-center justify-center gap-2"
+              >
+                Proceed to Checkout
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
       <Footer />

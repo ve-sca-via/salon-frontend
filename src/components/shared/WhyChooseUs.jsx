@@ -50,22 +50,22 @@ function ScissorsIcon() {
 // Header Component
 function Header() {
   return (
-    <div className="flex flex-col gap-4 items-center w-full mb-16">
+    <div className="flex flex-col gap-3 items-center w-full mb-8 md:mb-10">
       <div className="flex flex-col gap-2 items-center">
         {/* Title */}
-        <h2 className="font-display font-bold text-[32px] leading-[48px] text-neutral-black">
+        <h2 className="font-display font-bold text-[24px] leading-[32px] md:text-[32px] md:leading-[40px] text-neutral-black">
           Why Choose Lubist?
         </h2>
 
         {/* Icon with Lines */}
         <div className="flex items-center gap-4">
-          <div className="h-[1px] w-[50px] bg-neutral-black"></div>
+          <div className="h-[1px] w-[44px] bg-neutral-black/80"></div>
           <ScissorsIcon />
-          <div className="h-[1px] w-[50px] bg-neutral-black"></div>
+          <div className="h-[1px] w-[44px] bg-neutral-black/80"></div>
         </div>
 
         {/* Description */}
-        <p className="font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
+        <p className="font-body font-medium text-[14px] leading-[22px] md:text-[16px] md:leading-[24px] text-neutral-gray-700 text-center max-w-[560px] mt-1">
           Making beauty and wellness accessible, reliable, and delightful for everyone
         </p>
       </div>
@@ -170,14 +170,14 @@ function MapPinIcon() {
 // Feature Card Component
 function FeatureCard({ icon, title, description }) {
   return (
-    <div className="bg-primary-white p-8 rounded-[10px] shadow-lg text-center hover:shadow-xl transition-shadow group">
-      <div className="mb-6 transform group-hover:scale-110 transition-transform duration-300">
+    <div className="bg-primary-white p-5 md:p-6 rounded-[12px] shadow-sm ring-1 ring-black/5 text-center hover:shadow-md transition-shadow group">
+      <div className="mb-4 transform group-hover:scale-105 transition-transform duration-300">
         {icon}
       </div>
-      <h3 className="font-body font-semibold text-[20px] leading-[32px] text-neutral-black mb-3">
+      <h3 className="font-body font-semibold text-[16px] leading-[24px] md:text-[18px] md:leading-[26px] text-neutral-black mb-2">
         {title}
       </h3>
-      <p className="font-body font-normal text-[16px] leading-[24px] text-neutral-gray-500">
+      <p className="font-body font-normal text-[13px] leading-[20px] md:text-[14px] md:leading-[22px] text-neutral-gray-700">
         {description}
       </p>
     </div>
@@ -213,12 +213,12 @@ export default function WhyChooseUs() {
   ];
 
   return (
-    <section className="w-full py-20 bg-bg-secondary">
+    <section className="w-full py-10 md:py-14 bg-bg-secondary">
       <div className="max-w-[1320px] mx-auto px-4">
         <Header />
 
         {/* Features Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
           {features.map((feature, index) => (
             <FeatureCard
               key={index}
