@@ -13,6 +13,7 @@
  */
 
 import { toast } from 'react-toastify';
+import { getApiErrorMessage } from './apiErrorMessage';
 
 /**
  * Base toast configuration
@@ -55,6 +56,13 @@ export const showSuccessToast = (message, options = {}) => {
 /**
  * Error toast - red background
  */
+/**
+ * Show an error toast from an API/RTK error object (handles 429 rate limits).
+ */
+export const showApiErrorToast = (error, fallback = 'Something went wrong. Please try again.', options = {}) => {
+  showErrorToast(getApiErrorMessage(error, fallback), options);
+};
+
 export const showErrorToast = (message, options = {}) => {
   dismissToast();
   const customId = typeof message === 'string' ? message : undefined;

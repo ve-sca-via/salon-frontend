@@ -12,6 +12,7 @@ import { useDispatch } from "react-redux";
 import { FaUser, FaEnvelope, FaLock, FaPhone, FaEye, FaEyeSlash } from "react-icons/fa";
 import { FiKey } from "react-icons/fi";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
+import { getApiErrorMessage } from "../../utils/apiErrorMessage";
 import InputField from "../../components/shared/InputField";
 import Button from "../../components/shared/Button";
 import { setUser } from "../../store/slices/authSlice";
@@ -180,7 +181,7 @@ const Signup = () => {
       
       showSuccessToast(response.message || "OTP sent successfully");
     } catch (error) {
-      let msg = error.data?.detail || error.message || "Failed to send OTP.";
+      let msg = getApiErrorMessage(error, "Failed to send OTP.");
       if (msg.toLowerCase().includes("registered")) {
         msg = "This phone number is already registered. Please login instead.";
       }
@@ -216,8 +217,7 @@ const Signup = () => {
       setStep("form");
       showSuccessToast("Phone verified! Please complete your details.");
     } catch (error) {
-      const errorMessage = error.data?.detail || error.message || "OTP verification failed";
-      showErrorToast(errorMessage);
+      showErrorToast(getApiErrorMessage(error, "OTP verification failed"));
     }
   };
 
@@ -256,7 +256,7 @@ const Signup = () => {
         navigate("/");
       }, 500);
     } catch (error) {
-      let msg = error.data?.detail || error.message || "An error occurred during signup.";
+      let msg = getApiErrorMessage(error, "An error occurred during signup.");
       if (msg.toLowerCase().includes("email") && msg.toLowerCase().includes("registered")) {
         msg = "This email is already linked to another account.";
       } else if (msg.toLowerCase().includes("registered")) {

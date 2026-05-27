@@ -21,7 +21,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaEnvelope, FaTimes, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
-import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { showSuccessToast, showApiErrorToast } from '../../utils/toastConfig';
 
 const EmailVerificationBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -81,8 +81,11 @@ const EmailVerificationBanner = () => {
       if (response.ok) {
         showSuccessToast('Verification email sent! Please check your inbox.');
       } else {
-        const data = await response.json();
-        showErrorToast(data.detail || 'Failed to resend email. Please try again later.');
+        const data = await response.json().catch(() => ({}));
+        showApiErrorToast(
+          { status: response.status, data },
+          'Failed to resend email. Please try again later.'
+        );
       }
     } catch (error) {
       console.error('Error resending verification email:', error);

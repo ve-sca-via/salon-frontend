@@ -29,7 +29,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useForgotPasswordMutation } from "../../services/api/authApi";
-import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
+import { showSuccessToast, showErrorToast, showApiErrorToast } from "../../utils/toastConfig";
 import Button from "../../components/shared/Button";
 import InputField from "../../components/shared/InputField";
 import { FiMail, FiArrowLeft } from "react-icons/fi";
@@ -72,11 +72,10 @@ const ForgotPassword = () => {
 
     } catch (error) {
       // Even on error, show success for security (don't reveal if email exists)
-      const errorMessage = error.data?.detail || error.message;
-      
-      // Backend returns success regardless, but handle any network errors
-      if (errorMessage && !errorMessage.includes('email exists')) {
-        showErrorToast('Failed to send reset email. Please try again.');
+      if (error.status === 429) {
+        showApiErrorToast(error, 'Too many password reset attempts. Please try again later.');
+      } else if (error.status && error.status !== 'FETCH_ERROR') {
+        showApiErrorToast(error, 'Failed to send reset email. Please try again.');
       } else {
         setEmailSent(true);
         showSuccessToast('Password reset instructions sent! Check your email. 📧');
