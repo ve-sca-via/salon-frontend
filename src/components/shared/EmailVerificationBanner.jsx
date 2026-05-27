@@ -21,7 +21,7 @@
 import React, { useState, useEffect } from 'react';
 import { FaEnvelope, FaTimes, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
-import { showSuccessToast, showApiErrorToast } from '../../utils/toastConfig';
+import { showSuccessToast, showErrorToast, showApiErrorToast } from '../../utils/toastConfig';
 
 const EmailVerificationBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -78,15 +78,24 @@ const EmailVerificationBanner = () => {
         }
       });
 
-      if (response.ok) {
-        showSuccessToast('Verification email sent! Please check your inbox.');
-      } else {
-        const data = await response.json().catch(() => ({}));
-        showApiErrorToast(
-          { status: response.status, data },
-          'Failed to resend email. Please try again later.'
-        );
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data?.success !== false) {
+        if (data?.already_verified) {
+          sessionStorage.removeItem('just_signed_up');
+          sessionStorage.removeItem('email_banner_dismissed');
+          setIsVisible(false);
+          showSuccessToast(data.message || 'Your email is already verified.');
+          return;
+        }
+        showSuccessToast(data?.message || 'Verification email sent! Please check your inbox.');
+        return;
       }
+
+      showApiErrorToast(
+        { status: response.status, data },
+        data?.detail || data?.message || 'Failed to resend email. Please try again later.'
+      );
     } catch (error) {
       console.error('Error resending verification email:', error);
       showErrorToast('Failed to resend email. Please check your internet connection.');
