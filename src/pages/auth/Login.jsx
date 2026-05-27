@@ -447,15 +447,28 @@ const Login = () => {
 
       const response = await signup(payload).unwrap();
 
-      if (!response?.access_token || !response?.refresh_token || !response?.user) {
+      if (!response?.access_token || !response?.refresh_token) {
         throw new Error('Account created but login session was not returned');
       }
 
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
-      dispatch(setUser(response.user));
+
+      if (response.user) {
+        dispatch(setUser(response.user));
+      } else {
+        // Fall back to a minimal user object so authenticated UI keeps working
+        dispatch(setUser({
+          id: response.user_id,
+          email: payload.email,
+          full_name: payload.full_name,
+          role: payload.user_role,
+        }));
+      }
+
       sessionStorage.setItem('just_signed_up', 'true');
       sessionStorage.removeItem('email_banner_dismissed');
+      window.dispatchEvent(new Event('auth:just_signed_up'));
 
       showSuccessToast('Account created successfully! Welcome 🎉');
       setTimeout(() => navigate(from, { replace: true }), 500);

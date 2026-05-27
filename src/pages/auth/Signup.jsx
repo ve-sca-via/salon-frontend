@@ -250,6 +250,7 @@ const Signup = () => {
 
       dispatch(setUser(response.user));
       sessionStorage.setItem("just_signed_up", "true");
+      window.dispatchEvent(new Event('auth:just_signed_up'));
 
       showSuccessToast("Account created successfully!");
       setTimeout(() => {
