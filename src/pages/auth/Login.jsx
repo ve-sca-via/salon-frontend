@@ -454,6 +454,8 @@ const Login = () => {
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
       dispatch(setUser(response.user));
+      sessionStorage.setItem('just_signed_up', 'true');
+      sessionStorage.removeItem('email_banner_dismissed');
 
       showSuccessToast('Account created successfully! Welcome 🎉');
       setTimeout(() => navigate(from, { replace: true }), 500);
