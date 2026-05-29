@@ -427,20 +427,14 @@ export default function ServiceBooking() {
     <div className="min-h-screen bg-bg-secondary">
       <PublicNavbar />
 
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-24">
+      <div
+        className={`max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8 pb-24 ${
+          cart?.item_count > 0 ? "lg:pr-[340px]" : ""
+        }`}
+      >
         {/* Header */}
-        <div className="mb-4 sm:mb-6">
-          <div className="flex justify-between items-center mb-4">
-            <button
-              onClick={() => navigate(`/salons/${id}`)}
-              className="flex items-center gap-1.5 text-neutral-gray-500 hover:text-accent-orange transition-colors"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              <span className="font-body font-medium text-[15px] sm:text-[16px]">Back to Salon</span>
-            </button>
-            
+        <div className="mb-4 sm:mb-6 relative">
+          <div className="flex justify-start items-center mb-4">
             {/* View Cart Button at top */}
             {cart?.item_count > 0 && (
               <button
@@ -454,6 +448,35 @@ export default function ServiceBooking() {
               </button>
             )}
           </div>
+
+          {/* Desktop: checkout CTA pinned top-right without shifting layout */}
+          {cart?.item_count > 0 && (
+            <div className="hidden lg:block fixed right-6 top-24 z-40 w-[320px]">
+              <div className="bg-white border border-gray-200 rounded-2xl shadow-[0_16px_40px_rgba(0,0,0,0.12)] p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <p className="font-body text-[12px] text-neutral-black/60">Cart</p>
+                    <p className="font-body font-semibold text-[16px] text-neutral-black leading-tight">
+                      {cart?.item_count} {cart?.item_count === 1 ? 'service' : 'services'}
+                    </p>
+                  </div>
+                  <p className="font-body font-bold text-[16px] text-neutral-black">
+                    ₹{cart?.total_amount || 0}
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => navigate('/checkout')}
+                  className="mt-3 w-full bg-accent-orange hover:opacity-90 active:opacity-80 text-white font-body font-semibold text-[15px] py-3 rounded-xl transition-opacity shadow-sm flex items-center justify-center gap-2"
+                >
+                  Proceed to Checkout
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
           {!selectedCategory ? (
             <>
               <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black mb-1">
@@ -465,8 +488,16 @@ export default function ServiceBooking() {
             </>
           ) : (
             <div className="flex flex-col gap-4">
-              <nav className="flex items-center gap-2 text-sm font-body text-gray-500">
-                <button 
+              {/* Single functional breadcrumb (no duplicates) */}
+              <nav className="flex flex-wrap items-center gap-2 text-sm font-body text-gray-500">
+                <button
+                  onClick={() => navigate(`/salons/${id}`)}
+                  className="hover:text-accent-orange font-medium transition-colors"
+                >
+                  Salon
+                </button>
+                <span className="text-gray-400 text-xs">▶</span>
+                <button
                   onClick={() => setSelectedCategory(null)}
                   className="hover:text-accent-orange font-medium transition-colors"
                 >
@@ -474,23 +505,9 @@ export default function ServiceBooking() {
                 </button>
                 <span className="text-gray-400 text-xs">▶</span>
                 <span className="text-neutral-black font-semibold">
-                  {selectedCategory}
-                </span>
-                <span className="text-gray-400 text-xs">▶</span>
-                <span className="text-neutral-black font-semibold">
-                  Services
+                  {selectedCategory} Services
                 </span>
               </nav>
-
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className="flex items-center w-fit text-accent-orange font-body font-medium hover:opacity-80 transition-opacity mb-2"
-              >
-                <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Back to Categories
-              </button>
               
               <div className="flex items-center justify-between mb-4">
                 <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black">
@@ -697,21 +714,23 @@ export default function ServiceBooking() {
         )}
       </div>
 
-      {/* Fixed Bottom Checkout Bar — appears when cart has items */}
       {cart?.item_count > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0px_-2px_16px_rgba(0,0,0,0.12)] z-40">
-          <div className="max-w-7xl mx-auto">
-            <button
-              onClick={() => navigate('/checkout')}
-              className="w-full bg-accent-orange hover:opacity-90 active:opacity-80 text-white font-body font-semibold text-[16px] py-3.5 rounded-lg transition-opacity shadow-md flex items-center justify-center gap-2"
-            >
-              Proceed to Checkout
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
+        <>
+          {/* Mobile: keep fixed bottom checkout bar */}
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0px_-2px_16px_rgba(0,0,0,0.12)] z-40">
+            <div className="max-w-7xl mx-auto">
+              <button
+                onClick={() => navigate('/checkout')}
+                className="w-full bg-accent-orange hover:opacity-90 active:opacity-80 text-white font-body font-semibold text-[16px] py-3.5 rounded-lg transition-opacity shadow-md flex items-center justify-center gap-2"
+              >
+                Proceed to Checkout
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <Footer />

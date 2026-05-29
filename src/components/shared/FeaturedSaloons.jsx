@@ -81,7 +81,7 @@ function Header() {
         </div>
 
         {/* Description */}
-        <p className="hidden md:block font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
+        <p className="hidden md:block font-body font-medium text-[16px] leading-[24px] text-neutral-black/70 text-center max-w-[510px] mt-2">
           Our Barbershop &amp; Tattoo Salon provides classic services combined with
           innovative techniques.
         </p>

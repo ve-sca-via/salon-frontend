@@ -38,6 +38,7 @@ import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/a
 import { useGetSalonReviewsQuery } from "../../services/api/reviewApi";
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock, FiHeart } from "react-icons/fi";
 import { useAddFavoriteMutation, useGetFavoritesQuery, useRemoveFavoriteMutation } from "../../services/api/favoriteApi";
+import { useAddToCartMutation, useGetCartQuery } from "../../services/api/cartApi";
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
 import { NotFound } from "../../components/shared/ErrorFallback";
 import ShareModal from "../../components/shared/ShareModal";
@@ -247,6 +248,8 @@ export default function SalonDetail() {
   const { data: salonData, isLoading: loading, error } = useGetSalonByIdQuery(id);
   const { data: servicesData, isLoading: servicesLoading } = useGetSalonServicesQuery(id);
   const { data: reviewsData, isLoading: reviewsLoading } = useGetSalonReviewsQuery(id);
+  const { data: cart } = useGetCartQuery();
+  const [addToCart] = useAddToCartMutation();
   const isCustomer = user?.role === "customer";
   const { data: favoritesData } = useGetFavoritesQuery(undefined, {
     skip: !isAuthenticated || !isCustomer,
@@ -375,8 +378,48 @@ export default function SalonDetail() {
     return max > 0 ? max : 10;
   }, [services]);
 
-  const handleBookService = (service) => {
-    navigate(`/salons/${id}/book`, { state: { selectedService: service } });
+  const handleBookService = async (service) => {
+    if (!isAuthenticated) {
+      navigate("/login", {
+        replace: true,
+        state: { from: `/salons/${id}` },
+      });
+      return;
+    }
+
+    // Prevent mixing salons in cart
+    if (cart?.salon_id && String(cart.salon_id) !== String(id)) {
+      showErrorToast(
+        `Your selected services contain items from ${cart.salon_name}. Please clear your selection to add items from a different salon.`,
+        { autoClose: 4000 }
+      );
+      return;
+    }
+
+    const cartItem = {
+      salon_id: id,
+      salon_name: salon?.business_name || salon?.name,
+      service_id: service.id,
+      service_name: service.name,
+      plan_name: service.plan_name || "Standard",
+      category: service.service_subcategories?.name
+        ? `${service.service_categories?.name || "Category"} > ${service.service_subcategories.name}`
+        : (service.service_categories?.name || service.category_name || "Other"),
+      subcategory_id: service.subcategory_id || null,
+      duration: service.duration_minutes || 0,
+      price: parseFloat(service.price) || 0,
+      description: service.description || `${service.duration_minutes} minutes`,
+      quantity: 1,
+    };
+
+    try {
+      await addToCart(cartItem).unwrap();
+      showSuccessToast(`${service.name} added to services!`);
+      navigate("/cart");
+    } catch (addErr) {
+      const msg = addErr?.data?.detail || addErr?.data?.message || "Failed to add to cart";
+      showErrorToast(msg);
+    }
   };
 
   const handleToggleFavorite = async () => {
@@ -516,7 +559,11 @@ export default function SalonDetail() {
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     
     // If business_hours JSONB exists, use it (new format - stores strings like "9:00 AM - 6:00 PM" or "Closed")
-    if (salon.business_hours && typeof salon.business_hours === 'object') {
+    if (
+      salon.business_hours &&
+      typeof salon.business_hours === 'object' &&
+      Object.keys(salon.business_hours).length > 0
+    ) {
       return daysOfWeek.map(day => {
         const dayKey = day.toLowerCase();
         const hours = salon.business_hours[dayKey] || 'Closed';
@@ -539,7 +586,26 @@ export default function SalonDetail() {
       const closeTime = formatTime(salon.closing_time);
       const hoursStr = `${openTime} - ${closeTime}`;
       
-      const workingDays = (salon.working_days || []).map(d => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase());
+      const normalizeWorkingDays = (wd) => {
+        if (!wd) return [];
+        let arr = wd;
+        if (typeof wd === 'string') {
+          try {
+            const parsed = JSON.parse(wd);
+            if (Array.isArray(parsed)) arr = parsed;
+            else arr = [wd];
+          } catch {
+            arr = wd.split(',').map(s => s.trim()).filter(Boolean);
+          }
+        }
+        if (!Array.isArray(arr)) return [];
+        return arr
+          .map(d => String(d).trim())
+          .filter(Boolean)
+          .map(d => d.charAt(0).toUpperCase() + d.slice(1).toLowerCase());
+      };
+
+      const workingDays = normalizeWorkingDays(salon.working_days);
       
       return daysOfWeek.map(day => {
         const hours = workingDays.includes(day) ? hoursStr : 'Closed';

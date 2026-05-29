@@ -6,6 +6,7 @@
  */
 
 import { get, post, put, del, patch } from '../apiClient';
+import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 
 /**
  * Base query function for RTK Query
@@ -38,13 +39,17 @@ export const axiosBaseQuery = () => async ({ url, method = 'get', data, params }
     // RTK Query expects { data: ... } format
     return { data: result };
   } catch (axiosError) {
-    // Extract error information (status preserved from handleApiError)
-    const error = {
-      status: axiosError.status || axiosError.response?.status,
-      data: axiosError.data || axiosError.response?.data || axiosError.message,
-    };
+    const status = axiosError.status || axiosError.response?.status;
+    const rawData = axiosError.data || axiosError.response?.data || axiosError.message;
+    const message = getApiErrorMessage({ status, data: rawData }, 'An error occurred');
+    const data =
+      rawData && typeof rawData === 'object' && !Array.isArray(rawData)
+        ? { ...rawData, detail: message }
+        : typeof rawData === 'string'
+          ? { detail: message }
+          : { detail: message };
 
-    return { error };
+    return { error: { status, data } };
   }
 };
 

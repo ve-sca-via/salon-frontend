@@ -41,7 +41,8 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setUser } from "../../store/slices/authSlice";
 import { useResetPasswordMutation } from "../../services/api/authApi";
-import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
+import { showSuccessToast, showErrorToast, showApiErrorToast } from "../../utils/toastConfig";
+import { getApiErrorMessage } from "../../utils/apiErrorMessage";
 import Button from "../../components/shared/Button";
 import InputField from "../../components/shared/InputField";
 import { FiLock, FiEye, FiEyeOff, FiAlertCircle } from "react-icons/fi";
@@ -202,8 +203,8 @@ const ResetPassword = () => {
       }
 
     } catch (error) {
-      const errorMessage = error.data?.detail || error.message || 'Password reset failed';
-      
+      const errorMessage = getApiErrorMessage(error, 'Password reset failed');
+
       if (errorMessage.includes('token') || errorMessage.includes('expired')) {
         showErrorToast('Reset link has expired. Please request a new one.');
         setTimeout(() => navigate('/forgot-password'), 2000);

@@ -53,6 +53,7 @@ import {
   useVerifyPhoneSignupOTPMutation
 } from "../../services/api/authApi";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
+import { getApiErrorMessage } from "../../utils/apiErrorMessage";
 import Button from "../../components/shared/Button";
 import InputField from "../../components/shared/InputField";
 import { FiMail, FiLock, FiShoppingBag, FiUsers, FiEye, FiEyeOff, FiPhone, FiKey } from "react-icons/fi";
@@ -265,23 +266,16 @@ const Login = () => {
       }, 500);
 
     } catch (error) {
-      // RTK Query errors have a 'data' property with 'detail'
-      const errorMessage = error.data?.detail || error.message || 'Login failed';
-      
-      // Use backend message if available, otherwise provide user-friendly fallback
-      let msg = errorMessage;
-      
-      // Only map if backend didn't send a clear message
-      if (!errorMessage || errorMessage === 'Login failed') {
+      let msg = getApiErrorMessage(error, 'Login failed');
+
+      if (msg === 'Login failed') {
         if (error.status === 401) {
           msg = 'Invalid email or password. Please check your credentials.';
         } else if (error.status === 403) {
           msg = 'Access denied. Please contact support.';
-        } else {
-          msg = 'Login failed. Please try again.';
         }
       }
-      
+
       showErrorToast(msg);
     }
   };
@@ -325,7 +319,7 @@ const Login = () => {
         showSuccessToast(`OTP sent to ${response.phone}`);
       }
     } catch (error) {
-      const errorMessage = error.data?.detail || error.message || 'Failed to send OTP';
+      const errorMessage = getApiErrorMessage(error, 'Failed to send OTP');
       const notRegistered = error.status === 404 || errorMessage.toLowerCase().includes("not registered");
 
       if (!notRegistered) {
@@ -355,8 +349,7 @@ const Login = () => {
           showSuccessToast('New number detected. OTP sent to continue account creation.');
         }
       } catch (signupOtpError) {
-        const signupErrorMsg = signupOtpError.data?.detail || signupOtpError.message || 'Failed to send OTP';
-        showErrorToast(signupErrorMsg);
+        showErrorToast(getApiErrorMessage(signupOtpError, 'Failed to send OTP'));
       }
     }
   };
@@ -425,8 +418,7 @@ const Login = () => {
         setTimeout(() => navigate(from, { replace: true }), 500);
       }
     } catch (error) {
-      const errorMessage = error.data?.detail || error.message || 'OTP verification failed';
-      showErrorToast(errorMessage);
+      showErrorToast(getApiErrorMessage(error, 'OTP verification failed'));
     }
   };
 
@@ -455,19 +447,33 @@ const Login = () => {
 
       const response = await signup(payload).unwrap();
 
-      if (!response?.access_token || !response?.refresh_token || !response?.user) {
+      if (!response?.access_token || !response?.refresh_token) {
         throw new Error('Account created but login session was not returned');
       }
 
       localStorage.setItem('access_token', response.access_token);
       localStorage.setItem('refresh_token', response.refresh_token);
-      dispatch(setUser(response.user));
+
+      if (response.user) {
+        dispatch(setUser(response.user));
+      } else {
+        // Fall back to a minimal user object so authenticated UI keeps working
+        dispatch(setUser({
+          id: response.user_id,
+          email: payload.email,
+          full_name: payload.full_name,
+          role: payload.user_role,
+        }));
+      }
+
+      sessionStorage.setItem('just_signed_up', 'true');
+      sessionStorage.removeItem('email_banner_dismissed');
+      window.dispatchEvent(new Event('auth:just_signed_up'));
 
       showSuccessToast('Account created successfully! Welcome 🎉');
       setTimeout(() => navigate(from, { replace: true }), 500);
     } catch (error) {
-      const errorMessage = error.data?.detail || error.message || 'Failed to create account';
-      showErrorToast(errorMessage);
+      showErrorToast(getApiErrorMessage(error, 'Failed to create account'));
     }
   };
 

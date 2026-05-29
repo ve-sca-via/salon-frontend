@@ -50,7 +50,7 @@
  * - Razorpay key: Backend config (razorpay_key_id)
  */
 
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
@@ -58,6 +58,7 @@ import Footer from "../../components/layout/Footer";
 import { useGetCartQuery, useCheckoutCartMutation } from "../../services/api/cartApi";
 import { useCreateCartPaymentOrderMutation } from "../../services/api/paymentApi";
 import { useGetPublicConfigsQuery } from "../../services/api/configApi";
+import { useGetSalonByIdQuery } from "../../services/api/salonApi";
 import { showSuccessToast, showErrorToast, showWarningToast, showInfoToast } from "../../utils/toastConfig";
 import { SkeletonServiceCard } from "../../components/shared/Skeleton";
 
@@ -67,6 +68,12 @@ export default function Checkout() {
   
   // Fetch cart data
   const { data: cart, isLoading, error } = useGetCartQuery();
+
+  // Fetch salon details for business hours
+  const { data: salonData } = useGetSalonByIdQuery(cart?.salon_id, {
+    skip: !cart?.salon_id,
+  });
+  const salon = salonData?.salon || salonData;
   
   // Fetch public configs
   const { data: configs } = useGetPublicConfigsQuery();
@@ -126,27 +133,134 @@ export default function Checkout() {
   /**
    * Generate time slots from 2:30 PM to 8:15 PM (15-min intervals)
    */
-  const generateTimeSlots = () => {
-    const slots = [];
-    let currentHour = 14; // 2 PM
-    let currentMinute = 30;
+  const generateTimeSlots = (openMinutes, closeMinutes, stepMinutes = 15) => {
+    if (!Number.isFinite(openMinutes) || !Number.isFinite(closeMinutes)) return [];
+    if (closeMinutes <= openMinutes) return [];
 
-    while (currentHour < 20 || (currentHour === 20 && currentMinute <= 15)) {
-      const hour12 = currentHour > 12 ? currentHour - 12 : currentHour;
-      const ampm = currentHour >= 12 ? "PM" : "AM";
-      slots.push(`${hour12}:${currentMinute.toString().padStart(2, "0")} ${ampm}`);
-      
-      currentMinute += 15;
-      if (currentMinute >= 60) {
-        currentMinute = 0;
-        currentHour += 1;
-      }
+    const slots = [];
+    for (let m = openMinutes; m <= closeMinutes; m += stepMinutes) {
+      const hour24 = Math.floor(m / 60);
+      const minute = m % 60;
+      const hour12 = hour24 % 12 || 12;
+      const ampm = hour24 >= 12 ? "PM" : "AM";
+      slots.push(`${hour12}:${String(minute).padStart(2, "0")} ${ampm}`);
     }
     return slots;
   };
 
   const dates = generateDates();
-  const timeSlots = generateTimeSlots();
+
+  // Auto-select today's date so slots can be computed immediately (prevents showing fallback slots)
+  useEffect(() => {
+    if (!selectedDate && dates.length > 0) {
+      setSelectedDate(dates[0].value);
+    }
+  }, [dates, selectedDate]);
+
+  const getSalonHoursForSelectedDate = useMemo(() => {
+    if (!salon || !selectedDate) return null;
+
+    const dateObj = new Date(selectedDate);
+    if (Number.isNaN(dateObj.getTime())) return null;
+    const dayKey = dateObj
+      .toLocaleDateString("en-US", { weekday: "long" })
+      .toLowerCase(); // monday..sunday
+
+    // Parse "9:00 AM" / "9:00PM" / "09:00" into minutes since midnight
+    const parseTimeToMinutes = (timeStr) => {
+      if (!timeStr) return null;
+      const raw = String(timeStr).trim().toUpperCase();
+
+      // 12-hour format: H:MM AM/PM
+      const m12 = raw.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/);
+      if (m12) {
+        let h = Number(m12[1]);
+        const mins = Number(m12[2] ?? "0");
+        const ap = m12[3];
+        if (h === 12) h = 0;
+        const hour24 = ap === "PM" ? h + 12 : h;
+        return hour24 * 60 + mins;
+      }
+
+      // 24-hour format: HH:MM(:SS)?
+      const m24 = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+      if (m24) {
+        const h = Number(m24[1]);
+        const mins = Number(m24[2]);
+        if (h >= 0 && h <= 23 && mins >= 0 && mins <= 59) return h * 60 + mins;
+      }
+
+      return null;
+    };
+
+    // New format: business_hours JSONB (e.g. "9:00 AM - 6:00 PM" or "Closed")
+    // Treat empty object {} as "not configured" and fall back to legacy fields.
+    if (
+      salon.business_hours &&
+      typeof salon.business_hours === "object" &&
+      Object.keys(salon.business_hours).length > 0
+    ) {
+      const hours = salon.business_hours[dayKey];
+      if (!hours || String(hours).toLowerCase() === "closed") return { open: null, close: null, isClosed: true };
+      const parts = String(hours).split("-");
+      if (parts.length < 2) return null;
+      const open = parseTimeToMinutes(parts[0].trim());
+      const close = parseTimeToMinutes(parts.slice(1).join("-").trim());
+      if (open == null || close == null) return null;
+      return { open, close, isClosed: false };
+    }
+
+    // Legacy format: opening_time/closing_time + working_days
+    if (salon.opening_time && salon.closing_time) {
+      const normalizeWorkingDays = (wd) => {
+        if (!wd) return [];
+        let arr = wd;
+        if (typeof wd === "string") {
+          try {
+            const parsed = JSON.parse(wd);
+            if (Array.isArray(parsed)) arr = parsed;
+            else arr = [wd];
+          } catch {
+            arr = wd.split(",").map((s) => s.trim()).filter(Boolean);
+          }
+        }
+        if (!Array.isArray(arr)) return [];
+        return arr.map((d) => String(d).trim().toLowerCase()).filter(Boolean);
+      };
+
+      const workingDays = normalizeWorkingDays(salon.working_days);
+      if (workingDays.length > 0 && !workingDays.includes(dayKey)) {
+        return { open: null, close: null, isClosed: true };
+      }
+      const open = parseTimeToMinutes(salon.opening_time);
+      const close = parseTimeToMinutes(salon.closing_time);
+      if (open == null || close == null) return null;
+      return { open, close, isClosed: false };
+    }
+
+    return null;
+  }, [salon, selectedDate]);
+
+  const timeSlots = useMemo(() => {
+    // Until a date is selected, don't show slots
+    if (!selectedDate) return [];
+
+    // If salon hours aren't available yet, avoid showing misleading hardcoded slots
+    if (!getSalonHoursForSelectedDate) return [];
+
+    if (getSalonHoursForSelectedDate.isClosed) return [];
+
+    return generateTimeSlots(
+      getSalonHoursForSelectedDate.open,
+      getSalonHoursForSelectedDate.close,
+      15
+    );
+  }, [getSalonHoursForSelectedDate, selectedDate]);
+
+  // Clear selected times when date changes (or salon hours change)
+  useEffect(() => {
+    setSelectedTimes([]);
+  }, [selectedDate, cart?.salon_id]);
 
   // Calculate pricing (only if config is loaded)
   const servicesTotalAmount = cart?.total_amount || 0;
@@ -403,6 +517,16 @@ export default function Checkout() {
                     </span>
                   )}
                 </div>
+                {selectedDate && timeSlots.length === 0 && (
+                  <div className="mb-3 rounded-lg border border-orange-200 bg-orange-50 px-3 py-2">
+                    <p className="font-body text-[12px] text-accent-orange font-semibold">
+                      This salon is closed on the selected day.
+                    </p>
+                    <p className="font-body text-[12px] text-neutral-gray-600">
+                      Please choose a different date.
+                    </p>
+                  </div>
+                )}
                 <div
                   className="overflow-x-auto pb-2 scrollbar-hide"
                   style={{ WebkitOverflowScrolling: "touch" }}

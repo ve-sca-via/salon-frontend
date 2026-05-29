@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios';
+import { getApiErrorMessage } from '../utils/apiErrorMessage';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8000';
 
@@ -243,10 +244,17 @@ apiClient.interceptors.response.use(
 export const handleApiError = (error) => {
   if (error.response) {
     // Server responded with error
-    const message = error.response.data?.detail || error.response.data?.message || 'An error occurred';
+    const rtkShape = {
+      status: error.response.status,
+      data: error.response.data,
+    };
+    const message = getApiErrorMessage(rtkShape, 'An error occurred');
     const err = new Error(message);
     err.status = error.response.status;
-    err.data = error.response.data;
+    err.data = {
+      ...error.response.data,
+      detail: message,
+    };
     throw err;
   } else if (error.request) {
     // Request made but no response
