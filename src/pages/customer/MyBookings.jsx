@@ -270,18 +270,27 @@ function BookingCard({ booking, onCancel }) {
             )}
             <div className="flex justify-between items-center pt-2 border-t border-neutral-gray-600">
               <span className="font-body text-[15px] text-neutral-black font-bold">
-                Total Paid
+                Paid Online
               </span>
               <span className="font-body text-[20px] text-accent-orange font-bold">
-                ₹{(booking.total_amount || 0).toFixed(2)}
+                ₹{(booking.convenience_fee || 0).toFixed(2)}
               </span>
             </div>
+            {(booking.service_price || 0) > 0 && (
+              <div className="flex justify-between items-center pt-2">
+                <span className="font-body text-[13px] text-neutral-gray-500">
+                  Pay at Salon
+                </span>
+                <span className="font-body text-[15px] text-neutral-black font-bold">
+                  ₹{(booking.service_price || 0).toFixed(2)}
+                </span>
+              </div>
+            )}
           </div>
-          {/* Payment Instructions */}
           {booking.status !== 'cancelled' && booking.status !== 'completed' && booking.service_price > 0 && (
             <div className="bg-blue-50 mt-3 p-3 rounded-lg">
               <p className="font-body text-[13px] text-blue-700 font-semibold">
-                💰 Pay ₹{(booking.service_price || 0).toFixed(2)} at salon after service
+                💰 Please pay ₹{(booking.service_price || 0).toFixed(2)} at the salon after your service
               </p>
             </div>
           )}
