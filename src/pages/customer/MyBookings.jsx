@@ -379,7 +379,9 @@ export default function MyBookings() {
   const navigate = useNavigate();
   
   // RTK Query hooks
-  const { data: bookingsData, isLoading: loading, error } = useGetMyBookingsQuery();
+  const { data: bookingsData, isLoading: loading, error } = useGetMyBookingsQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
   const [cancelBooking] = useCancelBookingMutation();
   
   const bookings = bookingsData?.data || [];

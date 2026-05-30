@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import { useGetProductCartQuery, useClearProductCartMutation } from "../../services/api/productCartApi";
@@ -8,6 +8,7 @@ import {
   useCreateProductOrderMutation,
   useVerifyProductPaymentMutation,
   useDevVerifyProductPaymentMutation,
+  productOrderApi,
 } from "../../services/api/productOrderApi";
 import { showSuccessToast, showErrorToast, showInfoToast } from "../../utils/toastConfig";
 import { IS_PRODUCTION } from "../../utils/constants";
@@ -20,6 +21,7 @@ import { FiShield, FiLock, FiAlertTriangle, FiCreditCard, FiInfo } from "react-i
 // ─── Main Checkout Page ───────────────────────────────────────────────────────
 export default function ProductCheckout() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
 
   const { data: cart, isLoading, isFetching } = useGetProductCartQuery();
@@ -77,6 +79,9 @@ export default function ProductCheckout() {
             razorpay_payment_id: response.razorpay_payment_id,
             razorpay_signature: response.razorpay_signature,
           }).unwrap();
+          await dispatch(
+            productOrderApi.endpoints.getMyProductOrders.initiate(undefined, { forceRefetch: true })
+          ).unwrap();
           await clearCart().unwrap();
           setCheckoutComplete(true);
           showSuccessToast("Order placed successfully!");
@@ -114,6 +119,9 @@ export default function ProductCheckout() {
       await new Promise(r => setTimeout(r, 2000)); // Simulate processing delay
       
       await devVerifyPayment(orderResponse.order.id).unwrap();
+      await dispatch(
+        productOrderApi.endpoints.getMyProductOrders.initiate(undefined, { forceRefetch: true })
+      ).unwrap();
       await clearCart().unwrap();
 
       setCheckoutComplete(true);

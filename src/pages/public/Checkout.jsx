@@ -52,10 +52,11 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import { useGetCartQuery, useCheckoutCartMutation } from "../../services/api/cartApi";
+import { bookingApi } from "../../services/api/bookingApi";
 import { useCreateCartPaymentOrderMutation } from "../../services/api/paymentApi";
 import { useGetPublicConfigsQuery } from "../../services/api/configApi";
 import { useGetSalonByIdQuery } from "../../services/api/salonApi";
@@ -64,6 +65,7 @@ import { SkeletonServiceCard } from "../../components/shared/Skeleton";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   
   // Fetch cart data
@@ -367,7 +369,7 @@ export default function Checkout() {
    */
   const handleCheckoutSuccess = async (paymentResponse) => {
     try {
-      const result = await checkoutCart({
+      await checkoutCart({
         booking_date: selectedDate,
         time_slots: selectedTimes,
         razorpay_order_id: paymentResponse.razorpay_order_id,
@@ -376,6 +378,11 @@ export default function Checkout() {
         payment_method: 'razorpay',
         notes: ''
       }).unwrap();
+
+      // Prefetch fresh bookings so My Bookings shows the new appointment immediately
+      await dispatch(
+        bookingApi.endpoints.getMyBookings.initiate(undefined, { forceRefetch: true })
+      ).unwrap();
       
       setIsProcessingPayment(false);
       setCheckoutComplete(true);
