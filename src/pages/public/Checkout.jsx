@@ -86,6 +86,7 @@ export default function Checkout() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [checkoutComplete, setCheckoutComplete] = useState(false);
 
   // Get convenience fee from config (dynamically set by admin, no hardcoded fallback)
   const convenienceFeePercentage = configs?.convenience_fee_percentage;
@@ -93,13 +94,14 @@ export default function Checkout() {
   // Get max advance booking days from config or default to 30
   const maxAdvanceDays = configs?.max_booking_advance_days || 30;
 
-  // Redirect to cart if empty
+  // Redirect to cart if empty (skip after successful checkout — cart is cleared server-side)
   useEffect(() => {
+    if (checkoutComplete) return;
     if (!isLoading && (!cart || cart?.items?.length === 0)) {
       showInfoToast("Your cart is empty", { position: "top-center" });
       navigate("/cart");
     }
-  }, [cart, isLoading, navigate]);
+  }, [cart, isLoading, navigate, checkoutComplete]);
 
   // Check if required config is loaded
   useEffect(() => {
@@ -374,12 +376,9 @@ export default function Checkout() {
       }).unwrap();
       
       setIsProcessingPayment(false);
+      setCheckoutComplete(true);
       showSuccessToast('Booking confirmed successfully!');
-      
-      // Small delay to ensure user sees the success message
-      setTimeout(() => {
-        navigate('/my-bookings');
-      }, 1500);
+      navigate('/my-bookings', { replace: true });
     } catch (error) {
       setIsProcessingPayment(false);
       showErrorToast(error?.data?.message || 'Checkout failed. Please contact support.');

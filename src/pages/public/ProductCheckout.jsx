@@ -13,7 +13,7 @@ import { showSuccessToast, showErrorToast, showInfoToast } from "../../utils/toa
 import { IS_PRODUCTION } from "../../utils/constants";
 import InputField from "../../components/shared/InputField";
 import Card from "../../components/shared/Card";
-import { FiShield, FiLock, FiCheckCircle, FiAlertTriangle, FiCreditCard, FiInfo } from "react-icons/fi";
+import { FiShield, FiLock, FiAlertTriangle, FiCreditCard, FiInfo } from "react-icons/fi";
 
 // Removed DevPaymentModal - now uses standard Razorpay flow for both dev and prod
 
@@ -22,7 +22,7 @@ export default function ProductCheckout() {
   const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
 
-  const { data: cart, isLoading } = useGetProductCartQuery();
+  const { data: cart, isLoading, isFetching } = useGetProductCartQuery();
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateProductOrderMutation();
   const [verifyPayment] = useVerifyProductPaymentMutation();
   const [devVerifyPayment] = useDevVerifyProductPaymentMutation();
@@ -30,6 +30,7 @@ export default function ProductCheckout() {
 
   const [paymentStep, setPaymentStep] = useState(1); // 1 = Details, 2 = Processing, 3 = Success
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [checkoutComplete, setCheckoutComplete] = useState(false);
   const [pendingOrder, setPendingOrder] = useState(null);
 
   const [address, setAddress] = useState({
@@ -42,11 +43,13 @@ export default function ProductCheckout() {
   });
 
   useEffect(() => {
-    if (!isLoading && (!cart || !cart.items || cart.items.length === 0)) {
+    if (checkoutComplete) return;
+    if (isLoading || isFetching) return;
+    if (!cart || !cart.items || cart.items.length === 0) {
       showInfoToast("Your cart is empty", { position: "top-center" });
       navigate("/");
     }
-  }, [cart, isLoading, navigate]);
+  }, [cart, isLoading, isFetching, navigate, checkoutComplete]);
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
@@ -75,14 +78,12 @@ export default function ProductCheckout() {
             razorpay_signature: response.razorpay_signature,
           }).unwrap();
           await clearCart().unwrap();
-          setPaymentStep(3);
+          setCheckoutComplete(true);
           showSuccessToast("Order placed successfully!");
-          
-          setTimeout(() => {
-            navigate("/order-confirmation", {
-              state: { orderNumber: orderResponse.order.order_number },
-            });
-          }, 2000);
+          navigate("/order-confirmation", {
+            replace: true,
+            state: { orderNumber: orderResponse.order.order_number },
+          });
         } catch {
           setPaymentStep(1);
           setIsProcessingPayment(false);
@@ -114,15 +115,13 @@ export default function ProductCheckout() {
       
       await devVerifyPayment(orderResponse.order.id).unwrap();
       await clearCart().unwrap();
-      
-      setPaymentStep(3);
+
+      setCheckoutComplete(true);
       showSuccessToast("Order placed successfully! (Demo Mode)");
-      
-      setTimeout(() => {
-        navigate("/order-confirmation", {
-          state: { orderNumber: orderResponse.order.order_number },
-        });
-      }, 2000);
+      navigate("/order-confirmation", {
+        replace: true,
+        state: { orderNumber: orderResponse.order.order_number },
+      });
     } catch (err) {
       setPaymentStep(1);
       setIsProcessingPayment(false);
@@ -174,7 +173,9 @@ export default function ProductCheckout() {
     );
   }
 
-  if (!cart || !cart.items || cart.items.length === 0) return null;
+  if (!checkoutComplete && (!cart || !cart.items || cart.items.length === 0)) return null;
+
+  if (checkoutComplete) return null;
 
   const subtotal = cart.items.reduce(
     (total, item) => total + (item.price || item.unit_price) * item.quantity,
@@ -206,26 +207,6 @@ export default function ProductCheckout() {
               <div className="w-3 h-3 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
               <div className="w-3 h-3 bg-orange-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Screen (Step 3) */}
-      {paymentStep === 3 && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[100] px-4">
-          <div className="bg-white rounded-2xl max-w-md w-full text-center p-12 shadow-2xl">
-            <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <FiCheckCircle className="text-green-600 text-5xl" />
-            </div>
-            <h2 className="text-3xl font-display font-bold text-gray-900 mb-3">
-              Payment Successful! 🎉
-            </h2>
-            <p className="text-gray-600 font-body mb-2">
-              Your order has been placed successfully.
-            </p>
-            <p className="text-sm text-gray-500 font-body">
-              Redirecting to confirmation...
-            </p>
           </div>
         </div>
       )}

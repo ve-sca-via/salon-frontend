@@ -82,7 +82,6 @@ const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
 const Favorites = lazy(() => import('./pages/customer/Favorites'));
 const MyReviews = lazy(() => import('./pages/customer/MyReviews'));
 const MyOrders = lazy(() => import('./pages/customer/MyOrders'));
-const TrackOrder = lazy(() => import('./pages/customer/TrackOrder'));
 const CustomerProfile = lazy(() => import('./pages/customer/CustomerProfile'));
 
 // RM (Relationship Manager) pages
@@ -278,13 +277,6 @@ function App() {
                 <ProtectedRoute allowedRoles={['customer', 'vendor', 'regular_buyer', 'admin', 'hmr']}>
                   <ErrorBoundary fallback="page">
                     <MyOrders />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
-              <Route path="/customer/track-order" element={
-                <ProtectedRoute allowedRoles={['customer']}>
-                  <ErrorBoundary fallback="page">
-                    <TrackOrder />
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
