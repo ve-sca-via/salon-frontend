@@ -15,6 +15,7 @@ import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import { getApiErrorMessage } from "../../utils/apiErrorMessage";
 import InputField from "../../components/shared/InputField";
 import Button from "../../components/shared/Button";
+import PhoneCountryPrefix from "../../components/shared/PhoneCountryPrefix";
 import { setUser } from "../../store/slices/authSlice";
 import {
   useSignupMutation,
@@ -85,7 +86,13 @@ const Signup = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (name === "phone") {
+      const digits = value.replace(/\D/g, "").slice(0, 10);
+      setFormData((prev) => ({ ...prev, phone: digits }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
 
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
@@ -352,19 +359,26 @@ const Signup = () => {
 
               {step === "phone_input" && (
                 <form onSubmit={sendOtpForPhoneSignup} className="space-y-4">
-                  <InputField
-                    label="Phone Number"
-                    type="tel"
-                    name="phone"
-                    placeholder="Enter your 10-digit phone number"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    icon={<FaPhone />}
-                    error={errors.phone}
-                    disabled={isSendingOTP}
-                    aria-label="Phone number"
-                    autoFocus
-                  />
+                  <div className="flex gap-3 items-end">
+                    <PhoneCountryPrefix disabled={isSendingOTP} />
+                    <div className="flex-1">
+                      <InputField
+                        label="Phone Number"
+                        type="tel"
+                        name="phone"
+                        placeholder="9876543210"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        icon={<FaPhone />}
+                        error={errors.phone}
+                        disabled={isSendingOTP}
+                        maxLength={10}
+                        inputMode="numeric"
+                        aria-label="Phone number"
+                        autoFocus
+                      />
+                    </div>
+                  </div>
                   <Button
                     type="submit"
                     variant="primary"

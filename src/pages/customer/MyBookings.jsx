@@ -36,6 +36,7 @@ import {
   useCancelBookingMutation,
 } from "../../services/api/bookingApi";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
+import { getApiErrorMessage } from "../../utils/apiErrorMessage";
 import { SkeletonBookingCard } from "../../components/shared/Skeleton";
 
 /**
@@ -79,10 +80,14 @@ function BookingCard({ booking, onCancel }) {
     }
   };
 
-  // Upcoming: pending, confirmed only
-  // Past: completed, cancelled, no_show
+  // Upcoming: pending/confirmed with appointment date today or later
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const appointmentDate = new Date(booking.booking_date);
+  appointmentDate.setHours(0, 0, 0, 0);
   const isUpcoming =
-    booking.status === "pending" || booking.status === "confirmed";
+    (booking.status === "pending" || booking.status === "confirmed") &&
+    appointmentDate >= today;
 
   const bookingOriginalServicesTotal = (booking.services || []).reduce((total, service) => {
     const quantity = service.quantity || 1;
@@ -392,7 +397,7 @@ export default function MyBookings() {
         position: "top-center",
       });
     } catch (error) {
-      showErrorToast(error?.message || "Failed to cancel booking");
+      showErrorToast(getApiErrorMessage(error, "Failed to cancel booking"));
     }
   };
 
@@ -402,12 +407,22 @@ export default function MyBookings() {
    * Past: latest first (most recent completed/cancelled)
    */
   const filterAndSortBookings = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const isFutureOrToday = (bookingDate) => {
+      const d = new Date(bookingDate);
+      d.setHours(0, 0, 0, 0);
+      return d >= today;
+    };
+
     let filtered;
     
     if (activeTab === "upcoming") {
-      // Upcoming: pending, confirmed only
       filtered = bookings.filter(
-        (b) => b.status === "pending" || b.status === "confirmed"
+        (b) =>
+          (b.status === "pending" || b.status === "confirmed") &&
+          isFutureOrToday(b.booking_date)
       );
       
       // Sort: confirmed first, then by date (earliest upcoming first)
@@ -420,9 +435,13 @@ export default function MyBookings() {
         return new Date(a.booking_date) - new Date(b.booking_date);
       });
     } else {
-      // Past: completed, cancelled, no_show
+      // Past: completed, cancelled, no_show, or active bookings whose date has passed
       filtered = bookings.filter(
-        (b) => b.status === "completed" || b.status === "cancelled" || b.status === "no_show"
+        (b) =>
+          b.status === "completed" ||
+          b.status === "cancelled" ||
+          b.status === "no_show" ||
+          ((b.status === "pending" || b.status === "confirmed") && !isFutureOrToday(b.booking_date))
       );
       
       // Sort by date descending (latest first)
