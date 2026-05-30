@@ -271,7 +271,9 @@ export default function Checkout() {
     0
   );
   const discountAmount = Math.max(0, originalServicesTotal - servicesTotalAmount);
-  const convenienceFee = convenienceFeePercentage ? Math.round((originalServicesTotal * convenienceFeePercentage) / 100) : 0;
+  const convenienceFee = convenienceFeePercentage
+    ? Math.round((originalServicesTotal * convenienceFeePercentage) / 100 * 100) / 100
+    : 0;
   const totalBookingAmount = convenienceFee;
   const remainingAmount = servicesTotalAmount;
   const grandTotal = servicesTotalAmount + convenienceFee;
