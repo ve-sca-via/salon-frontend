@@ -2,14 +2,15 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FiPlus } from 'react-icons/fi';
 import OptimizedImage from './OptimizedImage';
-import { useAddToProductCartMutation } from '../../services/api/productCartApi';
+import { useAddToProductCartMutation, productCartApi } from '../../services/api/productCartApi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const ProductCard = ({ product, compact = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
   const { isAuthenticated } = useSelector((state) => state.auth);
   const [addToCart, { isLoading }] = useAddToProductCartMutation();
 
@@ -25,6 +26,7 @@ const ProductCard = ({ product, compact = false }) => {
     try {
       await addToCart({ product_id: product.id, quantity: 1 }).unwrap();
       showSuccessToast(`${product.name} added to cart`);
+      navigate('/product-cart');
     } catch (err) {
       showErrorToast(err?.data?.detail || 'Failed to add item to cart');
     }
@@ -41,6 +43,9 @@ const ProductCard = ({ product, compact = false }) => {
 
     try {
       await addToCart({ product_id: product.id, quantity: 1 }).unwrap();
+      await dispatch(
+        productCartApi.endpoints.getProductCart.initiate(undefined, { forceRefetch: true })
+      ).unwrap();
       navigate('/product-checkout');
     } catch (err) {
       showErrorToast(err?.data?.detail || 'Failed to add item to cart');

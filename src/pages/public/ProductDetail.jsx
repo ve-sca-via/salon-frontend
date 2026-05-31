@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { useGetProductBySlugQuery } from '../../services/api/productApi';
-import { useAddToProductCartMutation } from '../../services/api/productCartApi';
+import { useAddToProductCartMutation, productCartApi } from '../../services/api/productCartApi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import { FiShoppingCart, FiCreditCard, FiChevronLeft, FiStar, FiTruck, FiShield, FiRotateCcw } from 'react-icons/fi';
 import PublicNavbar from '../../components/layout/PublicNavbar';
@@ -12,6 +12,7 @@ const ProductDetail = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const dispatch = useDispatch();
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
 
   const [activeImage, setActiveImage] = useState(0);
@@ -81,10 +82,15 @@ const ProductDetail = () => {
         quantity: quantity,
       }).unwrap();
 
+      await dispatch(
+        productCartApi.endpoints.getProductCart.initiate(undefined, { forceRefetch: true })
+      ).unwrap();
+
       if (actionType === 'add_to_cart') {
         showSuccessToast('Added to cart successfully!');
+        navigate('/product-cart');
       } else if (actionType === 'buy_now') {
-        navigate('/product-checkout'); // Redirect to product checkout directly
+        navigate('/product-checkout');
       }
     } catch (err) {
       showErrorToast(err?.data?.detail || 'Failed to add item to cart');

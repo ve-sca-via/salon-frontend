@@ -56,6 +56,7 @@ import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import { getApiErrorMessage } from "../../utils/apiErrorMessage";
 import Button from "../../components/shared/Button";
 import InputField from "../../components/shared/InputField";
+import PhoneCountryPrefix from "../../components/shared/PhoneCountryPrefix";
 import { FiMail, FiLock, FiShoppingBag, FiUsers, FiEye, FiEyeOff, FiPhone, FiKey } from "react-icons/fi";
 import bgImage from "../../assets/images/optimized/bg.webp";
 
@@ -164,6 +165,19 @@ const Login = () => {
    */
   const handlePhoneChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === "phone") {
+      const digits = value.replace(/\D/g, "").slice(0, 10);
+      setPhoneData((prev) => ({ ...prev, phone: digits }));
+      return;
+    }
+
+    if (name === "otp") {
+      const digits = value.replace(/\D/g, "").slice(0, 6);
+      setPhoneData((prev) => ({ ...prev, otp: digits }));
+      return;
+    }
+
     setPhoneData({ ...phoneData, [name]: value });
   };
 
@@ -396,6 +410,7 @@ const Login = () => {
         phone: phoneData.phone,
         otp: phoneData.otp,
         verification_id: phoneData.verificationId,
+        country_code: "91",
       }).unwrap();
 
       if (response.success) {
@@ -785,19 +800,8 @@ const Login = () => {
                     /* Step 1: Enter Phone Number */
                     <form onSubmit={handleSendOTP} className="space-y-5">
                       {/* Country Code & Phone Input */}
-                      <div className="flex gap-3">
-                        <div className="w-24">
-                          <InputField
-                            label="Code"
-                            name="countryCode"
-                            type="text"
-                            value={phoneData.countryCode}
-                            onChange={handlePhoneChange}
-                            placeholder="+91"
-                            disabled={isSendingOTP}
-                            required
-                          />
-                        </div>
+                      <div className="flex gap-3 items-end">
+                        <PhoneCountryPrefix disabled={isSendingOTP} />
                         <div className="flex-1">
                           <InputField
                             label="Phone Number"
@@ -809,6 +813,8 @@ const Login = () => {
                             icon={<FiPhone />}
                             disabled={isSendingOTP}
                             required
+                            maxLength={10}
+                            inputMode="numeric"
                             aria-label="Phone number"
                           />
                         </div>

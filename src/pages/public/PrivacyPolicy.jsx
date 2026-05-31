@@ -241,8 +241,8 @@ export default function PrivacyPolicy() {
             </ul>
             <p className="text-gray-700 leading-relaxed">
               Contact us at{' '}
-              <a href="mailto:support@lubist.in" className="text-blue-600 hover:text-blue-700 font-semibold">
-                support@lubist.in
+              <a href="mailto:support@lubist.com" className="text-blue-600 hover:text-blue-700 font-semibold">
+                support@lubist.com
               </a>{' '}
               for assistance.
             </p>
@@ -296,24 +296,15 @@ export default function PrivacyPolicy() {
                 </p>
                 <div className="flex items-center gap-2 text-gray-700">
                   <FiPhone className="text-blue-600" />
-                  <a href="tel:7004950910" className="hover:text-blue-600">
-                    7004950910
+                  <a href="tel:+919204166560" className="hover:text-blue-600">
+                    +91 9204166560
                   </a>
                 </div>
                 <div className="flex items-center gap-2 text-gray-700">
                   <FiMail className="text-blue-600" />
-                  <a href="mailto:support@lubist.in" className="hover:text-blue-600">
-                    support@lubist.in
+                  <a href="mailto:support@lubist.com" className="hover:text-blue-600">
+                    support@lubist.com
                   </a>
-                </div>
-                <div className="flex items-start gap-2 text-gray-700">
-                  <FiMail className="text-blue-600 mt-1" />
-                  <div>
-                    <p className="font-semibold">Grievance Support:</p>
-                    <a href="mailto:grievance@lubist.in" className="hover:text-blue-600">
-                      grievance@lubist.in
-                    </a>
-                  </div>
                 </div>
                 <p className="text-gray-600 text-sm italic mt-4">
                   Response time: Within 15 working days

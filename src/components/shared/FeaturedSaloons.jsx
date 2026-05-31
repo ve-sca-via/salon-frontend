@@ -4,7 +4,7 @@ import { useSelector } from "react-redux";
 import { useGetSalonsQuery } from "../../services/api/salonApi";
 import { FiStar, FiMapPin, FiClock, FiCalendar } from "react-icons/fi";
 import { SkeletonSalonCard } from "./Skeleton";
-import { SalonCard, MobileSalonCard } from "./SalonCard";
+import { SalonCard } from "./SalonCard";
 import svgPaths from "../../utils/svgPaths";
 
 
@@ -82,8 +82,8 @@ function Header() {
 
         {/* Description */}
         <p className="hidden md:block font-body font-medium text-[16px] leading-[24px] text-neutral-black/70 text-center max-w-[510px] mt-2">
-          Our Barbershop &amp; Tattoo Salon provides classic services combined with
-          innovative techniques.
+          Discover verified hair and spa salons near you. Book beauty, grooming,
+          and wellness services online in just a few clicks.
         </p>
       </div>
     </div>
@@ -104,24 +104,11 @@ export default function FeaturedSaloons() {
 
         {/* ── Loading ── */}
         {isLoading && (
-          <>
-            {/* Desktop skeletons */}
-            <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <SkeletonSalonCard key={i} />
-              ))}
-            </div>
-            {/* Mobile skeletons — 2-column */}
-            <div className="grid grid-cols-2 gap-3 md:hidden">
-              {[1, 2, 3, 4].map((i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl bg-gray-200 animate-pulse border border-gray-100"
-                  style={{ aspectRatio: '3/4' }}
-                />
-              ))}
-            </div>
-          </>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-2 md:px-0">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <SkeletonSalonCard key={i} />
+            ))}
+          </div>
         )}
 
         {/* ── Error ── */}
@@ -135,21 +122,11 @@ export default function FeaturedSaloons() {
 
         {/* ── Data ── */}
         {!isLoading && !error && salons.length > 0 && (
-          <>
-            {/* Desktop: original 3-col grid */}
-            <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
-              {salons.map((salon) => (
-                <SalonCard key={salon.id} salon={salon} userLocation={userLocation} />
-              ))}
-            </div>
-
-            {/* Mobile: 1-column card grid */}
-            <div className="grid grid-cols-1 gap-4 md:hidden px-2">
-              {salons.map((salon) => (
-                <MobileSalonCard key={salon.id} salon={salon} userLocation={userLocation} />
-              ))}
-            </div>
-          </>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-2 md:px-0">
+            {salons.map((salon) => (
+              <SalonCard key={salon.id} salon={salon} userLocation={userLocation} />
+            ))}
+          </div>
         )}
 
         {/* ── Empty ── */}

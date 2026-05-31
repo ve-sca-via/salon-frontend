@@ -194,7 +194,7 @@ export default function ProductCart() {
             Failed to load your cart. Please try again.
           </div>
         ) : !cart?.items?.length ? (
-          <EmptyCart onBrowse={() => navigate("/")} />
+          <EmptyCart onBrowse={() => navigate("/products")} />
         ) : (
           <div className="flex flex-col gap-6">
             <div className="space-y-3">

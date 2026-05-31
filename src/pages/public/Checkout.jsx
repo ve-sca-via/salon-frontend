@@ -52,10 +52,11 @@
 
 import React, { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import { useGetCartQuery, useCheckoutCartMutation } from "../../services/api/cartApi";
+import { bookingApi } from "../../services/api/bookingApi";
 import { useCreateCartPaymentOrderMutation } from "../../services/api/paymentApi";
 import { useGetPublicConfigsQuery } from "../../services/api/configApi";
 import { useGetSalonByIdQuery } from "../../services/api/salonApi";
@@ -64,6 +65,7 @@ import { SkeletonServiceCard } from "../../components/shared/Skeleton";
 
 export default function Checkout() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   
   // Fetch cart data
@@ -86,6 +88,7 @@ export default function Checkout() {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [checkoutComplete, setCheckoutComplete] = useState(false);
 
   // Get convenience fee from config (dynamically set by admin, no hardcoded fallback)
   const convenienceFeePercentage = configs?.convenience_fee_percentage;
@@ -93,13 +96,14 @@ export default function Checkout() {
   // Get max advance booking days from config or default to 30
   const maxAdvanceDays = configs?.max_booking_advance_days || 30;
 
-  // Redirect to cart if empty
+  // Redirect to cart if empty (skip after successful checkout — cart is cleared server-side)
   useEffect(() => {
+    if (checkoutComplete) return;
     if (!isLoading && (!cart || cart?.items?.length === 0)) {
       showInfoToast("Your cart is empty", { position: "top-center" });
       navigate("/cart");
     }
-  }, [cart, isLoading, navigate]);
+  }, [cart, isLoading, navigate, checkoutComplete]);
 
   // Check if required config is loaded
   useEffect(() => {
@@ -269,7 +273,9 @@ export default function Checkout() {
     0
   );
   const discountAmount = Math.max(0, originalServicesTotal - servicesTotalAmount);
-  const convenienceFee = convenienceFeePercentage ? Math.round((originalServicesTotal * convenienceFeePercentage) / 100) : 0;
+  const convenienceFee = convenienceFeePercentage
+    ? Math.round((originalServicesTotal * convenienceFeePercentage) / 100 * 100) / 100
+    : 0;
   const totalBookingAmount = convenienceFee;
   const remainingAmount = servicesTotalAmount;
   const grandTotal = servicesTotalAmount + convenienceFee;
@@ -363,7 +369,7 @@ export default function Checkout() {
    */
   const handleCheckoutSuccess = async (paymentResponse) => {
     try {
-      const result = await checkoutCart({
+      await checkoutCart({
         booking_date: selectedDate,
         time_slots: selectedTimes,
         razorpay_order_id: paymentResponse.razorpay_order_id,
@@ -372,14 +378,16 @@ export default function Checkout() {
         payment_method: 'razorpay',
         notes: ''
       }).unwrap();
+
+      // Prefetch fresh bookings so My Bookings shows the new appointment immediately
+      await dispatch(
+        bookingApi.endpoints.getMyBookings.initiate(undefined, { forceRefetch: true })
+      ).unwrap();
       
       setIsProcessingPayment(false);
+      setCheckoutComplete(true);
       showSuccessToast('Booking confirmed successfully!');
-      
-      // Small delay to ensure user sees the success message
-      setTimeout(() => {
-        navigate('/my-bookings');
-      }, 1500);
+      navigate('/my-bookings', { replace: true });
     } catch (error) {
       setIsProcessingPayment(false);
       showErrorToast(error?.data?.message || 'Checkout failed. Please contact support.');

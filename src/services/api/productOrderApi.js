@@ -21,6 +21,16 @@ export const productOrderApi = createApi({
         data: paymentData,
       }),
       invalidatesTags: [{ type: 'ProductOrder', id: 'LIST' }],
+      async onQueryStarted(_paymentData, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          await dispatch(
+            productOrderApi.endpoints.getMyProductOrders.initiate(undefined, { forceRefetch: true })
+          ).unwrap();
+        } catch {
+          // Payment verification failed
+        }
+      },
     }),
     devVerifyProductPayment: builder.mutation({
       query: (orderId) => ({
@@ -28,13 +38,26 @@ export const productOrderApi = createApi({
         method: 'post',
       }),
       invalidatesTags: [{ type: 'ProductOrder', id: 'LIST' }],
+      async onQueryStarted(_orderId, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          await dispatch(
+            productOrderApi.endpoints.getMyProductOrders.initiate(undefined, { forceRefetch: true })
+          ).unwrap();
+        } catch {
+          // Dev verification failed
+        }
+      },
     }),
     getMyProductOrders: builder.query({
       query: () => ({
         url: '/api/v1/product-orders/my-orders',
         method: 'get',
       }),
-      providesTags: ['ProductOrder'],
+      providesTags: [{ type: 'ProductOrder', id: 'LIST' }],
+      keepUnusedDataFor: 60,
+      refetchOnFocus: true,
+      refetchOnReconnect: true,
     }),
   }),
 });
