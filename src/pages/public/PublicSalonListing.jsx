@@ -8,8 +8,9 @@ import { FiStar, FiMapPin, FiClock, FiCalendar, FiNavigation, FiX } from "react-
 import { useAddFavoriteMutation, useGetFavoritesQuery, useRemoveFavoriteMutation } from "../../services/api/favoriteApi";
 import { getUserLocation, clearLocation as clearLocationAction } from "../../store/slices/locationSlice";
 import { SkeletonSalonCard } from "../../components/shared/Skeleton";
-import { SalonCard, MobileSalonCard } from "../../components/shared/SalonCard";
+import { SalonCard } from "../../components/shared/SalonCard";
 import { showErrorToast, showInfoToast, showSuccessToast } from "../../utils/toastConfig";
+import { normalizeCityName, citiesMatch, uniqueNormalizedCities } from "../../utils/locationText";
 
 
 // Hero Section Component
@@ -66,7 +67,9 @@ const PublicSalonListing = () => {
   
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCity, setSelectedCity] = useState(cityFromUrl || "all");
+  const [selectedCity, setSelectedCity] = useState(
+    cityFromUrl ? normalizeCityName(cityFromUrl) || "all" : "all"
+  );
   const [isSearching, setIsSearching] = useState(false);
   const [apiSearchParams, setApiSearchParams] = useState(null);
   
@@ -141,17 +144,17 @@ const PublicSalonListing = () => {
   const loading = salonsLoading || searchLoading;
   const error = salonsError || searchError;
 
-  // Extract cities from salons
-  const cities = [
-    "all",
-    ...new Set(displaySalons.map((salon) => salon.city).filter(Boolean)),
-  ];
+  // Extract unique cities from all loaded salons (case-insensitive dedupe)
+  const cities = useMemo(
+    () => ["all", ...uniqueNormalizedCities(salons.map((salon) => salon.city))],
+    [salons]
+  );
 
   // Filter by city - Memoized to prevent refiltering on every render
   const filteredSalons = useMemo(() => 
     displaySalons.filter((salon) => {
       const matchesCity =
-        selectedCity === "all" || salon.city === selectedCity;
+        selectedCity === "all" || citiesMatch(salon.city, selectedCity);
       return matchesCity;
     })
   , [displaySalons, selectedCity]);
@@ -191,7 +194,7 @@ const PublicSalonListing = () => {
    */
   useEffect(() => {
     if (cityFromUrl) {
-      setSelectedCity(cityFromUrl);
+      setSelectedCity(normalizeCityName(cityFromUrl) || "all");
     }
   }, [cityFromUrl]);
 
@@ -291,7 +294,7 @@ const PublicSalonListing = () => {
               </div>
               <select
                 value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
+                onChange={(e) => setSelectedCity(e.target.value === "all" ? "all" : normalizeCityName(e.target.value))}
                 className="h-[48px] px-4 py-3 font-body text-[16px] leading-[24px] text-neutral-black border border-neutral-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-accent-orange transition-all outline-none cursor-pointer bg-white"
               >
                 {cities.map((city) => (
@@ -359,43 +362,25 @@ const PublicSalonListing = () => {
           </div>
 
           {loading ? (
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-2 md:px-0">
               {[1, 2, 3, 4, 5, 6].map((i) => (
                 <SkeletonSalonCard key={i} />
               ))}
             </div>
           ) : (
-            <>
-              {/* Desktop View */}
-              <div className="hidden md:grid grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredSalons.map((salon) => (
-                  <SalonCard
-                    key={salon.id}
-                    salon={salon}
-                    userLocation={userLocation}
-                    isFavorited={favoriteIds.has(String(salon.id))}
-                    onToggleFavorite={handleToggleFavorite}
-                    favoriteLoading={favoriteMutationInFlight}
-                    showFavoriteAction={!isAuthenticated || isCustomer}
-                  />
-                ))}
-              </div>
-
-              {/* Mobile View */}
-              <div className="grid grid-cols-1 gap-4 md:hidden px-2">
-                {filteredSalons.map((salon) => (
-                  <MobileSalonCard
-                    key={salon.id}
-                    salon={salon}
-                    userLocation={userLocation}
-                    isFavorited={favoriteIds.has(String(salon.id))}
-                    onToggleFavorite={handleToggleFavorite}
-                    favoriteLoading={favoriteMutationInFlight}
-                    showFavoriteAction={!isAuthenticated || isCustomer}
-                  />
-                ))}
-              </div>
-            </>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 px-2 md:px-0">
+              {filteredSalons.map((salon) => (
+                <SalonCard
+                  key={salon.id}
+                  salon={salon}
+                  userLocation={userLocation}
+                  isFavorited={favoriteIds.has(String(salon.id))}
+                  onToggleFavorite={handleToggleFavorite}
+                  favoriteLoading={favoriteMutationInFlight}
+                  showFavoriteAction={!isAuthenticated || isCustomer}
+                />
+              ))}
+            </div>
           )}
 
           {!loading && filteredSalons.length === 0 && (

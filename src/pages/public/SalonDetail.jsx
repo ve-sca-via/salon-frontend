@@ -296,7 +296,33 @@ export default function SalonDetail() {
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [serviceCategories, setServiceCategories] = useState([]);
+  const [aboutExpanded, setAboutExpanded] = useState(false);
+  const [aboutTruncated, setAboutTruncated] = useState(false);
+  const aboutTextRef = useRef(null);
   const intervalRef = useRef(null);
+
+  const salonDescription =
+    salon?.description ||
+    "Welcome to our salon! We provide premium beauty and grooming services with experienced professionals.";
+
+  useEffect(() => {
+    setAboutExpanded(false);
+  }, [id]);
+
+  useEffect(() => {
+    const el = aboutTextRef.current;
+    if (!el || aboutExpanded || activeTab !== "about") {
+      return;
+    }
+
+    const checkTruncation = () => {
+      setAboutTruncated(el.scrollHeight > el.clientHeight + 1);
+    };
+
+    checkTruncation();
+    window.addEventListener("resize", checkTruncation);
+    return () => window.removeEventListener("resize", checkTruncation);
+  }, [salonDescription, aboutExpanded, activeTab]);
 
   // Auto-rotate carousel images every 5 seconds
   useEffect(() => {
@@ -847,81 +873,34 @@ export default function SalonDetail() {
                       ({salon.total_reviews || displayReviews.length || 0} reviews)
                     </span>
                   </div>
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-neutral-gray-700">
-                    <div className="flex items-center gap-2">
-                      <FiMapPin className="w-5 h-5 text-accent-orange flex-shrink-0" />
-                      <span className="font-body text-[15px] break-words">
-                        {salon.address || `${salon.city}, ${salon.state}`}
-                      </span>
-                    </div>
-
-                    {/* Mobile Action Buttons - Get Directions & Contact */}
-                    <div className="lg:hidden w-full flex items-center gap-3 mt-3">
-                      <a
-                        href={getMapDirectionUrl()}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 pl-4 pr-3 rounded-xl transition-colors"
-                      >
-                        {/* Diamond/compass navigation icon */}
-                        <svg className="w-[22px] h-[22px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                          <rect x="12" y="2" width="14" height="14" rx="2" transform="rotate(45 12 2)" strokeLinejoin="round" />
-                          <path d="M12 8l-2 6 6-2-4-4z" fill="currentColor" stroke="none" />
-                        </svg>
-                        <span>Get Directions</span>
-                        <svg className="w-4 h-4 text-[#666] flex-shrink-0 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </a>
-                      {salon.phone && (
-                        <a
-                          href={`tel:${salon.phone}`}
-                          className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 px-5 rounded-xl transition-colors"
-                        >
-                          {/* Phone receiver icon */}
-                          <svg className="w-[20px] h-[20px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
-                          </svg>
-                          <span>Call Salon</span>
-                        </a>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {/* Get Directions & Contact buttons - Desktop only */}
-                <div className="hidden lg:flex items-center gap-3">
-                  {/* Get Directions - Desktop */}
-                  <a
-                    href={getMapDirectionUrl()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 pl-4 pr-3 rounded-xl transition-colors"
-                    aria-label={`Get directions to ${salon.business_name || salon.name}`}
-                  >
-                    {/* Diamond/compass navigation icon */}
-                    <svg className="w-[22px] h-[22px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                      <rect x="12" y="2" width="14" height="14" rx="2" transform="rotate(45 12 2)" strokeLinejoin="round" />
-                      <path d="M12 8l-2 6 6-2-4-4z" fill="currentColor" stroke="none" />
-                    </svg>
-                    <span>Get Directions</span>
-                    <svg className="w-4 h-4 text-[#666] flex-shrink-0 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </a>
                   {salon.phone && (
+                    <div className="lg:hidden w-full flex items-center gap-3 mt-2">
+                      <a
+                        href={`tel:${salon.phone}`}
+                        className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 px-5 rounded-xl transition-colors"
+                      >
+                        <svg className="w-[20px] h-[20px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                        </svg>
+                        <span>Call Salon</span>
+                      </a>
+                    </div>
+                  )}
+                </div>
+                {salon.phone && (
+                  <div className="hidden lg:flex items-center gap-3">
                     <a
                       href={`tel:${salon.phone}`}
                       className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 px-5 rounded-xl transition-colors"
                       aria-label={`Call ${salon.business_name || salon.name}`}
                     >
-                      {/* Phone receiver icon */}
                       <svg className="w-[20px] h-[20px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
                         <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
                       </svg>
                       <span>Call Salon</span>
                     </a>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -1209,9 +1188,32 @@ export default function SalonDetail() {
                       <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-3">
                         About the Salon
                       </h3>
-                      <p className="font-body text-[15px] text-neutral-gray-700 leading-relaxed break-words overflow-wrap-anywhere">
-                        {salon.description || "Welcome to our salon! We provide premium beauty and grooming services with experienced professionals."}
+                      <p
+                        ref={aboutTextRef}
+                        className={`font-body text-[15px] text-neutral-gray-700 leading-relaxed break-words ${
+                          !aboutExpanded ? "line-clamp-3" : ""
+                        }`}
+                      >
+                        {salonDescription}
                       </p>
+                      {aboutTruncated && !aboutExpanded && (
+                        <button
+                          type="button"
+                          onClick={() => setAboutExpanded(true)}
+                          className="font-body text-[15px] text-accent-orange hover:text-orange-600 font-medium mt-1"
+                        >
+                          ...more
+                        </button>
+                      )}
+                      {aboutExpanded && aboutTruncated && (
+                        <button
+                          type="button"
+                          onClick={() => setAboutExpanded(false)}
+                          className="font-body text-[15px] text-accent-orange hover:text-orange-600 font-medium mt-1"
+                        >
+                          less
+                        </button>
+                      )}
                     </div>
 
                     {salon.categories && salon.categories.length > 0 && (
@@ -1235,7 +1237,7 @@ export default function SalonDetail() {
                     {/* Contact & Hours Details */}
                     <div className="pt-6 mt-6 border-t border-gray-200">
                       <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-4">
-                        Contact & Location
+                        Contact
                       </h3>
                       <div className="space-y-4">
                         {/* Email */}
@@ -1282,27 +1284,6 @@ export default function SalonDetail() {
                                 </div>
                               ))}
                             </div>
-                          </div>
-                        </div>
-
-                        {/* Address */}
-                        <div className="flex items-start gap-3">
-                          <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5 flex-shrink-0" />
-                          <div className="flex flex-col gap-2 w-full max-w-md">
-                            <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
-                              {salon.address || `${salon.city}, ${salon.state}`}
-                            </span>
-                            <a
-                              href={getMapDirectionUrl()}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full inline-flex items-center justify-center gap-2 border border-orange-200 text-accent-orange bg-orange-50 hover:bg-orange-100 font-body font-medium text-[13px] py-1.5 px-3 rounded-md transition-colors text-center"
-                            >
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                              </svg>
-                              Get Directions
-                            </a>
                           </div>
                         </div>
                       </div>
