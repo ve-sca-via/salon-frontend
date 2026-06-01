@@ -36,7 +36,7 @@ import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { useGetSalonReviewsQuery } from "../../services/api/reviewApi";
-import { FiStar, FiMapPin, FiPhone, FiMail, FiClock, FiHeart } from "react-icons/fi";
+import { FiStar, FiMapPin, FiPhone, FiMail, FiClock, FiHeart, FiNavigation, FiShare2 } from "react-icons/fi";
 import { useAddFavoriteMutation, useGetFavoritesQuery, useRemoveFavoriteMutation } from "../../services/api/favoriteApi";
 import { useAddToCartMutation, useGetCartQuery } from "../../services/api/cartApi";
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
@@ -298,6 +298,8 @@ export default function SalonDetail() {
   const [serviceCategories, setServiceCategories] = useState([]);
   const [aboutExpanded, setAboutExpanded] = useState(false);
   const [aboutTruncated, setAboutTruncated] = useState(false);
+  const [hoursExpanded, setHoursExpanded] = useState(true);
+  const [aboutHoursExpanded, setAboutHoursExpanded] = useState(true);
   const aboutTextRef = useRef(null);
   const intervalRef = useRef(null);
 
@@ -821,71 +823,140 @@ export default function SalonDetail() {
             <div className="sm:bg-white sm:rounded-xl p-3 sm:p-6 sm:shadow-lg">
               <div className="flex flex-col sm:flex-row items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 w-full">
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h1 className="font-display font-bold text-[22px] sm:text-[28px] text-neutral-black break-words flex-1">
+                  {/* Mobile: title → rating → directions+share → call+love */}
+                  <div className="lg:hidden flex flex-col gap-3 mb-2">
+                    <h1 className="font-display font-bold text-[22px] text-neutral-black break-words">
                       {salon.business_name || salon.name}
                     </h1>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      {(!isAuthenticated || isCustomer) && (
-                        <button
-                          onClick={handleToggleFavorite}
-                          disabled={isAddingFavorite || isRemovingFavorite}
-                          className={`p-2 rounded-lg transition-colors ${
-                            isFavorited
-                              ? "bg-red-500 text-white hover:bg-red-600"
-                              : "bg-gray-100 hover:bg-gray-200 text-gray-600"
-                          } disabled:opacity-60`}
-                          aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
-                        >
-                          <FiHeart className={`w-5 h-5 ${isFavorited ? "fill-current" : ""}`} />
-                        </button>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <StarRating
+                        rating={Math.round(Number(salon.average_rating || 0))}
+                        size="large"
+                      />
+                      <span className="font-body font-semibold text-[16px] text-neutral-black">
+                        {Number(salon.average_rating || 0).toFixed(1)}
+                      </span>
+                      <span className="font-body text-[14px] text-neutral-gray-600">
+                        ({salon.total_reviews || displayReviews.length || 0} reviews)
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <a
+                        href={getMapDirectionUrl()}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[14px] py-3 px-4 rounded-xl transition-colors min-w-0"
+                        aria-label="Get directions"
+                      >
+                        <FiNavigation className="w-5 h-5 flex-shrink-0" aria-hidden />
+                        <span className="truncate">Get Directions</span>
+                      </a>
                       <button
+                        type="button"
                         onClick={() => setIsShareModalOpen(true)}
-                        className="p-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors flex-shrink-0"
+                        className="inline-flex items-center justify-center gap-2 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[14px] py-3 px-4 rounded-xl transition-colors"
                         aria-label="Share salon"
                       >
-                        <svg
-                          className="w-5 h-5"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                          />
-                        </svg>
+                        <FiShare2 className="w-5 h-5 flex-shrink-0" />
+                        <span>Share</span>
                       </button>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <StarRating
-                      rating={Math.round(Number(salon.average_rating || 0))}
-                      size="large"
-                    />
-                    <span className="font-body font-semibold text-[16px] text-neutral-black">
-                      {Number(salon.average_rating || 0).toFixed(1)}
-                    </span>
-                    <span className="font-body text-[14px] text-neutral-gray-600">
-                      ({salon.total_reviews || displayReviews.length || 0} reviews)
-                    </span>
-                  </div>
-                  {salon.phone && (
-                    <div className="lg:hidden w-full flex items-center gap-3 mt-2">
-                      <a
-                        href={`tel:${salon.phone}`}
-                        className="inline-flex items-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 px-5 rounded-xl transition-colors"
+                    {(salon.phone || !isAuthenticated || isCustomer) && (
+                      <div
+                        className={`grid gap-2 ${
+                          salon.phone && (!isAuthenticated || isCustomer)
+                            ? "grid-cols-2"
+                            : "grid-cols-1"
+                        }`}
                       >
-                        <svg className="w-[20px] h-[20px] text-[#1a1a1a] flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
-                        </svg>
-                        <span>Call Salon</span>
-                      </a>
+                        {salon.phone && (
+                          <a
+                            href={`tel:${salon.phone}`}
+                            className="inline-flex items-center justify-center gap-2 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[14px] py-3 px-4 rounded-xl transition-colors"
+                          >
+                            <svg className="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z" />
+                            </svg>
+                            <span className="truncate">Call Salon</span>
+                          </a>
+                        )}
+                        {(!isAuthenticated || isCustomer) && (
+                          <button
+                            type="button"
+                            onClick={handleToggleFavorite}
+                            disabled={isAddingFavorite || isRemovingFavorite}
+                            className={`inline-flex items-center justify-center gap-2 py-3 px-4 rounded-xl transition-colors disabled:opacity-60 ${
+                              isFavorited
+                                ? "bg-red-500 text-white hover:bg-red-600"
+                                : "bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a]"
+                            }`}
+                            aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                          >
+                            <FiHeart className={`w-5 h-5 flex-shrink-0 ${isFavorited ? "fill-current" : ""}`} />
+                            <span className="font-body font-medium text-[14px]">
+                              {isFavorited ? "Favourited" : "Favourite"}
+                            </span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Desktop: title + actions row, then rating */}
+                  <div className="hidden lg:block">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h1 className="font-display font-bold text-[28px] text-neutral-black break-words flex-1 min-w-0">
+                        {salon.business_name || salon.name}
+                      </h1>
+                      <div className="flex items-stretch gap-2 flex-shrink-0">
+                        <a
+                          href={getMapDirectionUrl()}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center justify-center gap-2.5 bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] font-body font-medium text-[15px] py-3 px-5 rounded-xl transition-colors"
+                          aria-label="Get directions"
+                        >
+                          <FiNavigation className="w-[22px] h-[22px] flex-shrink-0" aria-hidden />
+                          <span className="whitespace-nowrap">Get Directions</span>
+                        </a>
+                        {(!isAuthenticated || isCustomer) && (
+                          <button
+                            type="button"
+                            onClick={handleToggleFavorite}
+                            disabled={isAddingFavorite || isRemovingFavorite}
+                            className={`inline-flex items-center justify-center py-3 px-4 rounded-xl transition-colors disabled:opacity-60 ${
+                              isFavorited
+                                ? "bg-red-500 text-white hover:bg-red-600"
+                                : "bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a]"
+                            }`}
+                            aria-label={isFavorited ? "Remove from favorites" : "Add to favorites"}
+                          >
+                            <FiHeart className={`w-[22px] h-[22px] ${isFavorited ? "fill-current" : ""}`} />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setIsShareModalOpen(true)}
+                          className="inline-flex items-center justify-center py-3 px-4 rounded-xl bg-[#f2f2f2] hover:bg-[#e8e8e8] text-[#1a1a1a] transition-colors"
+                          aria-label="Share salon"
+                        >
+                          <FiShare2 className="w-[22px] h-[22px]" />
+                        </button>
+                      </div>
                     </div>
-                  )}
+                    <div className="flex items-center gap-2 mb-2">
+                      <StarRating
+                        rating={Math.round(Number(salon.average_rating || 0))}
+                        size="large"
+                      />
+                      <span className="font-body font-semibold text-[16px] text-neutral-black">
+                        {Number(salon.average_rating || 0).toFixed(1)}
+                      </span>
+                      <span className="font-body text-[14px] text-neutral-gray-600">
+                        ({salon.total_reviews || displayReviews.length || 0} reviews)
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 {salon.phone && (
                   <div className="hidden lg:flex items-center gap-3">
@@ -1234,58 +1305,73 @@ export default function SalonDetail() {
                       </div>
                     )}
 
-                    {/* Contact & Hours Details */}
-                    <div className="pt-6 mt-6 border-t border-gray-200">
-                      <h3 className="font-body font-semibold text-[20px] text-neutral-black mb-4">
-                        Contact
-                      </h3>
-                      <div className="space-y-4">
-                        {/* Email */}
-                        {salon.email && (
+                    {/* Salon details — mobile About tab only (desktop uses sidebar card) */}
+                    <div className="lg:hidden pt-6 border-t border-gray-200 space-y-4">
+                      {salon.email && (
+                        <div className="flex items-center gap-3">
+                          <FiMail className="w-5 h-5 text-accent-orange flex-shrink-0" />
+                          <a
+                            href={`mailto:${salon.email}`}
+                            className="font-body text-[15px] text-neutral-black font-medium break-all hover:text-accent-orange"
+                          >
+                            {salon.email}
+                          </a>
+                        </div>
+                      )}
+
+                      <div className="border border-neutral-gray-300 rounded-lg">
+                        <button
+                          type="button"
+                          onClick={() => setAboutHoursExpanded((prev) => !prev)}
+                          className="w-full px-4 py-3 flex items-center justify-between hover:bg-neutral-gray-100 transition-colors rounded-lg"
+                          aria-expanded={aboutHoursExpanded}
+                        >
                           <div className="flex items-center gap-3">
-                            <FiMail className="w-5 h-5 text-accent-orange flex-shrink-0" />
-                            <span className="font-body text-[15px] text-neutral-black font-medium break-all">
-                              {salon.email}
+                            <FiClock className="w-5 h-5 text-accent-orange" />
+                            <span className="font-body text-[15px] text-neutral-black font-medium">
+                              View Hours
                             </span>
                           </div>
-                        )}
-
-                        {/* Working Hours Dropdown */}
-                        <div className="border border-neutral-gray-300 rounded-lg max-w-md">
-                          <button
-                            onClick={() =>
-                              document
-                                .getElementById("about-working-hours")
-                                .classList.toggle("hidden")
-                            }
-                            className="w-full px-4 py-3 flex items-center justify-between hover:bg-neutral-gray-100 transition-colors rounded-lg"
+                          <svg
+                            className={`w-5 h-5 text-neutral-gray-600 transition-transform ${aboutHoursExpanded ? "rotate-180" : ""}`}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
                           >
-                            <div className="flex items-center gap-3">
-                              <FiClock className="w-5 h-5 text-accent-orange" />
-                              <span className="font-body text-[15px] text-neutral-black font-medium">
-                                View Hours
-                              </span>
-                            </div>
-                            <svg
-                              className="w-5 h-5 text-neutral-gray-600"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                            </svg>
-                          </button>
-                          <div id="about-working-hours" className="hidden px-4 pb-3">
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 9l-7 7-7-7"
+                            />
+                          </svg>
+                        </button>
+                        {aboutHoursExpanded && (
+                          <div className="px-4 pb-3">
                             <div className="space-y-2 pt-2 border-t border-neutral-gray-300">
                               {getBusinessHours().map(([day, hours]) => (
-                                <div key={day} className="flex justify-between items-center">
-                                  <span className="font-body text-[14px] text-neutral-gray-700">{day}</span>
-                                  <span className="font-body text-[14px] text-neutral-black font-medium">{hours}</span>
+                                <div
+                                  key={day}
+                                  className="flex justify-between items-center gap-4"
+                                >
+                                  <span className="font-body text-[14px] text-neutral-gray-700">
+                                    {day}
+                                  </span>
+                                  <span className="font-body text-[14px] text-neutral-black font-medium text-right">
+                                    {hours}
+                                  </span>
                                 </div>
                               ))}
                             </div>
                           </div>
-                        </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-start gap-3">
+                        <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5 flex-shrink-0" />
+                        <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
+                          {salon.address || `${salon.city}, ${salon.state}`}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1313,15 +1399,13 @@ export default function SalonDetail() {
                   </div>
                 )}
 
-                {/* Working Hours Dropdown */}
+                {/* Working Hours Dropdown (desktop sidebar — open by default) */}
                 <div className="border border-neutral-gray-300 rounded-lg">
                   <button
-                    onClick={() =>
-                      document
-                        .getElementById("working-hours")
-                        .classList.toggle("hidden")
-                    }
+                    type="button"
+                    onClick={() => setHoursExpanded((prev) => !prev)}
                     className="w-full px-4 py-3 flex items-center justify-between hover:bg-neutral-gray-100 transition-colors rounded-lg"
+                    aria-expanded={hoursExpanded}
                   >
                     <div className="flex items-center gap-3">
                       <FiClock className="w-5 h-5 text-accent-orange" />
@@ -1330,7 +1414,7 @@ export default function SalonDetail() {
                       </span>
                     </div>
                     <svg
-                      className="w-5 h-5 text-neutral-gray-600"
+                      className={`w-5 h-5 text-neutral-gray-600 transition-transform ${hoursExpanded ? "rotate-180" : ""}`}
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -1343,7 +1427,8 @@ export default function SalonDetail() {
                       />
                     </svg>
                   </button>
-                  <div id="working-hours" className="hidden px-4 pb-3">
+                  {hoursExpanded && (
+                  <div className="px-4 pb-3">
                     <div className="space-y-2 pt-2 border-t border-neutral-gray-300">
                       {getBusinessHours().map(([day, hours]) => (
                         <div
@@ -1360,27 +1445,15 @@ export default function SalonDetail() {
                       ))}
                     </div>
                   </div>
+                  )}
                 </div>
 
                 {/* Address */}
                 <div className="flex items-start gap-3">
                   <FiMapPin className="w-5 h-5 text-accent-orange mt-0.5 flex-shrink-0" />
-                  <div className="flex flex-col gap-2 w-full">
-                    <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
-                      {salon.address || `${salon.city}, ${salon.state}`}
-                    </span>
-                    <a
-                      href={getMapDirectionUrl()}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 border border-orange-200 text-accent-orange bg-orange-50 hover:bg-orange-100 font-body font-medium text-[13px] py-1.5 px-3 rounded-md transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                      </svg>
-                      Get Directions
-                    </a>
-                  </div>
+                  <span className="font-body text-[14px] text-neutral-gray-700 leading-relaxed break-words">
+                    {salon.address || `${salon.city}, ${salon.state}`}
+                  </span>
                 </div>
               </div>
 

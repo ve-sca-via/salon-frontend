@@ -14,4 +14,4 @@ export { AuthButton } from "./AuthButton";
 export { DropdownIcon, HamburgerIcon, CalendarIcon, UserIcon } from "./Icons";
 
 // Constants
-export { SERVICES_ITEMS, PAGES_ITEMS } from "./Menu";
+export { MORE_ITEMS, PAGES_ITEMS } from "./Menu";
