@@ -2,22 +2,16 @@ import { useState } from "react";
 import { MenuItem } from "./MenuItem";
 import { MenuItemWithDropdown } from "./Dropdown";
 
-export const SERVICES_ITEMS = [
-  { label: "Hair Services", to: "/salons?category=hair" },
-  { label: "Spa Services", to: "/salons?category=spa" },
-  { label: "Nail Services", to: "/salons?category=nails" },
-  { label: "Makeup Services", to: "/salons?category=makeup" },
-];
-
-export const PAGES_ITEMS = [
-  { label: "About Us", to: "/about" },
+export const MORE_ITEMS = [
   { label: "How It Works", to: "/how-it-works" },
   { label: "Testimonials", to: "/testimonials" },
   { label: "FAQ", to: "/faq" },
 ];
 
+/** @deprecated Use MORE_ITEMS */
+export const PAGES_ITEMS = MORE_ITEMS;
+
 export function Menu({ onItemClick }) {
-  const [servicesOpen, setServicesOpen] = useState(false);
   const [pagesOpen, setPagesOpen] = useState(false);
 
   return (
@@ -28,23 +22,13 @@ export function Menu({ onItemClick }) {
       <MenuItem to="/salons" onClick={onItemClick}>
         Browse Salons
       </MenuItem>
+      <MenuItem to="/about" onClick={onItemClick}>
+        About Us
+      </MenuItem>
       <MenuItemWithDropdown
-        items={SERVICES_ITEMS}
-        isOpen={servicesOpen}
-        onToggle={() => {
-          setServicesOpen(!servicesOpen);
-          setPagesOpen(false);
-        }}
-      >
-        Services
-      </MenuItemWithDropdown>
-      <MenuItemWithDropdown
-        items={PAGES_ITEMS}
+        items={MORE_ITEMS}
         isOpen={pagesOpen}
-        onToggle={() => {
-          setPagesOpen(!pagesOpen);
-          setServicesOpen(false);
-        }}
+        onToggle={() => setPagesOpen(!pagesOpen)}
       >
         More
       </MenuItemWithDropdown>
