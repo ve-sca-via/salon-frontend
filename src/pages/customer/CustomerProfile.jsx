@@ -1,12 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import { useGetMyBookingsQuery } from "../../services/api/bookingApi";
-import { useUpdateProfileMutation } from "../../services/api/authApi";
+import { useGetCurrentUserQuery, useUpdateProfileMutation } from "../../services/api/authApi";
 import { setUser } from "../../store/slices/authSlice";
 import { toast } from "react-toastify";
 import { FiUser, FiMail, FiPhone, FiCalendar, FiHeart, FiMessageSquare, FiShoppingBag, FiEdit2, FiCheck, FiX } from "react-icons/fi";
+
+function formatBookingTimeSlots(booking) {
+  if (booking.time_slots && Array.isArray(booking.time_slots) && booking.time_slots.length > 0) {
+    return booking.time_slots.join(", ");
+  }
+  return booking.all_booking_times || booking.booking_time || "N/A";
+}
 
 export default function CustomerProfile() {
   const navigate = useNavigate();
@@ -19,8 +26,13 @@ export default function CustomerProfile() {
   const { data: bookingsResponse, isLoading: bookingsLoading } = useGetMyBookingsQuery(undefined, {
     skip: !isAuthenticated
   });
+
+  const { data: profileResponse, isLoading: profileLoading } = useGetCurrentUserQuery(undefined, {
+    skip: !isAuthenticated,
+  });
   
   const myBookings = bookingsResponse?.data || [];
+  const profileUser = profileResponse?.user;
 
   // Local state for editing profile
   const [isEditing, setIsEditing] = useState(false);
@@ -33,6 +45,8 @@ export default function CustomerProfile() {
 
   // API mutation
   const [updateProfile, { isLoading: isUpdating }] = useUpdateProfileMutation();
+  const userRef = useRef(user);
+  userRef.current = user;
 
   /**
    * Redirect to login if not authenticated
@@ -44,17 +58,23 @@ export default function CustomerProfile() {
     }
   }, [isAuthenticated, navigate]);
 
-  // Load user data into form when user details are available/change
+  // Load user data into form when profile is fetched from API
   useEffect(() => {
-    if (user) {
-      setFormData({
-        full_name: user?.full_name || "",
-        phone: user?.phone || "",
-        age: user?.age || "",
-        gender: user?.gender || ""
-      });
-    }
-  }, [user]);
+    const source = profileUser || user;
+    if (!source) return;
+
+    setFormData({
+      full_name: source?.full_name || "",
+      phone: source?.phone || "",
+      age: source?.age ?? "",
+      gender: source?.gender || "",
+    });
+  }, [profileUser, user]);
+
+  useEffect(() => {
+    if (!profileUser) return;
+    dispatch(setUser({ ...userRef.current, ...profileUser }));
+  }, [profileUser, dispatch]);
 
   /**
    * Handle Edit Submit
@@ -68,7 +88,6 @@ export default function CustomerProfile() {
     try {
       const payload = {
         full_name: formData.full_name,
-        phone: formData.phone,
         age: formData.age ? parseInt(formData.age, 10) : null,
         gender: formData.gender
       };
@@ -84,6 +103,8 @@ export default function CustomerProfile() {
       toast.error(error?.data?.detail || "Failed to update profile.");
     }
   };
+
+  const displayUser = profileUser || user;
 
   /**
    * Calculate booking statistics from booking data
@@ -158,13 +179,16 @@ export default function CustomerProfile() {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-neutral-gray-500 uppercase tracking-wider mb-1">Phone Number</label>
-                      <input 
-                        type="text" 
-                        value={formData.phone} 
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                        className="w-full border border-neutral-gray-300 rounded px-3 py-2 text-sm focus:ring-accent-orange focus:border-accent-orange"
-                        placeholder="Your phone number"
+                      <input
+                        type="text"
+                        value={formData.phone || "Not provided"}
+                        readOnly
+                        disabled
+                        className="w-full border border-neutral-gray-200 rounded px-3 py-2 text-sm bg-neutral-gray-100 text-neutral-gray-500 cursor-not-allowed"
                       />
+                      <p className="mt-1 text-[11px] text-neutral-gray-400">
+                        Contact number cannot be changed from profile settings.
+                      </p>
                     </div>
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -198,10 +222,10 @@ export default function CustomerProfile() {
                         onClick={() => {
                           setIsEditing(false);
                           setFormData({
-                            full_name: user?.full_name || "",
-                            phone: user?.phone || "",
-                            age: user?.age || "",
-                            gender: user?.gender || ""
+                            full_name: displayUser?.full_name || "",
+                            phone: displayUser?.phone || "",
+                            age: displayUser?.age ?? "",
+                            gender: displayUser?.gender || "",
                           });
                         }}
                         className="flex-1 flex justify-center items-center gap-1 bg-neutral-gray-100 hover:bg-neutral-gray-200 text-neutral-black py-2 rounded transition-colors text-sm font-medium"
@@ -220,33 +244,37 @@ export default function CustomerProfile() {
                 ) : (
                   <>
                     <h2 className="font-display font-bold text-[24px] text-neutral-black text-center mb-1">
-                      {user?.full_name || user?.email?.split("@")[0] || "Customer"}
+                      {displayUser?.full_name || displayUser?.email?.split("@")[0] || "Customer"}
                     </h2>
                     <p className="font-body text-[14px] text-neutral-gray-500 text-center mb-2">
                       Customer Account
                     </p>
-                    {(user?.age || user?.gender) && (
-                      <p className="font-body text-[14px] text-neutral-gray-800 text-center mb-6 capitalize font-medium bg-neutral-gray-100 rounded-full py-1 px-4 inline-block mx-auto w-max flex items-center justify-center">
-                        {user?.gender || "Unknown"} {user?.age ? `• ${user.age} yrs` : ""}
+                    {profileLoading ? (
+                      <p className="font-body text-[14px] text-neutral-gray-500 text-center mb-6">
+                        Loading profile...
                       </p>
-                    )}
+                    ) : (displayUser?.age || displayUser?.gender) ? (
+                      <p className="font-body text-[14px] text-neutral-gray-800 text-center mb-6 capitalize font-medium bg-neutral-gray-100 rounded-full py-1 px-4 inline-block mx-auto w-max flex items-center justify-center">
+                        {displayUser?.gender || "Unknown"} {displayUser?.age ? `• ${displayUser.age} yrs` : ""}
+                      </p>
+                    ) : null}
 
                     {/* Contact Info */}
                     <div className="space-y-3 mb-6">
                       <div className="flex items-center gap-3 text-neutral-gray-500">
                         <FiMail className="w-5 h-5 flex-shrink-0" />
-                        <span className="font-body text-[14px]">{user?.email || "Not provided"}</span>
+                        <span className="font-body text-[14px]">{displayUser?.email || "Not provided"}</span>
                       </div>
                       <div className="flex items-center gap-3 text-neutral-gray-500">
                         <FiPhone className="w-5 h-5 flex-shrink-0" />
-                        <span className="font-body text-[14px]">{user?.phone || "Not provided"}</span>
+                        <span className="font-body text-[14px]">{displayUser?.phone || "Not provided"}</span>
                       </div>
                       <div className="flex items-center gap-3 text-neutral-gray-500">
                         <FiCalendar className="w-5 h-5 flex-shrink-0" />
                         <span className="font-body text-[14px]">
                           Member since{" "}
-                          {user?.created_at
-                            ? new Date(user.created_at).toLocaleDateString("en-US", {
+                          {displayUser?.created_at
+                            ? new Date(displayUser.created_at).toLocaleDateString("en-US", {
                                 month: "short",
                                 year: "numeric",
                               })
@@ -383,7 +411,7 @@ export default function CustomerProfile() {
                             month: "short",
                             day: "numeric",
                           })}{" "}
-                          at {booking.booking_time}
+                          at {formatBookingTimeSlots(booking)}
                         </p>
                       </div>
                       <span

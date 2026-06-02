@@ -7,11 +7,10 @@ import { useClearCartMutation } from "../../../services/api/cartApi";
 import { toast } from "react-toastify";
 import { MobileMenuItem } from "./MenuItem";
 import { MobileDropdown } from "./Dropdown";
-import { SERVICES_ITEMS, PAGES_ITEMS } from "./Menu";
+import { MORE_ITEMS } from "./Menu";
 import { FiHeart, FiScissors, FiShoppingBag, FiPackage } from "react-icons/fi";
 
 export function MobileMenu({ isOpen, onClose }) {
-  const [servicesOpen, setServicesOpen] = useState(false);
   const [pagesOpen, setPagesOpen] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
@@ -103,26 +102,14 @@ export function MobileMenu({ isOpen, onClose }) {
         <MobileMenuItem to="/salons" onClick={onClose}>
           Browse Salons
         </MobileMenuItem>
+        <MobileMenuItem to="/about" onClick={onClose}>
+          About Us
+        </MobileMenuItem>
 
         <MobileDropdown
-          items={SERVICES_ITEMS}
-          isOpen={servicesOpen}
-          onToggle={() => {
-            setServicesOpen(!servicesOpen);
-            setPagesOpen(false);
-          }}
-          onItemClick={onClose}
-        >
-          Services
-        </MobileDropdown>
-
-        <MobileDropdown
-          items={PAGES_ITEMS}
+          items={MORE_ITEMS}
           isOpen={pagesOpen}
-          onToggle={() => {
-            setPagesOpen(!pagesOpen);
-            setServicesOpen(false);
-          }}
+          onToggle={() => setPagesOpen(!pagesOpen)}
           onItemClick={onClose}
         >
           More

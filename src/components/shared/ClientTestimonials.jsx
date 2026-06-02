@@ -66,8 +66,8 @@ function Header() {
 
         {/* Description */}
         <p className="font-body font-medium text-[16px] leading-[24px] text-neutral-gray-600 text-center max-w-[510px] mt-2">
-          Trusted by businesses and professionals across India. Real
-          testimonials from our valued clients.
+          Loved by customers across India. Real stories from people who book
+          hair, spa, and beauty services through our platform.
         </p>
       </div>
     </div>
@@ -96,9 +96,9 @@ function TestimonialContent() {
     <div className="flex flex-col gap-[18px] items-center">
       <QuoteIcon />
       <p className="font-body font-semibold text-[20px] leading-[32px] text-primary-white text-center max-w-[654px]">
-        "Outstanding platform for connecting businesses with talented
-        professionals. The interface is incredibly intuitive and makes project
-        management seamless. Perfect for India's growing freelance economy!"
+        "Booking my salon appointments online has been so easy. I found a
+        great spa near me, compared services and prices, and got confirmed
+        instantly — no phone calls or waiting in line!"
       </p>
     </div>
   );

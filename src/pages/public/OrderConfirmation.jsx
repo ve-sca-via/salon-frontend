@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FiCheckCircle } from 'react-icons/fi';
 import Button from '../../components/shared/Button';
@@ -10,10 +10,20 @@ export default function OrderConfirmation() {
   const navigate = useNavigate();
   const orderNumber = location.state?.orderNumber;
 
-  if (!orderNumber) {
-    navigate('/');
-    return null;
-  }
+  useEffect(() => {
+    if (!orderNumber) {
+      navigate('/');
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      navigate('/customer/my-orders', { replace: true });
+    }, 4000);
+
+    return () => clearTimeout(timer);
+  }, [orderNumber, navigate]);
+
+  if (!orderNumber) return null;
 
   return (
     <div className="min-h-screen bg-bg-secondary flex flex-col">
@@ -33,24 +43,28 @@ export default function OrderConfirmation() {
             Thank you for your purchase. We've received your order and are getting it ready for shipment.
           </p>
           
-          <div className="bg-gray-50 rounded-lg p-4 mb-8 border border-gray-100">
+          <div className="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-100">
             <p className="text-sm text-neutral-gray-500 mb-1">Order Number</p>
             <p className="font-mono font-bold text-lg text-neutral-black tracking-wider">
               {orderNumber}
             </p>
           </div>
+
+          <p className="text-sm text-neutral-gray-500 mb-8">
+            Redirecting to your orders...
+          </p>
           
           <div className="flex flex-col gap-3">
             <Button 
               variant="primary" 
-              onClick={() => navigate('/customer/track-order')}
+              onClick={() => navigate('/customer/my-orders', { replace: true })}
               fullWidth
             >
-              Track My Order
+              View My Orders
             </Button>
             <Button 
               variant="outline" 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/products')}
               fullWidth
             >
               Continue Shopping

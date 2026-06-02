@@ -63,7 +63,7 @@ export default function FAQ() {
     },
     {
       question: "How can I contact support?",
-      answer: "You can reach out anytime through the Contact Us page or email support@lubist.in."
+      answer: "You can reach out anytime through the Contact Us page or email support@lubist.com."
     }
   ];
 
@@ -147,7 +147,7 @@ export default function FAQ() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <a
-                href="mailto:support@lubist.in"
+                href="mailto:support@lubist.com"
                 className="bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors inline-flex items-center justify-center gap-2"
               >
                 <FiMail />
