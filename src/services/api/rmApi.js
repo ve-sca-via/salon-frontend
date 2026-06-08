@@ -105,16 +105,6 @@ export const rmApi = createApi({
       keepUnusedDataFor: 300, // Cache for 5 minutes
     }),
 
-    // Get service categories for dropdown
-    getServiceCategories: builder.query({
-      query: () => ({
-        url: '/api/v1/rm/service-categories',
-        method: 'get',
-      }),
-      keepUnusedDataFor: 600, // Cache for 10 minutes (rarely changes)
-      refetchOnFocus: false, // No need to refetch on focus
-    }),
-
     // Get RM leaderboard
     getRMLeaderboard: builder.query({
       query: ({ limit = 20 } = {}) => ({
@@ -149,7 +139,6 @@ export const {
   useGetRMProfileQuery,
   useUpdateRMProfileMutation,
   useGetRMScoreHistoryQuery,
-  useGetServiceCategoriesQuery,
   useGetRMLeaderboardQuery,
   useGetRMSalonsQuery,
 } = rmApi;

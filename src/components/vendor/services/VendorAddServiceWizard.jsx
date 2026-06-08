@@ -35,11 +35,16 @@ const buildServicePayload = (formData, isActive, isCustomServiceFlow) => {
     is_active: isActive,
   };
 
+  // A typed sub-type name (level 3) is optional; backend get-or-creates it under
+  // the chosen subcategory. Undefined keys are dropped from the JSON body.
+  const subSubcategoryName = formData.custom_sub_subcategory_name?.trim() || undefined;
+
   if (isCustomServiceFlow) {
     return {
       ...base,
       category_name: formData.custom_category_name.trim(),
       subcategory_name: formData.custom_subcategory_name.trim(),
+      sub_subcategory_name: subSubcategoryName,
     };
   }
 
@@ -47,6 +52,8 @@ const buildServicePayload = (formData, isActive, isCustomServiceFlow) => {
     ...base,
     category_id: formData.category_id || null,
     subcategory_id: formData.subcategory_id || null,
+    sub_subcategory_id: formData.sub_subcategory_id || null,
+    sub_subcategory_name: subSubcategoryName,
   };
 };
 
@@ -161,8 +168,10 @@ const VendorAddServiceWizard = ({
       ...formData,
       category_id: '',
       subcategory_id: '',
+      sub_subcategory_id: '',
       custom_category_name: '',
       custom_subcategory_name: '',
+      custom_sub_subcategory_name: '',
       name: '',
       description: '',
     };
@@ -211,6 +220,12 @@ const VendorAddServiceWizard = ({
       };
       if (name === 'category_id') {
         updated.subcategory_id = '';
+        updated.sub_subcategory_id = '';
+        updated.custom_sub_subcategory_name = '';
+      }
+      if (name === 'subcategory_id') {
+        updated.sub_subcategory_id = '';
+        updated.custom_sub_subcategory_name = '';
       }
       return updated;
     });
@@ -260,8 +275,29 @@ const VendorAddServiceWizard = ({
     setFormData((prev) => ({
       ...prev,
       subcategory_id: sub.id,
+      // Reset the optional 3rd level whenever the subcategory changes.
+      sub_subcategory_id: '',
+      custom_sub_subcategory_name: '',
       name: '',
       description: prev.description || sub.description || '',
+    }));
+  };
+
+  const handleSelectSubSubcategory = (subSub) => {
+    // Tapping the active chip again (subSub === null) clears the selection.
+    setFormData((prev) => ({
+      ...prev,
+      sub_subcategory_id: subSub?.id || '',
+      custom_sub_subcategory_name: '',
+    }));
+  };
+
+  const handleChangeCustomSubSubcategory = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      custom_sub_subcategory_name: value,
+      // Typing a new sub-type clears any tapped catalog selection.
+      sub_subcategory_id: value ? '' : prev.sub_subcategory_id,
     }));
   };
 
@@ -345,6 +381,8 @@ const VendorAddServiceWizard = ({
         formData={formData}
         categories={categories}
         onSelectSubcategory={handleSelectSubcategory}
+        onSelectSubSubcategory={handleSelectSubSubcategory}
+        onChangeCustomSubSubcategory={handleChangeCustomSubSubcategory}
         onCustomService={() => openCustomConfigureForm(WIZARD_STEPS.SUBCATEGORY)}
         onBack={handleWizardBack}
         onContinue={handleStep3Continue}

@@ -43,25 +43,31 @@ const VendorServiceWizardStep5Review = ({
   onCancel,
   isSaving,
 }) => {
-  const { categoryName, subcategoryName } = useMemo(() => {
+  const { categoryName, subcategoryName, subSubcategoryName } = useMemo(() => {
+    const typedSubSub = formData.custom_sub_subcategory_name?.trim() || '';
     if (isCustomServiceFlow) {
       return {
         categoryName: formData.custom_category_name?.trim() || '—',
         subcategoryName: formData.custom_subcategory_name?.trim() || '',
+        subSubcategoryName: typedSubSub,
       };
     }
     const cat = categories.find((c) => c.id === formData.category_id);
     const sub = cat?.subcategories?.find((s) => s.id === formData.subcategory_id);
+    const subSub = sub?.subcategories?.find((s) => s.id === formData.sub_subcategory_id);
     return {
       categoryName: cat?.name || '—',
       subcategoryName: sub?.name || '',
+      subSubcategoryName: subSub?.name || typedSubSub,
     };
   }, [
     categories,
     formData.category_id,
     formData.subcategory_id,
+    formData.sub_subcategory_id,
     formData.custom_category_name,
     formData.custom_subcategory_name,
+    formData.custom_sub_subcategory_name,
     isCustomServiceFlow,
   ]);
 
@@ -84,6 +90,9 @@ const VendorServiceWizardStep5Review = ({
               <ReviewRow label="Service name" value={formData.name || '—'} />
               <ReviewRow label="Category" value={categoryName} />
               <ReviewRow label="Subcategory" value={subcategoryName || '—'} />
+              {subSubcategoryName && (
+                <ReviewRow label="Sub-type" value={subSubcategoryName} />
+              )}
               <ReviewRow label="Preference" value={genderLabel(formData.gender_category)} />
               <ReviewRow
                 label="Description"

@@ -10,11 +10,10 @@ import { SkeletonFormField } from '../../components/shared/Skeleton';
 import {
   useSubmitVendorRequestMutation,
   useUpdateVendorRequestMutation,
-  useGetVendorRequestByIdQuery,
-  useGetServiceCategoriesQuery
+  useGetVendorRequestByIdQuery
 } from '../../services/api/rmApi';
 import { uploadSalonImage, uploadAgreementDocument, getAgreementDocumentSignedUrl } from '../../services/api/uploadApi';
-import { showSuccessToast, showErrorToast, showInfoToast, showWarningToast } from '../../utils/toastConfig';
+import { showSuccessToast, showErrorToast, showInfoToast } from '../../utils/toastConfig';
 import {
   INDIAN_STATES,
   BUSINESS_HOURS_PRESETS,
@@ -74,12 +73,10 @@ const AddSalonForm = () => {
   const { data: draftData, isLoading: loadingDraft } = useGetVendorRequestByIdQuery(draftId, {
     skip: !draftId, // Only fetch if draftId exists
   });
-  const { data: categoriesData, isLoading: loadingCategories } = useGetServiceCategoriesQuery();
 
   // React Hook Form setup
   const { register, handleSubmit, formState: { errors }, watch, setValue, reset } = useForm({
     defaultValues: {
-      services: [{ name: '', category_id: '', subcategory_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
       // Initialize with default business hours preset
       ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
     }
@@ -91,15 +88,11 @@ const AddSalonForm = () => {
   // Redux state (only auth)
   const { user } = useSelector((state) => state.auth);
 
-  // Get service categories from API
-  const serviceCategories = categoriesData?.data || [];
-
   // UI State (wizard steps and selections)
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedHoursPreset, setSelectedHoursPreset] = useState('weekdays-9-6');
 
   // Form data state (data being built before submission)
-  const [services, setServices] = useState([]);
   const [uploadedImages, setUploadedImages] = useState([]);
   const [coverImage, setCoverImage] = useState(null);
   const [logo, setLogo] = useState(null);
@@ -121,7 +114,7 @@ const AddSalonForm = () => {
 
   // Load draft data if editing
   useEffect(() => {
-    if (draftId && draftData && !loadingDraft && !loadingCategories) {
+    if (draftId && draftData && !loadingDraft) {
       // Populate form with draft data, safely unwrapping `{data}` layer if it exists
       const draft = draftData.data || draftData;
       const documents = draft.documents || {};
@@ -165,54 +158,6 @@ const AddSalonForm = () => {
         facility_comfortable_seating: draft.facilities?.comfortable_seating || documents.facilities?.comfortable_seating || false,
         facility_sanitized_tools: draft.facilities?.sanitized_tools || documents.facilities?.sanitized_tools || false,
       });
-
-      // Services - check both new and old format
-      let loadedServices = [];
-
-      // FIX: Try documents.services first (most reliable)
-      if (documents.services && documents.services.length > 0) {
-        // Services already have category_id
-        loadedServices = documents.services;
-        console.log('✅ Loaded services from documents.services (with category_id)');
-      } else if (draft.services_offered) {
-        // New format: services_offered is a JSONB object with categories (category name as key)
-        console.log('⚠️ Loading services from services_offered (requires category lookup)');
-        Object.entries(draft.services_offered).forEach(([categoryName, serviceList]) => {
-          if (Array.isArray(serviceList)) {
-            // Find category ID by name
-            const categoryObj = serviceCategories.find(cat => cat.name === categoryName);
-            const categoryId = categoryObj ? categoryObj.id : null;
-
-            if (!categoryId) {
-              console.error(`❌ Could not find category_id for category: ${categoryName}`);
-            }
-
-            serviceList.forEach(service => {
-              loadedServices.push({
-                name: service.name || '',
-                category_id: categoryId, // Use category_id, not category
-                price: service.price || '',
-                duration_minutes: service.duration_minutes || 30,
-                description: service.description || '',
-                gender_category: service.gender_category || 'both'
-              });
-            });
-          }
-        });
-      }
-
-      console.log('=== SERVICE LOADING DEBUG ===');
-      console.log('Draft Services Offered:', draft.services_offered);
-      console.log('Document Services:', documents.services);
-      console.log('Loaded Services:', loadedServices);
-      console.log('Services with category_id:', loadedServices.filter(s => s.category_id).length);
-      console.log('Services WITHOUT category_id:', loadedServices.filter(s => !s.category_id).length);
-      console.log('Service Categories Available:', serviceCategories.length);
-      console.log('============================');
-
-      if (loadedServices.length > 0) {
-        setServices(loadedServices);
-      }
 
       // Images
       if (draft.cover_image_url) {
@@ -278,7 +223,7 @@ const AddSalonForm = () => {
     } else if (!draftId && typeFromQuery) {
       setRequestType(typeFromQuery);
     }
-  }, [draftId, draftData, loadingDraft, loadingCategories, serviceCategories, reset, typeFromQuery]);
+  }, [draftId, draftData, loadingDraft, reset, typeFromQuery]);
 
   // CRITICAL: Reset ALL state when navigating to "Add" mode (no draft).
   // Without this, draft data persists when navigating from edit-salon/:id to add-salon
@@ -287,11 +232,9 @@ const AddSalonForm = () => {
     if (!draftId) {
       // Reset react-hook-form to clean defaults
       reset({
-        services: [{ name: '', category_id: '', subcategory_id: '', price: '', duration_minutes: '', gender_category: 'both' }],
         ...BUSINESS_HOURS_PRESETS['weekdays-9-6'].hours
       });
       // Reset all local state
-      setServices([]);
       setUploadedImages([]);
       setCoverImage(null);
       setLogo(null);
@@ -342,29 +285,6 @@ const AddSalonForm = () => {
     } finally {
       setUploading(false);
     }
-  };
-
-  const addService = () => {
-    setServices([...services, { name: '', category_id: '', subcategory_id: '', price: '', duration_minutes: '', description: '', gender_category: 'both' }]);
-  };
-
-  const removeService = (index) => {
-    if (services.length === 1) {
-      showWarningToast('At least one service is required!');
-      return;
-    }
-    setServices(services.filter((_, i) => i !== index));
-    showInfoToast('Service removed');
-  };
-
-  const updateService = (index, field, value) => {
-    const updated = [...services];
-    updated[index][field] = value;
-    // When Category 1 changes, reset Category 2
-    if (field === 'category_id') {
-      updated[index]['subcategory_id'] = '';
-    }
-    setServices(updated);
   };
 
   // Get user's current location
@@ -445,140 +365,10 @@ const AddSalonForm = () => {
           setCurrentStep(3);
           return;
         }
-        if (requestType !== 'regular_buyer' && (services.length === 0 || !services.some(s => s.name && s.price))) {
-          showErrorToast('At least one service is required for submission');
-          setCurrentStep(2);
-          return;
-        }
       }
 
-      // Helper: Parse business hours to get opening/closing times
-      const parseBusinessHours = () => {
-        const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        const workingDays = [];
-        let opening_time = null;
-        let closing_time = null;
-
-        // Helper to convert 12-hour to 24-hour format (HH:MM:SS)
-        const convertTo24Hour = (time12h) => {
-          if (!time12h || time12h === 'Closed') return null;
-
-          // Handle edge cases
-          const trimmed = time12h.trim();
-          if (!trimmed.includes(' ')) return null; // No AM/PM
-
-          const parts = trimmed.split(' ');
-          if (parts.length !== 2) return null;
-
-          const [time, period] = parts;
-          if (!time.includes(':')) return null;
-
-          const timeParts = time.split(':');
-          if (timeParts.length < 2) return null;
-
-          let hours = parseInt(timeParts[0]);
-          let minutes = parseInt(timeParts[1]) || 0;
-
-          if (isNaN(hours) || isNaN(minutes)) return null;
-
-          if (period.toUpperCase() === 'PM' && hours !== 12) {
-            hours += 12;
-          } else if (period.toUpperCase() === 'AM' && hours === 12) {
-            hours = 0;
-          }
-
-          return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
-        };
-
-        days.forEach(day => {
-          const hours = data[day];
-
-          if (hours && hours !== 'Closed' && hours.trim() !== '') {
-            // Add to working days (capitalize first letter)
-            workingDays.push(day.charAt(0).toUpperCase() + day.slice(1));
-
-            // Parse time range: "9:00 AM - 6:00 PM"
-            if (hours.includes(' - ')) {
-              const [open, close] = hours.split(' - ').map(t => t.trim());
-
-              // Use first non-closed day's hours as representative times
-              if (!opening_time) {
-                opening_time = convertTo24Hour(open);
-              }
-              if (!closing_time) {
-                closing_time = convertTo24Hour(close);
-              }
-            }
-          }
-        });
-
-        return { opening_time, closing_time, working_days: workingDays };
-      };
-
-      const { opening_time, closing_time, working_days } = parseBusinessHours();
-
-      // Helper: Convert services to array format for documents.services
-      // Backend reads from documents.services and needs category_id
-      const prepareServicesArray = () => {
-        console.log('=== PREPARE SERVICES DEBUG ===');
-        console.log('Services State:', services);
-        console.log('Services with category_id:', services.filter(s => s.category_id));
-        console.log('Services WITHOUT category_id:', services.filter(s => !s.category_id));
-        console.log('Services filtered:', services.filter(s => s.name && s.price && s.category_id));
-        console.log('=============================');
-
-        // FIX: Warn user if services are missing category_id
-        const servicesWithoutCategory = services.filter(s => s.name && s.price && !s.category_id);
-        if (servicesWithoutCategory.length > 0) {
-          const serviceNames = servicesWithoutCategory.map(s => s.name).join(', ');
-          console.error(`⚠️ WARNING: ${servicesWithoutCategory.length} services missing category_id: ${serviceNames}`);
-          showErrorToast(
-            `⚠️ ${servicesWithoutCategory.length} service(s) are missing a category: ${serviceNames}. ` +
-            `These services will NOT be visible to the vendor. Please select a category for each service.`
-          );
-        }
-
-        return services
-          .filter(s => s.name && s.price && s.category_id)
-          .map(s => ({
-            name: s.name,
-            category_id: s.category_id,
-            subcategory_id: s.subcategory_id || null,
-            price: parseFloat(s.price),
-            duration_minutes: parseInt(s.duration_minutes) || 30,
-            description: s.description || '',
-            gender_category: s.gender_category || 'both',
-          }));
-      };
-
-      // Helper: Group services by category for services_offered JSONB column
-      const groupServicesByCategory = () => {
-        const servicesArray = prepareServicesArray();
-        const grouped = {};
-
-        servicesArray.forEach(service => {
-          // Find category name from serviceCategories
-          const category = serviceCategories.find(cat => cat.id === service.category_id);
-          const categoryName = category ? category.name : 'Uncategorized';
-          const subcategory = category?.subcategories?.find(sub => sub.id === service.subcategory_id);
-          const subcategoryName = subcategory ? subcategory.name : '';
-
-          if (!grouped[categoryName]) {
-            grouped[categoryName] = [];
-          }
-
-          grouped[categoryName].push({
-            name: service.name,
-            subcategory_name: subcategoryName,
-            price: service.price,
-            duration_minutes: service.duration_minutes,
-            description: service.description,
-            gender_category: service.gender_category || 'both'
-          });
-        });
-
-        return Object.keys(grouped).length > 0 ? grouped : null;
-      };
+      // Note: operational times are intentionally stored as null on the request
+      // (the canonical business hours live in documents.business_hours below).
 
       // Prepare vendor request data matching backend schema
       const vendorRequestData = {
@@ -614,10 +404,11 @@ const AddSalonForm = () => {
         closing_time: null,
         working_days: null,
 
-        // Services - Store in BOTH places for full compatibility
-        services_offered: groupServicesByCategory(),  // Grouped by category for database column
+        // Services are no longer collected by the RM during onboarding — the vendor
+        // adds their own services (with category/subcategory/sub-subcategory) later.
+        services_offered: null,
 
-        // Documents JSONB - Store services here for backend to read
+        // Documents JSONB
         documents: {
           description: data.description || '',
           email: data.email,
@@ -625,7 +416,6 @@ const AddSalonForm = () => {
           logo: logo || null,
           outlet: data.outlet || null,
           is_gst: data.is_gst || false,
-          services: prepareServicesArray(),
           business_hours: {
             monday: data.monday || 'Closed',
             tuesday: data.tuesday || 'Closed',
@@ -727,7 +517,6 @@ const AddSalonForm = () => {
             'business_name': 1, 'business_type': 1, 'owner_name': 1, 'owner_email': 1,
             'owner_phone': 1, 'business_address': 1, 'address_line1': 1, 'city': 1,
             'state': 1, 'pincode': 1, 'description': 1,
-            'services': 2, 'services_offered': 2,
             'cover_image_url': 3, 'cover_image': 3
           };
 
@@ -816,33 +605,9 @@ const AddSalonForm = () => {
       }
     }
 
-    if (currentStep === 2 && services.length === 0) {
-      showWarningToast('Please add at least one service before proceeding');
-      return;
-    }
-
-    // FIX: Validate that all services have category_id
-    if (currentStep === 2 && services.length > 0) {
-      const servicesWithoutCategory = services.filter(s => s.name && !s.category_id);
-      if (servicesWithoutCategory.length > 0) {
-        const serviceNames = servicesWithoutCategory.map(s => s.name || 'Unnamed').slice(0, 3).join(', ');
-        const moreCount = servicesWithoutCategory.length > 3 ? ` and ${servicesWithoutCategory.length - 3} more` : '';
-        showErrorToast(
-          `⚠️ Please select a category for all services! ` +
-          `${servicesWithoutCategory.length} service(s) missing category: ${serviceNames}${moreCount}. ` +
-          `Services without categories WILL NOT appear for the vendor!`
-        );
-        return;
-      }
-    }
-
+    // Step 1 advances straight to Photos (step 3) — the Services step was removed,
+    // so the salon and regular_buyer flows share the same path from here on.
     if (currentStep === 1) {
-      if (requestType === 'regular_buyer') {
-        setCurrentStep(3);
-      } else {
-        setCurrentStep(2);
-      }
-    } else if (currentStep === 2) {
       setCurrentStep(3);
     } else if (currentStep === 3) {
       if (requestType === 'regular_buyer') {
@@ -859,7 +624,8 @@ const AddSalonForm = () => {
   const prevStep = () => {
     if (currentStep === 5 && requestType === 'regular_buyer') {
       setCurrentStep(3);
-    } else if (currentStep === 3 && requestType === 'regular_buyer') {
+    } else if (currentStep === 3) {
+      // Photos -> Basic Info (no Services step in between for either flow)
       setCurrentStep(1);
     } else if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
@@ -877,7 +643,6 @@ const AddSalonForm = () => {
         ]
       : [
           { id: 1, label: 'Basic Info', mobileLabel: 'Info' },
-          { id: 2, label: 'Services', mobileLabel: 'Services' },
           { id: 3, label: 'Photos', mobileLabel: 'Photos' },
           { id: 4, label: 'Facilities', mobileLabel: 'Facilities' },
           { id: 5, label: 'Review', mobileLabel: 'Review' }
@@ -1560,174 +1325,6 @@ const AddSalonForm = () => {
             </Card>
           )}
 
-          {/* Step 2: Services */}
-          {currentStep === 2 && (
-            <Card title="Services Offered">
-              <div className="mb-4 p-4 bg-blue-50 border-l-4 border-blue-500 rounded">
-                <div className="flex items-start">
-                  <FiInfo className="text-blue-500 mt-1 mr-3 flex-shrink-0" size={20} />
-                  <div className="text-sm text-blue-800 font-body">
-                    <p className="font-semibold mb-1">Add Salon Services</p>
-                    <p className="text-xs mb-2">Add services offered by the salon. Make sure to select the correct category for each service from the dropdown.</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Added Services List */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-body font-semibold text-gray-900">
-                    Salon Services ({services.length})
-                  </h4>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addService}
-                  >
-                    <FiPlus className="mr-1" size={16} />
-                    Add Custom Service
-                  </Button>
-                </div>
-
-                {services.length === 0 ? (
-                  <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg">
-                    <FiPlus className="mx-auto text-gray-400 mb-3" size={48} />
-                    <p className="text-gray-600 font-body mb-2">No services added yet</p>
-                    <p className="text-sm text-gray-500 font-body">
-                      Use quick add above or click "Add Custom Service"
-                    </p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {services.map((service, index) => (
-                      <div key={index} className="p-4 border border-gray-200 rounded-lg bg-white hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-3">
-                          <span className="inline-block px-3 py-1 bg-accent-orange/10 text-accent-orange text-xs font-semibold rounded-full">
-                            Service #{index + 1}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeService(index)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 p-2 rounded-lg transition-all"
-                            title="Remove service"
-                          >
-                            <FiTrash2 size={16} />
-                          </button>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          <div>
-                            <label className="block text-xs font-body font-medium text-gray-700 mb-1">
-                              Service Name <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="text"
-                              placeholder="e.g., Haircut, Facial"
-                              value={service.name}
-                              onChange={(e) => updateService(index, 'name', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-body font-medium text-gray-700 mb-1">
-                              Category (Level 1) <span className="text-red-500">*</span>
-                            </label>
-                            <select
-                              value={service.category_id || ''}
-                              onChange={(e) => updateService(index, 'category_id', e.target.value)}
-                              className={`w-full px-3 py-2 border rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange ${!service.category_id ? 'border-red-300 bg-red-50' : 'border-gray-200'
-                                }`}
-                            >
-                              <option value="">Select category</option>
-                              {serviceCategories.map(cat => (
-                                <option key={cat.id} value={cat.id}>{cat.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-body font-medium text-gray-700 mb-1">
-                              Subcategory (Level 2)
-                            </label>
-                            <select
-                              value={service.subcategory_id || ''}
-                              onChange={(e) => updateService(index, 'subcategory_id', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange disabled:bg-gray-100 disabled:text-gray-400"
-                              disabled={!service.category_id}
-                            >
-                              <option value="">Select subcategory</option>
-                              {service.category_id && serviceCategories.find(c => c.id === service.category_id)?.subcategories?.map(sub => (
-                                <option key={sub.id} value={sub.id}>{sub.name}</option>
-                              ))}
-                            </select>
-                          </div>
-                          <div>
-                            <label className="block text-xs font-body font-medium text-gray-700 mb-1">
-                              Price (₹) <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="number"
-                              placeholder="e.g., 500"
-                              value={service.price}
-                              onChange={(e) => updateService(index, 'price', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                              min="0"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-xs font-body font-medium text-gray-700 mb-1">
-                              Duration (minutes) <span className="text-red-500">*</span>
-                            </label>
-                            <input
-                              type="number"
-                              placeholder="e.g., 30"
-                              value={service.duration_minutes}
-                              onChange={(e) => updateService(index, 'duration_minutes', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                              min="5"
-                              step="5"
-                            />
-                          </div>
-
-                          <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <div>
-                              <label className="block text-xs font-body font-medium text-gray-700 mb-1">
-                                Available For (Gender) <span className="text-red-500">*</span>
-                              </label>
-                              <select
-                                value={service.gender_category || 'both'}
-                                onChange={(e) => updateService(index, 'gender_category', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                              >
-                                <option value="both">Both (Unisex)</option>
-                                <option value="male">Male Only</option>
-                                <option value="female">Female Only</option>
-                              </select>
-                            </div>
-                            <div>
-                              <label className="block text-xs font-body font-medium text-gray-700 mb-1">
-                                Description (Optional)
-                              </label>
-                              <input
-                                type="text"
-                                placeholder="Brief description of the service"
-                                value={service.description || ''}
-                                onChange={(e) => updateService(index, 'description', e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-200 rounded-lg font-body text-sm focus:outline-none focus:ring-2 focus:ring-accent-orange"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </Card>
-          )}
-
           {/* Step 3: Photos */}
           {currentStep === 3 && (
             <Card title="Salon Photos">
@@ -2108,61 +1705,10 @@ const AddSalonForm = () => {
                 )}
 
 
-                {/* Services - Hidden for Regular Buyers */}
-                {requestType !== 'regular_buyer' && (
-                  <div className="border-l-4 border-purple-500 pl-4">
-                    <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
-                      <span className="bg-purple-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">2</span>
-                      Services ({services.filter(s => s.name && s.price).length})
-                    </h3>
-                    {services.filter(s => s.name && s.price).length === 0 ? (
-                      <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-4 rounded-lg text-sm font-body">
-                        ⚠️ No services added. Please go back to add at least one service.
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {services.filter(s => s.name && s.price).map((service, index) => (
-                          <div key={index} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-purple-300 transition-all">
-                            <div className="flex justify-between items-start">
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2 mb-2">
-                                  <span className="font-semibold text-gray-900 font-body">{service.name}</span>
-                                  <span className="inline-block px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
-                                    {serviceCategories.find(c => c.id === service.category_id)?.name || service.category || 'Uncategorized'}
-                                  </span>
-                                  {service.subcategory_id && (
-                                    <span className="inline-block px-2 py-1 bg-indigo-100 text-indigo-700 text-xs rounded-full">
-                                      {serviceCategories.find(c => c.id === service.category_id)?.subcategories?.find(s => s.id === service.subcategory_id)?.name || 'Subcategory'}
-                                    </span>
-                                  )}
-                                  {service.gender_category && service.gender_category !== 'both' && (
-                                    <span className={`inline-block px-2 py-1 text-[10px] rounded-full uppercase tracking-wider font-semibold ${
-                                      service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 'bg-pink-100 text-pink-700'
-                                    }`}>
-                                      {service.gender_category}
-                                    </span>
-                                  )}
-                                </div>
-                                {service.description && (
-                                  <p className="text-xs text-gray-600 mb-2">{service.description}</p>
-                                )}
-                                <div className="flex gap-4 text-xs text-gray-600">
-                                  <span>💰 ₹{service.price}</span>
-                                  <span>⏱️ {service.duration_minutes || service.duration} mins</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-
                 {/* Photos */}
                 <div className="border-l-4 border-pink-500 pl-4">
                   <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
-                    <span className="bg-pink-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">3</span>
+                    <span className="bg-pink-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">2</span>
                     Photos
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg space-y-4">
@@ -2240,7 +1786,7 @@ const AddSalonForm = () => {
                 {/* Facilities Review */}
                 <div className="border-l-4 border-teal-500 pl-4">
                   <h3 className="text-lg font-display font-bold text-gray-900 mb-3 flex items-center">
-                    <span className="bg-teal-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">4</span>
+                    <span className="bg-teal-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-sm mr-2">3</span>
                     Facilities
                   </h3>
                   <div className="bg-gray-50 p-4 rounded-lg">
@@ -2330,16 +1876,6 @@ const AddSalonForm = () => {
                       )}
                       <span>Basic information filled (including owner details)</span>
                     </div>
-                    {requestType !== 'regular_buyer' && (
-                      <div className={`flex items-center gap-2 ${services.filter(s => s.name && s.price).length > 0 ? 'text-green-700' : 'text-gray-600'}`}>
-                        {services.filter(s => s.name && s.price).length > 0 ? (
-                          <FiCheck className="text-green-600" size={16} />
-                        ) : (
-                          <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
-                        )}
-                        <span>At least one service added ({services.filter(s => s.name && s.price).length} services)</span>
-                      </div>
-                    )}
                     <div className={`flex items-center gap-2 ${coverImage ? 'text-green-700' : 'text-gray-600'}`}>
                       {coverImage ? (
                         <FiCheck className="text-green-600" size={16} />
