@@ -76,6 +76,10 @@ const VendorConfigureService = ({
     submitLabel || (editingService ? 'Update Service' : 'Save Service');
   const selectedCategory = categories.find((c) => c.id === formData.category_id);
   const subcategories = selectedCategory?.subcategories || [];
+  // Optional level-3 nodes under the chosen subcategory (edit-mode only; the
+  // wizard handles sub-subcategory selection in its dedicated Subcategory step).
+  const selectedSubcategory = subcategories.find((s) => s.id === formData.subcategory_id);
+  const subSubcategories = selectedSubcategory?.subcategories || [];
 
   const handleGenderSelect = (value) => {
     setFormData((prev) => ({ ...prev, gender_category: value }));
@@ -199,6 +203,21 @@ const VendorConfigureService = ({
                     disabled={isSaving}
                   />
                 </div>
+                <div>
+                  <label className={fieldLabelClass} htmlFor="custom_sub_subcategory_name">
+                    Sub-type <span className="normal-case text-[#9CA3AF]">(optional)</span>
+                  </label>
+                  <input
+                    id="custom_sub_subcategory_name"
+                    type="text"
+                    name="custom_sub_subcategory_name"
+                    value={formData.custom_sub_subcategory_name || ''}
+                    onChange={handleChange}
+                    placeholder="e.g. Spanish Haircut"
+                    className={fieldInputClass}
+                    disabled={isSaving}
+                  />
+                </div>
               </>
             )}
 
@@ -264,6 +283,59 @@ const VendorConfigureService = ({
                     size={16}
                   />
                 </div>
+              </div>
+            )}
+
+            {/* Optional 3rd level — pick an existing sub-type or type a new one. */}
+            {!useTextCategoryFields && !hideSubcategoryField && formData.subcategory_id && (
+              <div>
+                <label className={fieldLabelClass} htmlFor="sub_subcategory_id">
+                  Sub-type <span className="normal-case text-[#9CA3AF]">(optional)</span>
+                </label>
+                {subSubcategories.length > 0 && (
+                  <div className="relative mb-2">
+                    <select
+                      id="sub_subcategory_id"
+                      name="sub_subcategory_id"
+                      value={formData.sub_subcategory_id || ''}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          sub_subcategory_id: e.target.value,
+                          custom_sub_subcategory_name: '',
+                        }))
+                      }
+                      className={`${fieldInputClass} appearance-none pr-10`}
+                      disabled={isSaving || Boolean(formData.custom_sub_subcategory_name)}
+                    >
+                      <option value="">Select sub-type</option>
+                      {subSubcategories.map((ss) => (
+                        <option key={ss.id} value={ss.id}>
+                          {ss.name}
+                        </option>
+                      ))}
+                    </select>
+                    <FiChevronDown
+                      className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[#534433]"
+                      size={16}
+                    />
+                  </div>
+                )}
+                <input
+                  type="text"
+                  name="custom_sub_subcategory_name"
+                  value={formData.custom_sub_subcategory_name || ''}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      custom_sub_subcategory_name: e.target.value,
+                      sub_subcategory_id: e.target.value ? '' : prev.sub_subcategory_id,
+                    }))
+                  }
+                  placeholder="Or add a new sub-type…"
+                  className={fieldInputClass}
+                  disabled={isSaving}
+                />
               </div>
             )}
 

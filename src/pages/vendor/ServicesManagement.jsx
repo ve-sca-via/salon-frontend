@@ -99,10 +99,36 @@ const ServicesManagement = () => {
     duration: '',
     category_id: '',
     subcategory_id: '',
+    sub_subcategory_id: '',
+    custom_sub_subcategory_name: '',
     gender_category: 'both',
     is_active: true,
     image_url: '',
   });
+
+  /**
+   * Resolve a stored (deepest) subcategory_id back into its level-2 + level-3 parts.
+   * A service's subcategory_id may point at a level-2 subcategory OR a level-3
+   * sub-subcategory; the edit form needs both filled so the dropdowns pre-select.
+   */
+  const resolveServiceTaxonomy = (service) => {
+    const storedSubId = service.subcategory_id || '';
+    if (!storedSubId) return { subcategory_id: '', sub_subcategory_id: '' };
+
+    for (const cat of categories) {
+      for (const sub of cat.subcategories || []) {
+        if (sub.id === storedSubId) {
+          return { subcategory_id: sub.id, sub_subcategory_id: '' };
+        }
+        const subSub = (sub.subcategories || []).find((ss) => ss.id === storedSubId);
+        if (subSub) {
+          return { subcategory_id: sub.id, sub_subcategory_id: subSub.id };
+        }
+      }
+    }
+    // Not found in the active tree (e.g. inactive node) — keep it as the L2 value.
+    return { subcategory_id: storedSubId, sub_subcategory_id: '' };
+  };
 
   /**
    * handleOpenAdd - Opens 5-step wizard for new service (resumes local draft if present)
@@ -137,6 +163,7 @@ const ServicesManagement = () => {
     if (service) {
       // Edit mode - pre-fill form with service data
       setEditingService(service);
+      const { subcategory_id, sub_subcategory_id } = resolveServiceTaxonomy(service);
       setFormData({
         name: service.name || '',
         description: service.description || '',
@@ -148,7 +175,9 @@ const ServicesManagement = () => {
         // Handle API inconsistency: duration_minutes is canonical, but may receive 'duration'
         duration: service.duration_minutes || service.duration || '',
         category_id: service.category_id || (categories.length > 0 ? categories[0].id : ''),
-        subcategory_id: service.subcategory_id || '',
+        subcategory_id,
+        sub_subcategory_id,
+        custom_sub_subcategory_name: '',
         gender_category: service.gender_category || 'both',
         is_active: service.is_active !== undefined ? service.is_active : true,
         image_url: service.image_url || '',
@@ -171,6 +200,8 @@ const ServicesManagement = () => {
       duration: '',
       category_id: categories.length > 0 ? categories[0].id : '',
       subcategory_id: '',
+      sub_subcategory_id: '',
+      custom_sub_subcategory_name: '',
       gender_category: 'both',
       is_active: true,
       image_url: '',
@@ -190,6 +221,12 @@ const ServicesManagement = () => {
       };
       if (name === 'category_id') {
         updated.subcategory_id = '';
+        updated.sub_subcategory_id = '';
+        updated.custom_sub_subcategory_name = '';
+      }
+      if (name === 'subcategory_id') {
+        updated.sub_subcategory_id = '';
+        updated.custom_sub_subcategory_name = '';
       }
       return updated;
     });
@@ -245,6 +282,9 @@ const ServicesManagement = () => {
         duration_minutes: parseInt(formData.duration),
         category_id: formData.category_id || null,
         subcategory_id: formData.subcategory_id || null,
+        sub_subcategory_id: formData.sub_subcategory_id || null,
+        // A typed sub-type name is get-or-created under the chosen subcategory.
+        sub_subcategory_name: formData.custom_sub_subcategory_name?.trim() || undefined,
         gender_category: formData.gender_category,
         is_active: formData.is_active,
         image_url: formData.image_url || null,

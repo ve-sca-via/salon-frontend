@@ -1088,22 +1088,42 @@ export default function SalonDetail() {
                             </h3>
                           </div>
 
-                          {/* Render Services grouped by Subcategory */}
+                          {/* Render Services grouped by Subcategory (L2), then Sub-subcategory (L3) */}
                           {(() => {
                             const categoryServices = services.filter(s => s.category_id === selectedParentCategory.id);
-                            
-                            // Group by subcategory_id
-                            const subcatGroups = {};
-                            const noSubcatServices = [];
-                            
+
+                            // Build a 3-level grouping using the taxonomy path the API
+                            // attaches per service: category -> subcategory (L2) -> sub_subcategory (L3).
+                            const subcatGroups = {};      // keyed by L2 id
+                            const noSubcatServices = [];  // services with no L2 node at all
+
                             categoryServices.forEach(s => {
-                              if (s.subcategory_id) {
-                                const subcatId = s.subcategory_id;
-                                const subcatName = s.service_subcategories?.name || 'Other';
-                                if (!subcatGroups[subcatId]) {
-                                  subcatGroups[subcatId] = { name: subcatName, services: [] };
+                              const tax = s.taxonomy;
+                              let sub, subSub;
+                              if (tax) {
+                                sub = tax.subcategory;
+                                subSub = tax.sub_subcategory;
+                              } else {
+                                // Legacy fallback when the API didn't attach a taxonomy path.
+                                sub = s.subcategory_id
+                                  ? { id: s.subcategory_id, name: s.service_subcategories?.name || 'Other' }
+                                  : null;
+                                subSub = null;
+                              }
+
+                              if (sub && sub.id) {
+                                if (!subcatGroups[sub.id]) {
+                                  subcatGroups[sub.id] = { name: sub.name || 'Other', directServices: [], subSubGroups: {} };
                                 }
-                                subcatGroups[subcatId].services.push(s);
+                                const group = subcatGroups[sub.id];
+                                if (subSub && subSub.id) {
+                                  if (!group.subSubGroups[subSub.id]) {
+                                    group.subSubGroups[subSub.id] = { name: subSub.name || 'Other', services: [] };
+                                  }
+                                  group.subSubGroups[subSub.id].services.push(s);
+                                } else {
+                                  group.directServices.push(s);
+                                }
                               } else {
                                 noSubcatServices.push(s);
                               }
@@ -1118,18 +1138,44 @@ export default function SalonDetail() {
                                         {group.name}
                                       </h4>
                                     </div>
-                                    <div className="p-4 flex flex-wrap gap-4">
-                                      {group.services.map(service => (
-                                        <ServiceCard 
-                                          key={service.id} 
-                                          service={service} 
-                                          onBook={handleBookService} 
-                                        />
+                                    <div className="p-4 space-y-6">
+                                      {/* Services attached directly to the subcategory (no sub-type) */}
+                                      {group.directServices.length > 0 && (
+                                        <div className="flex flex-wrap gap-4">
+                                          {group.directServices.map(service => (
+                                            <ServiceCard
+                                              key={service.id}
+                                              service={service}
+                                              onBook={handleBookService}
+                                            />
+                                          ))}
+                                        </div>
+                                      )}
+
+                                      {/* Sub-subcategory (L3) sub-groups */}
+                                      {Object.values(group.subSubGroups).map((subGroup, sIdx) => (
+                                        <div key={sIdx} className="space-y-3">
+                                          <div className="flex items-center gap-2">
+                                            <span className="h-1.5 w-1.5 rounded-full bg-accent-orange" />
+                                            <h5 className="font-body font-semibold text-[14px] text-gray-600">
+                                              {subGroup.name}
+                                            </h5>
+                                          </div>
+                                          <div className="flex flex-wrap gap-4 pl-3.5">
+                                            {subGroup.services.map(service => (
+                                              <ServiceCard
+                                                key={service.id}
+                                                service={service}
+                                                onBook={handleBookService}
+                                              />
+                                            ))}
+                                          </div>
+                                        </div>
                                       ))}
                                     </div>
                                   </div>
                                 ))}
-                                
+
                                 {noSubcatServices.length > 0 && (
                                   <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                                     {Object.keys(subcatGroups).length > 0 && (
@@ -1141,16 +1187,16 @@ export default function SalonDetail() {
                                     )}
                                     <div className="p-4 flex flex-wrap gap-4">
                                       {noSubcatServices.map(service => (
-                                        <ServiceCard 
-                                          key={service.id} 
-                                          service={service} 
-                                          onBook={handleBookService} 
+                                        <ServiceCard
+                                          key={service.id}
+                                          service={service}
+                                          onBook={handleBookService}
                                         />
                                       ))}
                                     </div>
                                   </div>
                                 )}
-                                
+
                                 {categoryServices.length === 0 && (
                                   <div className="text-center py-8 text-gray-500 font-body">
                                     No services available in this category.

@@ -14,6 +14,8 @@ const VendorServiceWizardStep3Subcategory = ({
   formData,
   categories,
   onSelectSubcategory,
+  onSelectSubSubcategory,
+  onChangeCustomSubSubcategory,
   onCustomService,
   onBack,
   onContinue,
@@ -22,6 +24,12 @@ const VendorServiceWizardStep3Subcategory = ({
 
   const selectedCategory = categories.find((c) => c.id === formData.category_id);
   const subcategories = selectedCategory?.subcategories || [];
+
+  // Level-3 options live under the chosen subcategory. Sub-subcategory is optional.
+  const selectedSubcategory = subcategories.find(
+    (s) => s.id === formData.subcategory_id
+  );
+  const subSubcategories = selectedSubcategory?.subcategories || [];
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -91,6 +99,50 @@ const VendorServiceWizardStep3Subcategory = ({
                 iconUrl={sub.icon_url}
               />
             ))}
+          </div>
+        )}
+
+        {/* Optional 3rd level — only after a subcategory is chosen. */}
+        {formData.subcategory_id && (
+          <div className="space-y-3 rounded-2xl border border-[#F0E0D1] bg-[#FFFAF5] p-4">
+            <div className="space-y-0.5">
+              <p className="font-vendor text-sm font-bold text-[#111827]">
+                Sub-type <span className="font-normal text-[#9CA3AF]">(optional)</span>
+              </p>
+              <p className="font-vendor text-xs text-[#6B7280]">
+                Narrow it down further, e.g. “Spanish Haircut” under “Haircut”. Skip if not needed.
+              </p>
+            </div>
+
+            {subSubcategories.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {subSubcategories.map((ss) => {
+                  const active = formData.sub_subcategory_id === ss.id;
+                  return (
+                    <button
+                      key={ss.id}
+                      type="button"
+                      onClick={() => onSelectSubSubcategory(active ? null : ss)}
+                      className={`rounded-full border-2 px-3 py-1.5 font-vendor text-sm font-semibold transition-colors ${
+                        active
+                          ? 'border-[#F89E07] bg-[#FFF1E6] text-[#865300]'
+                          : 'border-[#F0E0D1] bg-white text-[#534433] hover:border-[#F89E07]/40'
+                      }`}
+                    >
+                      {ss.name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <input
+              type="text"
+              value={formData.custom_sub_subcategory_name || ''}
+              onChange={(e) => onChangeCustomSubSubcategory(e.target.value)}
+              placeholder="Or add a new sub-type…"
+              className="h-11 w-full rounded-xl border-0 bg-white px-4 font-vendor text-base text-[#111827] shadow-[0_2px_12px_rgba(34,26,17,0.06)] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#F89E07]/35"
+            />
           </div>
         )}
       </div>
