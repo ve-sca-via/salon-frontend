@@ -303,7 +303,18 @@ const Sidebar = ({ role, isOpen, onClose, isCollapsed }) => {
             <div className="p-4 border-t border-gray-200">
               <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-lg p-4 border border-orange-100">
                 <p className="text-xs text-orange-900 font-semibold">Need help?</p>
-                <p className="text-xs text-orange-700 mt-1">Contact support</p>
+                <a
+                  href="mailto:support@lubist.com"
+                  className="text-xs text-orange-700 mt-1 block hover:text-orange-900 hover:underline"
+                >
+                  Contact support
+                </a>
+                <a
+                  href="mailto:support@lubist.com"
+                  className="text-xs text-orange-700 mt-0.5 block hover:text-orange-900 hover:underline"
+                >
+                  Email: support@lubist.com
+                </a>
               </div>
             </div>
           )}
