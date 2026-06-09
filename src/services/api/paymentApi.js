@@ -10,7 +10,7 @@ import axiosBaseQuery from './baseQuery';
 export const paymentApi = createApi({
   reducerPath: 'paymentApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['PaymentHistory', 'VendorEarnings'],
+  tagTypes: ['PaymentHistory'],
   endpoints: (builder) => ({
     // Cart Checkout Payment - Create Razorpay Order
     createCartPaymentOrder: builder.mutation({
@@ -82,24 +82,6 @@ export const paymentApi = createApi({
       keepUnusedDataFor: 180, // Cache for 3 minutes
       refetchOnFocus: true,
     }),
-
-    // Get vendor earnings
-    getVendorEarnings: builder.query({
-      query: ({ vendorId, startDate, endDate }) => {
-        const params = {};
-        if (startDate) params.start_date = startDate;
-        if (endDate) params.end_date = endDate;
-        return {
-          url: `/api/v1/payments/vendor/${vendorId}/earnings`,
-          method: 'get',
-          params,
-        };
-      },
-      providesTags: (result, error, { vendorId }) => [
-        { type: 'VendorEarnings', id: vendorId },
-      ],
-      keepUnusedDataFor: 300, // Cache for 5 minutes
-    }),
   }),
 });
 
@@ -110,7 +92,6 @@ export const {
   useCreateVendorRegistrationOrderMutation,
   useVerifyVendorRegistrationPaymentMutation,
   useGetPaymentHistoryQuery,
-  useGetVendorEarningsQuery,
 } = paymentApi;
 
 export default paymentApi;
