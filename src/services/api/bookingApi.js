@@ -35,7 +35,7 @@ export const bookingApi = createApi({
     // Create a booking
     createBooking: builder.mutation({
       query: (bookingData) => ({
-        url: '/api/v1/bookings',
+        url: '/api/v1/customers/bookings',
         method: 'post',
         data: bookingData,
       }),
@@ -79,16 +79,6 @@ export const bookingApi = createApi({
         { type: 'CustomerBookings', id: bookingId },
       ],
     }),
-
-    // Get customer bookings (alternative endpoint)
-    getCustomerBookings: builder.query({
-      query: () => ({
-        url: '/api/v1/customers/bookings/my-bookings',
-        method: 'get',
-      }),
-      providesTags: [{ type: 'CustomerBookings', id: 'LIST' }],
-      keepUnusedDataFor: 60,
-    }),
   }),
 });
 
@@ -96,7 +86,6 @@ export const {
   useGetMyBookingsQuery,
   useCreateBookingMutation,
   useCancelBookingMutation,
-  useGetCustomerBookingsQuery,
 } = bookingApi;
 
 export default bookingApi;
