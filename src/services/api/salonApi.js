@@ -44,7 +44,7 @@ export const salonApi = createApi({
     // Search salons
     searchSalons: builder.query({
       query: ({ query, location, serviceType, lat, lon, radius, city, state, service_ids }) => ({
-        url: query ? '/api/v1/salons/search/query' : '/api/v1/salons/search/nearby',
+        url: query ? '/api/v1/salons/search/query' : '/api/v1/location/salons/nearby',
         method: 'get',
         params: { q: query, city: location || city, service_type: serviceType, lat, lon, radius, state, service_ids },
       }),
@@ -73,24 +73,6 @@ export const salonApi = createApi({
       keepUnusedDataFor: 0,
     }),
 
-    // Get booking fee percentage
-    getBookingFeePercentage: builder.query({
-      query: () => ({
-        url: '/api/v1/salons/config/booking-fee-percentage',
-        method: 'get',
-      }),
-      keepUnusedDataFor: 3600, // Cache for 1 hour (config doesn't change often)
-    }),
-
-    // Get public system configuration
-    getPublicConfig: builder.query({
-      query: () => ({
-        url: '/api/v1/salons/config/public',
-        method: 'get',
-      }),
-      keepUnusedDataFor: 3600, // Cache for 1 hour (config rarely changes)
-    }),
-
     // Get popular cities (aggregated from database)
     getPopularCities: builder.query({
       query: ({ limit = 8 } = {}) => ({
@@ -112,8 +94,6 @@ export const {
   useSearchSalonsQuery,
   useGetSalonServicesQuery,
   useGetSalonAvailableSlotsQuery,
-  useGetBookingFeePercentageQuery,
-  useGetPublicConfigQuery,
   useGetPopularCitiesQuery, // New hook for popular cities
   useLazySearchSalonsQuery, // Lazy query for manual triggering
   useLazyGetSalonsQuery,
