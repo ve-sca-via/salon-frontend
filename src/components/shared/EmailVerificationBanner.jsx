@@ -21,47 +21,51 @@
 import React, { useState, useEffect } from 'react';
 import { FaEnvelope, FaTimes, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
-import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { showSuccessToast, showErrorToast, showApiErrorToast } from '../../utils/toastConfig';
 
 const EmailVerificationBanner = () => {
-  const [isVisible, setIsVisible] = useState(false);
+  const [uiTick, setUiTick] = useState(0);
   const [isResending, setIsResending] = useState(false);
   const user = useSelector((state) => state.auth?.user);
+  const accessToken = localStorage.getItem('access_token');
+  const justSignedUp = sessionStorage.getItem('just_signed_up');
+  const bannerDismissed = sessionStorage.getItem('email_banner_dismissed');
+  const shouldShow =
+    justSignedUp === 'true' &&
+    bannerDismissed !== 'true' &&
+    !!(user || accessToken);
   
   useEffect(() => {
-    // Check if user just signed up (set by signup page)
-    const justSignedUp = sessionStorage.getItem('just_signed_up');
-    const bannerDismissed = sessionStorage.getItem('email_banner_dismissed');
-    
-    // Show banner if user just signed up and hasn't dismissed it
-    if (justSignedUp === 'true' && bannerDismissed !== 'true' && user) {
-      setIsVisible(true);
-    }
+    const rerender = () => setUiTick((t) => t + 1);
 
     // Listen for manual confirmation (when user clicks email link and comes back)
     // We'll rely on user dismissing the banner or clicking email link
     const handleStorageChange = (e) => {
       if (e.key === 'just_signed_up') {
-        if (e.newValue === 'true') {
-          setIsVisible(true);
-        } else if (e.newValue === null) {
-          setIsVisible(false);
-        }
+        rerender();
       }
       // If email_verified flag is set (you can set this after email confirmation)
       if (e.key === 'email_verified' && e.newValue === 'true') {
         sessionStorage.removeItem('just_signed_up');
         sessionStorage.removeItem('email_banner_dismissed');
-        setIsVisible(false);
+        rerender();
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    
+    window.addEventListener('auth:just_signed_up', rerender);
+
+    // Safety net: poll sessionStorage so the banner reliably picks up
+    // the just_signed_up flag even if the same-tab dispatch was missed
+    // (e.g. due to route transitions or Suspense remounts).
+    const intervalId = setInterval(rerender, 1000);
+
     return () => {
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('auth:just_signed_up', rerender);
+      clearInterval(intervalId);
     };
-  }, [user]);
+  }, []);
 
   const handleResendEmail = async () => {
     setIsResending(true);
@@ -78,12 +82,24 @@ const EmailVerificationBanner = () => {
         }
       });
 
-      if (response.ok) {
-        showSuccessToast('Verification email sent! Please check your inbox.');
-      } else {
-        const data = await response.json();
-        showErrorToast(data.detail || 'Failed to resend email. Please try again later.');
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data?.success !== false) {
+        if (data?.already_verified) {
+          sessionStorage.removeItem('just_signed_up');
+          sessionStorage.removeItem('email_banner_dismissed');
+          setUiTick((t) => t + 1);
+          showSuccessToast(data.message || 'Your email is already verified.');
+          return;
+        }
+        showSuccessToast(data?.message || 'Verification email sent! Please check your inbox.');
+        return;
       }
+
+      showApiErrorToast(
+        { status: response.status, data },
+        data?.detail || data?.message || 'Failed to resend email. Please try again later.'
+      );
     } catch (error) {
       console.error('Error resending verification email:', error);
       showErrorToast('Failed to resend email. Please check your internet connection.');
@@ -93,13 +109,13 @@ const EmailVerificationBanner = () => {
   };
 
   const handleDismiss = () => {
-    setIsVisible(false);
+    setUiTick((t) => t + 1);
     // Store dismissal in session storage (will show again on page reload if still unverified)
     sessionStorage.setItem('email_banner_dismissed', 'true');
   };
 
   // Don't render if not visible
-  if (!isVisible || !user) {
+  if (!shouldShow) {
     return null;
   }
 
@@ -120,7 +136,7 @@ const EmailVerificationBanner = () => {
                 📧 Please verify your email address
               </p>
               <p className="text-xs sm:text-sm opacity-90 mt-0.5">
-                We've sent a confirmation email to <span className="font-semibold">{user?.email}</span>. 
+                We've sent a confirmation email to <span className="font-semibold">{user?.email || 'your email'}</span>. 
                 Please check your inbox and click the verification link to activate your account.
               </p>
             </div>

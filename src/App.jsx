@@ -82,7 +82,6 @@ const MyBookings = lazy(() => import('./pages/customer/MyBookings'));
 const Favorites = lazy(() => import('./pages/customer/Favorites'));
 const MyReviews = lazy(() => import('./pages/customer/MyReviews'));
 const MyOrders = lazy(() => import('./pages/customer/MyOrders'));
-const TrackOrder = lazy(() => import('./pages/customer/TrackOrder'));
 const CustomerProfile = lazy(() => import('./pages/customer/CustomerProfile'));
 
 // RM (Relationship Manager) pages
@@ -106,6 +105,7 @@ const VendorDashboard = lazy(() => import('./pages/vendor/VendorDashboard'));
 const SalonProfile = lazy(() => import('./pages/vendor/SalonProfile'));
 const ServicesManagement = lazy(() => import('./pages/vendor/ServicesManagement'));
 const BookingsManagement = lazy(() => import('./pages/vendor/BookingsManagement'));
+const VendorRunPromo = lazy(() => import('./pages/vendor/VendorRunPromo'));
 const CompleteRegistration = lazy(() => import('./pages/vendor/CompleteRegistration'));
 const VendorPayment = lazy(() => import('./pages/vendor/VendorPayment'));
 
@@ -280,13 +280,6 @@ function App() {
                   </ErrorBoundary>
                 </ProtectedRoute>
               } />
-              <Route path="/customer/track-order" element={
-                <ProtectedRoute allowedRoles={['customer']}>
-                  <ErrorBoundary fallback="page">
-                    <TrackOrder />
-                  </ErrorBoundary>
-                </ProtectedRoute>
-              } />
               <Route path="/customer/profile" element={
                 <ProtectedRoute allowedRoles={['customer']}>
                   <ErrorBoundary fallback="page">
@@ -391,6 +384,15 @@ function App() {
                   <PaymentProtectionWrapper>
                     <ErrorBoundary fallback="page">
                       <BookingsManagement />
+                    </ErrorBoundary>
+                  </PaymentProtectionWrapper>
+                </VendorProtectedRoute>
+              } />
+              <Route path="/vendor/promo" element={
+                <VendorProtectedRoute>
+                  <PaymentProtectionWrapper>
+                    <ErrorBoundary fallback="page">
+                      <VendorRunPromo />
                     </ErrorBoundary>
                   </PaymentProtectionWrapper>
                 </VendorProtectedRoute>

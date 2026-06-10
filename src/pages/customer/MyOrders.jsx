@@ -6,7 +6,9 @@ import { FiPackage, FiShoppingBag, FiTruck, FiCheckCircle, FiArrowLeft, FiClock 
 
 export default function MyOrders() {
   const navigate = useNavigate();
-  const { data: orders, isLoading, error } = useGetMyProductOrdersQuery();
+  const { data: orders, isLoading, error } = useGetMyProductOrdersQuery(undefined, {
+    refetchOnMountOrArgChange: true,
+  });
 
   const getStatusColor = (status) => {
     switch(status.toLowerCase()) {

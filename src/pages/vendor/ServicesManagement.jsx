@@ -40,10 +40,22 @@
 
 import React, { useState, useMemo } from 'react';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import Card from '../../components/shared/Card';
-import Button from '../../components/shared/Button';
-import InputField from '../../components/shared/InputField';
-import Modal from '../../components/shared/Modal';
+import VendorServiceCard from '../../components/vendor/services/VendorServiceCard';
+import VendorConfigureService from '../../components/vendor/services/VendorConfigureService';
+import VendorAddServiceWizard, {
+  loadServiceWizardDraft,
+} from '../../components/vendor/services/VendorAddServiceWizard';
+import { clearServiceWizardDraft } from '../../components/vendor/services/serviceWizardDraft';
+import VendorPageShell from '../../components/vendor/VendorPageShell';
+import {
+  SERVICES_PAGE_BG,
+  ServicesPageHeader,
+  ServicesAddButton,
+  ServicesSearchInput,
+  ServicesGenderChip,
+  ServicesStatusChip,
+  ServicesCategoryHeading,
+} from '../../components/vendor/services/ServicesManagementFigmaUI';
 import {
   useGetVendorServicesQuery,
   useCreateVendorServiceMutation,
@@ -51,16 +63,7 @@ import {
   useDeleteVendorServiceMutation,
   useGetServiceCategoriesQuery,
 } from '../../services/api/vendorApi';
-import {
-  FiPlus,
-  FiEdit2,
-  FiTrash2,
-  FiClock,
-  FiToggleLeft,
-  FiToggleRight,
-  FiShoppingBag,
-  FiSearch,
-} from 'react-icons/fi';
+import { FiShoppingBag } from 'react-icons/fi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 
 const ServicesManagement = () => {
@@ -74,13 +77,17 @@ const ServicesManagement = () => {
   const services = servicesData || [];
   const categories = categoriesData?.data || [];
 
-  // Modal and edit state
+  // Add wizard vs edit modal
+  const [isWizardOpen, setIsWizardOpen] = useState(false);
+  const [wizardDraft, setWizardDraft] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingService, setEditingService] = useState(null);
   
   // Filter state
   const [searchTerm, setSearchTerm] = useState('');
   const [filterActive, setFilterActive] = useState('all');
+  /** Figma gender chips: all | male (Men) | female (Women) | both (Unisex) */
+  const [genderFilter, setGenderFilter] = useState('all');
 
   // Form data state - represents service fields
   // Note: duration_minutes is the canonical field, but API may return 'duration' in some cases
@@ -92,18 +99,71 @@ const ServicesManagement = () => {
     duration: '',
     category_id: '',
     subcategory_id: '',
+    sub_subcategory_id: '',
+    custom_sub_subcategory_name: '',
     gender_category: 'both',
     is_active: true,
+    image_url: '',
   });
 
   /**
-   * handleOpenModal - Opens modal for adding or editing a service
-   * @param {Object|null} service - Service to edit, or null for new service
+   * Resolve a stored (deepest) subcategory_id back into its level-2 + level-3 parts.
+   * A service's subcategory_id may point at a level-2 subcategory OR a level-3
+   * sub-subcategory; the edit form needs both filled so the dropdowns pre-select.
+   */
+  const resolveServiceTaxonomy = (service) => {
+    const storedSubId = service.subcategory_id || '';
+    if (!storedSubId) return { subcategory_id: '', sub_subcategory_id: '' };
+
+    for (const cat of categories) {
+      for (const sub of cat.subcategories || []) {
+        if (sub.id === storedSubId) {
+          return { subcategory_id: sub.id, sub_subcategory_id: '' };
+        }
+        const subSub = (sub.subcategories || []).find((ss) => ss.id === storedSubId);
+        if (subSub) {
+          return { subcategory_id: sub.id, sub_subcategory_id: subSub.id };
+        }
+      }
+    }
+    // Not found in the active tree (e.g. inactive node) — keep it as the L2 value.
+    return { subcategory_id: storedSubId, sub_subcategory_id: '' };
+  };
+
+  /**
+   * handleOpenAdd - Opens 5-step wizard for new service (resumes local draft if present)
+   */
+  const handleOpenAdd = () => {
+    const saved = loadServiceWizardDraft();
+    if (saved) {
+      const resume = window.confirm(
+        'You have an unfinished service draft. Resume where you left off?'
+      );
+      if (resume) {
+        setWizardDraft(saved);
+        setIsWizardOpen(true);
+        return;
+      }
+      clearServiceWizardDraft();
+    }
+    setWizardDraft(null);
+    setIsWizardOpen(true);
+  };
+
+  const handleCloseWizard = () => {
+    setIsWizardOpen(false);
+    setWizardDraft(null);
+  };
+
+  /**
+   * handleOpenModal - Opens modal for editing a service (single-page configure)
+   * @param {Object|null} service - Service to edit
    */
   const handleOpenModal = (service = null) => {
     if (service) {
       // Edit mode - pre-fill form with service data
       setEditingService(service);
+      const { subcategory_id, sub_subcategory_id } = resolveServiceTaxonomy(service);
       setFormData({
         name: service.name || '',
         description: service.description || '',
@@ -115,26 +175,15 @@ const ServicesManagement = () => {
         // Handle API inconsistency: duration_minutes is canonical, but may receive 'duration'
         duration: service.duration_minutes || service.duration || '',
         category_id: service.category_id || (categories.length > 0 ? categories[0].id : ''),
-        subcategory_id: service.subcategory_id || '',
+        subcategory_id,
+        sub_subcategory_id,
+        custom_sub_subcategory_name: '',
         gender_category: service.gender_category || 'both',
         is_active: service.is_active !== undefined ? service.is_active : true,
+        image_url: service.image_url || '',
       });
-    } else {
-      // Add mode - reset form with default values
-      setEditingService(null);
-      setFormData({
-        name: '',
-        description: '',
-        price: '',
-        discount_percentage: '',
-        duration: '',
-        category_id: categories.length > 0 ? categories[0].id : '',
-        subcategory_id: '',
-        gender_category: 'both',
-        is_active: true,
-      });
+      setIsModalOpen(true);
     }
-    setIsModalOpen(true);
   };
 
   /**
@@ -151,8 +200,11 @@ const ServicesManagement = () => {
       duration: '',
       category_id: categories.length > 0 ? categories[0].id : '',
       subcategory_id: '',
+      sub_subcategory_id: '',
+      custom_sub_subcategory_name: '',
       gender_category: 'both',
       is_active: true,
+      image_url: '',
     });
   };
 
@@ -169,6 +221,12 @@ const ServicesManagement = () => {
       };
       if (name === 'category_id') {
         updated.subcategory_id = '';
+        updated.sub_subcategory_id = '';
+        updated.custom_sub_subcategory_name = '';
+      }
+      if (name === 'subcategory_id') {
+        updated.sub_subcategory_id = '';
+        updated.custom_sub_subcategory_name = '';
       }
       return updated;
     });
@@ -224,8 +282,12 @@ const ServicesManagement = () => {
         duration_minutes: parseInt(formData.duration),
         category_id: formData.category_id || null,
         subcategory_id: formData.subcategory_id || null,
+        sub_subcategory_id: formData.sub_subcategory_id || null,
+        // A typed sub-type name is get-or-created under the chosen subcategory.
+        sub_subcategory_name: formData.custom_sub_subcategory_name?.trim() || undefined,
         gender_category: formData.gender_category,
         is_active: formData.is_active,
+        image_url: formData.image_url || null,
       };
 
       if (editingService) {
@@ -259,6 +321,7 @@ const ServicesManagement = () => {
         subcategory_id: service.subcategory_id || null,
         gender_category: service.gender_category,
         is_active: !service.is_active,
+        image_url: service.image_url || null,
       }).unwrap();
       showSuccessToast(`Service ${!service.is_active ? 'activated' : 'deactivated'}`);
     } catch (error) {
@@ -301,391 +364,169 @@ const ServicesManagement = () => {
         filterActive === 'all' ||
         (filterActive === 'active' && service.is_active) ||
         (filterActive === 'inactive' && !service.is_active);
-      
-      return matchesSearch && matchesActive;
+
+      const matchesGender =
+        genderFilter === 'all' ||
+        (service.gender_category || 'both') === genderFilter;
+
+      return matchesSearch && matchesActive && matchesGender;
     });
-  }, [services, searchTerm, filterActive]);
+  }, [services, searchTerm, filterActive, genderFilter]);
+
+  const groupedServices = useMemo(() => {
+    const resolveCategoryName = (service) => {
+      if (service.category) return service.category;
+      const cat = categories.find((c) => c.id === service.category_id);
+      if (cat?.name) return cat.name;
+      if (service.subcategory_id) {
+        for (const c of categories) {
+          const sub = c.subcategories?.find((s) => s.id === service.subcategory_id);
+          if (sub?.name) return sub.name;
+        }
+      }
+      return 'Other Services';
+    };
+
+    const groups = {};
+    filteredServices.forEach((service) => {
+      const key = resolveCategoryName(service);
+      if (!groups[key]) groups[key] = [];
+      groups[key].push(service);
+    });
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [filteredServices, categories]);
 
   return (
     <DashboardLayout role="vendor">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 font-display">Services Management</h1>
-            <p className="mt-1 text-gray-600 font-body">
-              Manage your salon services and pricing
-            </p>
+      <VendorPageShell bgClass={SERVICES_PAGE_BG}>
+      <div className={`${SERVICES_PAGE_BG} space-y-5 px-4 py-6 max-lg:min-h-[calc(100dvh-4rem)] lg:space-y-6`}>
+        <ServicesPageHeader
+          title="Services Management"
+          subtitle="Manage your salon services and pricing"
+        />
+
+        <ServicesAddButton onClick={handleOpenAdd} />
+
+        <div className="space-y-4 rounded-2xl bg-white/60 p-4 shadow-[0_2px_12px_rgba(34,26,17,0.04)] lg:p-6">
+          <ServicesSearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+
+          <div className="-mx-1 flex gap-2 overflow-x-auto pb-1">
+            <ServicesGenderChip
+              active={genderFilter === 'male'}
+              onClick={() => setGenderFilter(genderFilter === 'male' ? 'all' : 'male')}
+            >
+              Men
+            </ServicesGenderChip>
+            <ServicesGenderChip
+              active={genderFilter === 'female'}
+              onClick={() => setGenderFilter(genderFilter === 'female' ? 'all' : 'female')}
+            >
+              Women
+            </ServicesGenderChip>
+            <ServicesGenderChip
+              active={genderFilter === 'both'}
+              onClick={() => setGenderFilter(genderFilter === 'both' ? 'all' : 'both')}
+            >
+              Unisex
+            </ServicesGenderChip>
           </div>
-          <Button
-            variant="primary"
-            onClick={() => handleOpenModal()}
-            className="flex items-center gap-2"
-          >
-            <FiPlus />
-            Add Service
-          </Button>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <ServicesStatusChip
+              active={filterActive === 'all'}
+              onClick={() => setFilterActive('all')}
+            >
+              All
+            </ServicesStatusChip>
+            <ServicesStatusChip
+              active={filterActive === 'active'}
+              onClick={() => setFilterActive('active')}
+            >
+              Active
+            </ServicesStatusChip>
+            <ServicesStatusChip
+              active={filterActive === 'inactive'}
+              onClick={() => setFilterActive('inactive')}
+            >
+              Inactive
+            </ServicesStatusChip>
+          </div>
         </div>
 
-        {/* Filters */}
-        <Card>
-          <div className="flex flex-col gap-4 sm:flex-row">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <FiSearch className="absolute text-gray-400 transform -translate-y-1/2 left-3 top-1/2" />
-                <input
-                  type="text"
-                  placeholder="Search services..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full py-2 pl-10 pr-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
-                  aria-label="Search services"
-                />
-              </div>
-            </div>
-
-            {/* Status Filter */}
-            <div className="flex gap-2">
-              <Button
-                variant={filterActive === 'all' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setFilterActive('all')}
-              >
-                All
-              </Button>
-              <Button
-                variant={filterActive === 'active' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setFilterActive('active')}
-              >
-                Active
-              </Button>
-              <Button
-                variant={filterActive === 'inactive' ? 'primary' : 'outline'}
-                size="sm"
-                onClick={() => setFilterActive('inactive')}
-              >
-                Inactive
-              </Button>
-            </div>
-          </div>
-        </Card>
-
-        {/* Services List */}
         {servicesLoading ? (
-          <div className="flex items-center justify-center min-h-[40vh]">
+          <div className="flex min-h-[40vh] items-center justify-center">
             <div className="text-center">
-              <div className="w-12 h-12 mx-auto mb-4 border-4 rounded-full animate-spin border-accent-orange border-t-transparent"></div>
-              <p className="text-gray-600 font-body">Loading services...</p>
+              <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-[#F89E07] border-t-transparent" />
+              <p className="font-vendor text-[#4B5563]">Loading services...</p>
             </div>
           </div>
         ) : filteredServices.length === 0 ? (
-          <Card>
-            <div className="py-12 text-center">
-              <FiShoppingBag className="mx-auto mb-4 text-6xl text-gray-400" />
-              <h3 className="mb-2 text-xl font-bold text-gray-900 font-display">
-                {searchTerm ? 'No services found' : 'No services yet'}
-              </h3>
-              <p className="mb-6 text-gray-600 font-body">
-                {searchTerm
-                  ? 'Try adjusting your search terms'
-                  : 'Get started by adding your first service'}
-              </p>
-              {!searchTerm && (
-                <div className="flex justify-center">
-                  <Button variant="primary" onClick={() => handleOpenModal()}>
-                    <FiPlus className="mr-2" />
-                    Add Your First Service
-                  </Button>
-                </div>
-              )}
-            </div>
-          </Card>
+          <div className="rounded-3xl bg-white px-6 py-12 text-center shadow-[0_4px_24px_rgba(34,26,17,0.06)]">
+            <FiShoppingBag className="mx-auto mb-4 text-6xl text-[#EAE0D3]" />
+            <h3 className="mb-2 font-vendor text-xl font-bold text-[#111827]">
+              {searchTerm || filterActive !== 'all' || genderFilter !== 'all'
+                ? 'No services found'
+                : 'No services yet'}
+            </h3>
+            <p className="mb-6 font-vendor text-sm text-[#4B5563]">
+              {searchTerm || filterActive !== 'all' || genderFilter !== 'all'
+                ? 'Try adjusting your search or filters'
+                : 'Get started by adding your first service'}
+            </p>
+            {!searchTerm && filterActive === 'all' && genderFilter === 'all' && (
+              <ServicesAddButton onClick={handleOpenAdd} label="Add Your First Service" />
+            )}
+          </div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredServices.map((service) => (
-              <Card key={service.id} className="transition-shadow hover:shadow-lg">
-                <div className="space-y-4">
-                  {/* Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-bold text-gray-900 font-display">
-                        {service.name}
-                      </h3>
-                      {service.category && (
-                        <span className="inline-block px-2 py-1 mt-1 mr-2 text-xs text-orange-700 bg-orange-100 rounded-full font-body">
-                          {service.category}
-                        </span>
-                      )}
-                      {service.subcategory_id && (
-                        <span className="inline-block px-2 py-1 mt-1 mr-2 text-[10px] uppercase tracking-wider font-semibold rounded-full bg-indigo-100 text-indigo-700 font-body">
-                          {categories.find(c => c.id === service.category_id)?.subcategories?.find(s => s.id === service.subcategory_id)?.name || 'Subcategory'}
-                        </span>
-                      )}
-                      {/* Gender Category Badge */}
-                      <span className={`inline-block px-2 py-1 mt-1 text-[10px] rounded-full uppercase tracking-wider font-semibold font-body ${
-                        (!service.gender_category || service.gender_category === 'both') ? 'bg-gray-100 text-gray-700' : 
-                        service.gender_category === 'male' ? 'bg-blue-100 text-blue-700' : 
-                        'bg-pink-100 text-pink-700'
-                      }`}>
-                        {service.gender_category || 'both'}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => handleToggleActive(service)}
-                      className="text-2xl focus:outline-none"
-                      title={service.is_active ? 'Active' : 'Inactive'}
-                      aria-label={`Toggle service ${service.is_active ? 'inactive' : 'active'}`}
-                      disabled={isUpdating}
-                    >
-                      {service.is_active ? (
-                        <FiToggleRight className="text-green-600" />
-                      ) : (
-                        <FiToggleLeft className="text-gray-400" />
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Description */}
-                  <p className="text-sm text-gray-600 font-body line-clamp-2">
-                    {service.description || 'No description'}
-                  </p>
-
-                  {/* Details */}
-                  <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center text-accent-orange">
-                      {service.discounted_price !== null && service.discounted_price !== undefined ? (
-                        <div className="flex items-center gap-2 font-body">
-                          <span className="font-semibold">₹{service.discounted_price}</span>
-                          <span className="text-xs text-gray-500 line-through">₹{service.price}</span>
-                          {service.discount_percentage !== null && service.discount_percentage !== undefined && (
-                            <span className="px-2 py-0.5 text-xs font-semibold text-green-700 bg-green-100 rounded-full">
-                              {service.discount_percentage}% OFF
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="font-semibold font-body">
-                          {!service.price || service.price === 0 ? 'FREE' : `₹${service.price}`}
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <FiClock className="mr-1" />
-                      <span className="font-body">{service.duration_minutes || service.duration} min</span>
-                    </div>
-                  </div>
-
-                  {/* Status Badge */}
-                  <div>
-                    <span
-                      className={`inline-block px-3 py-1 rounded-full text-xs font-body font-semibold ${
-                        service.is_active
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-100 text-gray-600'
-                      }`}
-                    >
-                      {service.is_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2 pt-4 border-t">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleOpenModal(service)}
-                      className="flex-1"
-                    >
-                      <FiEdit2 className="mr-1" />
-                      Edit
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(service.id)}
-                      className="text-red-600 border-red-200 hover:bg-red-50"
-                      disabled={isDeleting}
-                      aria-label="Delete service"
-                    >
-                      <FiTrash2 />
-                    </Button>
-                  </div>
+          <div className="space-y-6">
+            {groupedServices.map(([categoryName, categoryServices]) => (
+              <section key={categoryName} className="space-y-3">
+                <ServicesCategoryHeading>
+                  {categoryName.toUpperCase()}
+                </ServicesCategoryHeading>
+                <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 xl:grid-cols-3">
+                  {categoryServices.map((service) => (
+                    <VendorServiceCard
+                      key={service.id}
+                      service={service}
+                      onEdit={handleOpenModal}
+                      onToggleActive={handleToggleActive}
+                      onDelete={handleDelete}
+                      isToggling={isUpdating}
+                      isDeleting={isDeleting}
+                    />
+                  ))}
                 </div>
-              </Card>
+              </section>
             ))}
           </div>
         )}
       </div>
+      </VendorPageShell>
 
-      {/* Add/Edit Service Modal */}
-      <Modal
+      <VendorAddServiceWizard
+        isOpen={isWizardOpen}
+        onClose={handleCloseWizard}
+        categories={categories}
+        categoriesLoading={categoriesLoading}
+        initialDraft={wizardDraft}
+      />
+
+      <VendorConfigureService
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={editingService ? 'Edit Service' : 'Add New Service'}
-      >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <InputField
-            label="Service Name"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-            placeholder="e.g., Haircut, Facial, Manicure"
-            disabled={isCreating || isUpdating}
-          />
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div>
-              <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
-                Category (Level 1)
-              </label>
-              <select
-                name="category_id"
-                value={formData.category_id}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
-                disabled={categoriesLoading || isCreating || isUpdating}
-              >
-                {categoriesLoading ? (
-                  <option>Loading...</option>
-                ) : categories.length === 0 ? (
-                  <option>No categories</option>
-                ) : (
-                  categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </div>
-            <div>
-              <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
-                Subcategory (Level 2)
-              </label>
-              <select
-                name="subcategory_id"
-                value={formData.subcategory_id}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body disabled:bg-gray-100 disabled:text-gray-400"
-                disabled={!formData.category_id || isCreating || isUpdating}
-              >
-                <option value="">Select subcategory</option>
-                {formData.category_id && categories.find(c => c.id === formData.category_id)?.subcategories?.map(sub => (
-                  <option key={sub.id} value={sub.id}>{sub.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
-                Available For (Gender)
-              </label>
-              <select
-                name="gender_category"
-                value={formData.gender_category}
-                onChange={handleChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
-                disabled={isCreating || isUpdating}
-              >
-                <option value="both">Both (Unisex)</option>
-                <option value="male">Male Only</option>
-                <option value="female">Female Only</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label className="block mb-2 text-sm font-semibold text-gray-700 font-body">
-              Description
-            </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-accent-orange focus:border-transparent font-body"
-              placeholder="Describe the service..."
-              disabled={isCreating || isUpdating}
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <InputField
-              label="Price (₹)"
-              type="number"
-              name="price"
-              value={formData.price}
-              onChange={handleChange}
-              required
-              min="0"
-              step="0.01"
-              placeholder="0 for FREE"
-              disabled={isCreating || isUpdating}
-            />
-
-            <InputField
-              label="Discount (%)"
-              type="number"
-              name="discount_percentage"
-              value={formData.discount_percentage}
-              onChange={handleChange}
-              min="0"
-              max="100"
-              step="0.01"
-              placeholder="Optional"
-              disabled={isCreating || isUpdating}
-            />
-
-            <InputField
-              label="Duration (minutes)"
-              type="number"
-              name="duration"
-              value={formData.duration}
-              onChange={handleChange}
-              required
-              min="1"
-              placeholder="e.g., 30"
-              icon={<FiClock />}
-              disabled={isCreating || isUpdating}
-            />
-          </div>
-
-          <div className="flex items-center gap-3">
-            <input
-              type="checkbox"
-              id="is_active"
-              name="is_active"
-              checked={formData.is_active}
-              onChange={handleChange}
-              className="w-4 h-4 border-gray-300 rounded text-accent-orange focus:ring-accent-orange"
-              disabled={isCreating || isUpdating}
-            />
-            <label htmlFor="is_active" className="text-sm text-gray-700 font-body">
-              Service is active and available for booking
-            </label>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={handleCloseModal}
-              disabled={isCreating || isUpdating}
-            >
-              Cancel
-            </Button>
-            <Button 
-              type="submit" 
-              variant="primary" 
-              disabled={isCreating || isUpdating}
-            >
-              {isCreating || isUpdating ? 'Saving...' : editingService ? 'Update Service' : 'Add Service'}
-            </Button>
-          </div>
-        </form>
-      </Modal>
+        editingService={editingService}
+        formData={formData}
+        handleChange={handleChange}
+        setFormData={setFormData}
+        onSubmit={handleSubmit}
+        categories={categories}
+        categoriesLoading={categoriesLoading}
+        isSaving={isCreating || isUpdating}
+      />
     </DashboardLayout>
   );
 };

@@ -41,6 +41,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { getApiErrorMessage } from '../../utils/apiErrorMessage';
 import { FiUser, FiMail, FiLock, FiShoppingBag, FiUsers, FiEye, FiEyeOff } from 'react-icons/fi';
 import { setUser } from '../../store/slices/authSlice';
 import { useLoginMutation } from '../../services/api/authApi';
@@ -169,13 +170,9 @@ const VendorLogin = () => {
 
     } catch (error) {
       // RTK Query errors have a 'data' property with 'detail'
-      const errorMessage = error.data?.detail || error.message || 'Login failed';
-      
-      // Use backend message if available, otherwise provide user-friendly fallback
-      let msg = errorMessage;
-      
-      // Only map if backend didn't send a clear message
-      if (!errorMessage || errorMessage === 'Login failed') {
+      let msg = getApiErrorMessage(error, 'Login failed');
+
+      if (msg === 'Login failed') {
         if (error.status === 401) {
           msg = 'Invalid email or password. Please check your credentials.';
         } else if (error.status === 403) {

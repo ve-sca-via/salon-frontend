@@ -5,7 +5,7 @@ import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
 import { useGetOwnVendorRequestsQuery, useDeleteVendorRequestMutation } from '../../services/api/rmApi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
-import { FiEdit2, FiTrash2, FiSend, FiClock, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiSend, FiClock, FiAlertCircle } from 'react-icons/fi';
 
 /**
  * Drafts
@@ -23,7 +23,7 @@ const Drafts = () => {
   const navigate = useNavigate();
   
   // RTK Query hooks - Fix: use status_filter (snake_case) to match backend
-  const { data: submissionsData, isLoading: submissionsLoading, refetch, isFetching } = useGetOwnVendorRequestsQuery({ status_filter: 'draft' });
+  const { data: submissionsData, isLoading: submissionsLoading, isFetching } = useGetOwnVendorRequestsQuery({ status_filter: 'draft' });
   // Include mutation loading state so we can disable UI while deleting
   const [deleteVendorRequest, { isLoading: deleteLoading }] = useDeleteVendorRequestMutation();
 
@@ -100,23 +100,11 @@ const Drafts = () => {
     <DashboardLayout role="hmr">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">Draft Submissions</h1>
-            <p className="text-gray-600 font-body mt-1">
-              Incomplete salon submissions that you can continue editing
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => refetch()}
-            disabled={isFetching}
-            className="whitespace-nowrap"
-            title="Refresh drafts list"
-          >
-            <FiRefreshCw className={`mr-2 ${isFetching ? 'animate-spin' : ''}`} size={16} />
-            {isFetching ? 'Refreshing...' : 'Refresh'}
-          </Button>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">Draft Submissions</h1>
+          <p className="text-gray-600 font-body mt-1">
+            Incomplete salon submissions that you can continue editing
+          </p>
         </div>
 
         {/* Drafts List */}

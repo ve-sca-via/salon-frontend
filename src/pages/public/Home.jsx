@@ -342,7 +342,7 @@ const Home = () => {
           <h2 className="text-4xl font-display font-bold mb-6">
             Ready to Experience Beauty, Simplified?
           </h2>
-          <p className="text-xl mb-8 text-neutral-gray-500">
+          <p className="text-xl mb-8 text-neutral-gray-200">
             Join thousands who trust Lubist for stress-free salon bookings
           </p>
           <Link

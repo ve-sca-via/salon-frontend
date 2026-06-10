@@ -1,645 +1,301 @@
 /**
- * VendorDashboard Component
- * 
- * Purpose:
- * Main dashboard for salon vendors displaying comprehensive overview of their salon operations.
- * Shows analytics, bookings, payment status, and quick actions for managing salon.
- * 
- * Data Management:
- * - Salon profile from RTK Query (useGetVendorSalonQuery)
- * - Analytics data from RTK Query (useGetVendorAnalyticsQuery)
- * - Recent bookings from RTK Query (useGetVendorBookingsQuery)
- * - Auth state from Redux (user display name)
- * 
- * Key Features:
- * - Payment status check for new vendors (registration fee)
- * - Analytics cards (bookings, revenue, services, rating, pending)
- * - Quick action links (add service, add view bookings)
- * - Recent bookings table (last 5 bookings)
- * - Responsive grid layouts
- * 
- * User Flow:
- * 1. Vendor logs in and lands on dashboard
- * 2. If payment pending: sees payment CTA and limited access
- * 3. If payment complete: sees full analytics and bookings
- * 4. Can navigate to manage services, or bookings
- * 5. Receives real-time notifications when customers book
+ * VendorDashboard — Pixel match to Figma node 79:2 ("Looks Salon" vendor dashboard)
+ * Specs from Figma API: 390px frame, #F3EEE7 canvas, #F89E07 primary, Inter typography
  */
 
-import React, { useEffect } from 'react';
+import React, { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/layout/DashboardLayout';
-import Card from '../../components/shared/Card';
 import Button from '../../components/shared/Button';
-import { 
-  useGetVendorAnalyticsQuery, 
-  useGetVendorBookingsQuery, 
+import {
+  useGetVendorAnalyticsQuery,
+  useGetVendorBookingsQuery,
   useGetVendorSalonQuery,
-  useUpdateVendorSalonMutation
 } from '../../services/api/vendorApi';
-import { 
-  FiCalendar, FiTrendingUp, FiShoppingBag, FiUsers, 
-  FiStar, FiClock, FiPlus, FiArrowRight, FiCreditCard, FiCheckCircle, FiAlertCircle, FiLock, FiPackage
+import {
+  FiAlertCircle,
+  FiCalendar,
+  FiCreditCard,
+  FiLock,
+  FiStar,
+  FiTrendingUp,
+  FiUsers,
 } from 'react-icons/fi';
-import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
-import { SkeletonStatCard, SkeletonTableRow } from '../../components/shared/Skeleton';
+import VendorHeroBanner from '../../components/vendor/dashboard/VendorHeroBanner';
+import VendorQuickActions from '../../components/vendor/dashboard/VendorQuickActions';
+import VendorMetricCard from '../../components/vendor/dashboard/VendorMetricCard';
+import VendorBookingCard from '../../components/vendor/dashboard/VendorBookingCard';
+import VendorPageShell from '../../components/vendor/VendorPageShell';
+
+const mapBookingStatus = (status) => {
+  if (status === 'confirmed') return 'in_progress';
+  return status || 'pending';
+};
 
 const VendorDashboard = () => {
   const navigate = useNavigate();
-  
-  // Get user from auth state for display name
   const { user } = useSelector((state) => state.auth);
-  
-  // RTK Query hooks for fetching salon data
+
   const { data: salonData, isLoading: salonLoading, error: salonError } = useGetVendorSalonQuery();
   const { data: analyticsData, isLoading: analyticsLoading, error: analyticsError } = useGetVendorAnalyticsQuery();
-  const { data: bookingsData, isLoading: bookingsLoading, refetch: refetchBookings } = useGetVendorBookingsQuery({ limit: 5 });
-  
-  // Mutation for updating salon
-  const [updateSalon, { isLoading: isUpdating }] = useUpdateVendorSalonMutation();
-  
-  // Handle different response formats from API
+  const { data: bookingsData, isLoading: bookingsLoading } = useGetVendorBookingsQuery({ limit: 10 });
+
   const salonProfile = salonData?.salon || salonData;
-  // TODO: Standardize analytics response structure in API (sometimes {data: {...}}, sometimes direct)
   const analytics = analyticsData?.data || analyticsData;
-  // Backend returns array directly for bookings
-  const recentBookings = Array.isArray(bookingsData) 
-    ? bookingsData.slice(0, 5).sort((a, b) => new Date(b.created_at || b.booking_date) - new Date(a.created_at || a.booking_date))
-    : (bookingsData?.bookings || []).slice(0, 5);
+  const recentBookings = useMemo(() => {
+    const list = Array.isArray(bookingsData)
+      ? bookingsData
+      : bookingsData?.bookings || [];
+    return [...list]
+      .sort((a, b) => new Date(b.created_at || b.booking_date) - new Date(a.created_at || a.booking_date))
+      .slice(0, 5);
+  }, [bookingsData]);
 
-  /**
-   * TODO: Real-time booking notifications
-   * Consider implementing via WebSocket connection to FastAPI backend
-   * or polling mechanism for new bookings
-   * 
-   * Alternative approaches:
-   * 1. WebSocket: Backend can push real-time updates
-   * 2. Polling: Refetch bookings every N seconds
-   * 3. Server-Sent Events (SSE): Backend streams updates
-   */
+  const isPaymentPending =
+    salonProfile && (!salonProfile.is_active || !salonProfile.registration_fee_paid);
 
-  /**
-   * Toggle accepting_bookings status
-   */
-  const handleToggleAcceptingBookings = async () => {
-    try {
-      const newStatus = !salonProfile.accepting_bookings;
-      await updateSalon({ accepting_bookings: newStatus }).unwrap();
-      showSuccessToast(
-        newStatus 
-          ? 'Bookings enabled! Customers can now book your services.' 
-          : 'Bookings disabled. Customers cannot book until you enable it again.'
-      );
-    } catch (error) {
-      showErrorToast(error?.data?.message || 'Failed to update booking status');
-    }
-  };
+  const handleMakePayment = () => navigate('/vendor/payment');
 
-
-
-  /**
-   * Check if vendor needs to complete payment
-   * Payment is pending if salon is inactive OR registration fee not paid
-   */
-  const isPaymentPending = salonProfile && (!salonProfile.is_active || !salonProfile.registration_fee_paid);
-
-
-  /**
-   * handleMakePayment - Navigate to vendor payment page
-   */
-  const handleMakePayment = () => {
-    navigate('/vendor/payment');
-  };
-
-  /**
-   * getServiceNames - Parse services JSONB array and return formatted names
-   */
   const getServiceNames = (booking) => {
     try {
-      // Services can be a JSONB array
       const services = booking.services;
-      
-      if (!services || !Array.isArray(services) || services.length === 0) {
-        return 'N/A';
-      }
-      
-      // Get first service name - check multiple possible field names
+      if (!services || !Array.isArray(services) || services.length === 0) return 'Service';
       const firstName = services[0].service_name || services[0].name || 'Service';
-      
-      if (services.length === 1) {
-        return firstName;
-      } else {
-        return `${firstName} +${services.length - 1} more`;
-      }
-    } catch (error) {
-      console.error('Error parsing services:', error);
-      return 'N/A';
+      return services.length === 1 ? firstName : `${firstName} +${services.length - 1} more`;
+    } catch {
+      return 'Service';
     }
   };
 
-  /**
-   * Loading state - show skeleton cards while fetching initial data
-   */
-  if ((analyticsLoading && !analytics) || (salonLoading && !salonProfile)) {
-    return (
-      <DashboardLayout role={user?.role || "vendor"}>
-        <div className="space-y-8 p-4 md:p-6">
-          {/* Header Skeleton */}
-          <div className="animate-pulse">
-            <div className="h-8 w-64 bg-gray-200 rounded mb-2"></div>
-            <div className="h-4 w-48 bg-gray-200 rounded"></div>
-          </div>
-          
-          {/* Stats Grid Skeleton */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <SkeletonStatCard key={i} />
-            ))}
-          </div>
-          
-          {/* Bookings Table Skeleton */}
-          <div className="bg-primary-white rounded-xl shadow-md overflow-hidden">
-            <div className="p-6">
-              <div className="h-6 w-48 bg-gray-200 rounded mb-4 animate-pulse"></div>
-              <table className="w-full">
-                <thead className="bg-neutral-gray-600">
-                  <tr>
-                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
-                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
-                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
-                    <th className="px-6 py-3"><div className="h-4 w-24 bg-gray-300 rounded"></div></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <SkeletonTableRow key={i} columns={4} />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const formatServiceLine = (booking) => {
+    const service = getServiceNames(booking);
+    const time =
+      booking.time_slots?.[0] ||
+      booking.booking_time ||
+      (booking.booking_date
+        ? new Date(booking.booking_date).toLocaleTimeString('en-IN', {
+            hour: 'numeric',
+            minute: '2-digit',
+          })
+        : '');
+    return time ? `${service} • ${time}` : service;
+  };
 
-  /**
-   * Error state - show error message if queries fail
-   */
-  if (salonError || analyticsError) {
-    return (
-      <DashboardLayout role={user?.role || "vendor"}>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <Card className="max-w-md text-center">
-            <FiAlertCircle className="text-red-600 text-5xl mx-auto mb-4" />
-            <h2 className="text-2xl font-display font-bold text-gray-900 mb-2">
-              Failed to Load Dashboard
-            </h2>
-            <p className="text-gray-600 font-body mb-4">
-              {salonError?.data?.detail || analyticsError?.data?.detail || salonError?.message || analyticsError?.message || "Unable to fetch dashboard data"}
-            </p>
-            <Button onClick={() => window.location.reload()} className="bg-accent-orange text-white">
-              Retry
-            </Button>
-          </Card>
-        </div>
-      </DashboardLayout>
-    );
-  }
-
-  /**
-   * Analytics stats cards configuration
-   * Note: Filtered based on user role (regular_buyer vs vendor)
-   */
   const userRole = user?.role || user?.user_role || 'vendor';
   const isRegularBuyer = userRole === 'regular_buyer';
 
-  const stats = [];
+  const metrics = useMemo(() => {
+    if (isRegularBuyer) {
+      return [
+        {
+          label: 'Spending',
+          value: `₹${(analytics?.total_product_spending || 0).toLocaleString('en-IN')}`,
+          badge: analytics?.pending_product_orders ? `+${analytics.pending_product_orders} New` : null,
+          icon: <FiTrendingUp className="text-vendor-orange" size={16} />,
+        },
+        {
+          label: 'Orders',
+          value: String(analytics?.total_product_orders ?? 0),
+          icon: <FiCalendar className="text-vendor-orange" size={16} />,
+        },
+      ];
+    }
+    const activeServices = analytics?.active_services ?? 0;
+    return [
+      {
+        label: 'Revenue',
+        value: `₹${(analytics?.total_revenue || 0).toLocaleString('en-IN')}`,
+        icon: <FiTrendingUp className="text-vendor-orange" size={16} />,
+      },
+      {
+        label: 'Bookings',
+        value: String(analytics?.total_bookings ?? 0),
+        badge:
+          (analytics?.pending_bookings ?? 0) > 0
+            ? `+${analytics.pending_bookings} New`
+            : null,
+        icon: <FiCalendar className="text-vendor-orange" size={16} />,
+      },
+      {
+        label: 'Staff Active',
+        value: `${Math.min(activeServices, 10)}/10`,
+        badge: activeServices >= 8 ? 'Optimal' : null,
+        badgeVariant: 'neutral',
+        icon: <FiUsers className="text-vendor-orange" size={16} />,
+      },
+      {
+        label: 'Avg Rating',
+        value: (analytics?.average_rating ?? 0).toFixed(1),
+        badge: (analytics?.average_rating ?? 0) >= 4 ? 'New' : null,
+        icon: <FiStar className="text-vendor-orange" size={16} />,
+      },
+    ];
+  }, [analytics, isRegularBuyer]);
 
-  if (isRegularBuyer) {
-    // Stats for Regular Buyers
-    stats.push(
-      {
-        title: 'Total Product Orders',
-        value: analytics?.total_product_orders || 0,
-        icon: <FiPackage className="text-blue-600" size={24} />,
-        bgColor: 'bg-blue-100',
-        change: analytics?.orders_change || null,
-        changeType: 'increase',
-      },
-      {
-        title: 'Total Spending',
-        value: `₹${(analytics?.total_product_spending || 0).toLocaleString()}`,
-        icon: <FiTrendingUp className="text-green-600" size={24} />,
-        bgColor: 'bg-green-100',
-        change: analytics?.spending_change || null,
-        changeType: 'increase',
-      },
-      {
-        title: 'Pending Orders',
-        value: analytics?.pending_product_orders || 0,
-        icon: <FiClock className="text-red-600" size={24} />,
-        bgColor: 'bg-red-100',
-        change: analytics?.pending_orders_change || null,
-        changeType: 'decrease',
-      }
-    );
-  } else {
-    // Stats for Standard Vendors (Salon + Product Purchases)
-    stats.push(
-      {
-        title: 'Total Bookings',
-        value: analytics?.total_bookings || 0,
-        icon: <FiCalendar className="text-blue-600" size={24} />,
-        bgColor: 'bg-blue-100',
-      },
-      {
-        title: 'Revenue',
-        value: `₹${(analytics?.total_revenue || 0).toLocaleString()}`,
-        icon: <FiTrendingUp className="text-green-600" size={24} />,
-        bgColor: 'bg-green-100',
-      },
-      {
-        title: 'Pending Bookings',
-        value: analytics?.pending_bookings || 0,
-        icon: <FiClock className="text-red-600" size={24} />,
-        bgColor: 'bg-red-100',
-      },
-      {
-        title: 'Active Services',
-        value: analytics?.active_services || 0,
-        icon: <FiShoppingBag className="text-accent-orange" size={24} />,
-        bgColor: 'bg-orange-100',
-      },
-      {
-        title: 'Average Rating',
-        value: (analytics?.average_rating || 0).toFixed(1),
-        icon: <FiStar className="text-yellow-600" size={24} />,
-        bgColor: 'bg-yellow-100',
-      },
-      // Product Stats for Vendor
-      {
-        title: 'Product Orders',
-        value: analytics?.total_product_orders || 0,
-        icon: <FiPackage className="text-indigo-600" size={24} />,
-        bgColor: 'bg-indigo-100',
-      },
-      {
-        title: 'Total Spending',
-        value: `₹${(analytics?.total_product_spending || 0).toLocaleString()}`,
-        icon: <FiTrendingUp className="text-emerald-600" size={24} />,
-        bgColor: 'bg-emerald-100',
-      },
-      {
-        title: 'Pending Orders',
-        value: analytics?.pending_product_orders || 0,
-        icon: <FiClock className="text-rose-600" size={24} />,
-        bgColor: 'bg-rose-100',
-      }
+  if ((analyticsLoading && !analytics) || (salonLoading && !salonProfile)) {
+    return (
+      <DashboardLayout role={userRole}>
+        <VendorPageShell>
+          <div className="animate-pulse w-full px-5 pt-5 space-y-8">
+            <div className="aspect-[350/220] w-full rounded-[32px] bg-vendor-border lg:aspect-auto lg:min-h-[220px]" />
+            <div className="space-y-8">
+              <div className="h-4 w-32 bg-vendor-border rounded" />
+              <div className="grid w-full grid-cols-3 gap-2 lg:grid-cols-6">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="h-[118px] bg-vendor-surface rounded-[24px]" />
+                ))}
+              </div>
+              <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+                {[1, 2, 3, 4].map((i) => (
+                  <div key={i} className="h-[112px] bg-vendor-surface rounded-[16px]" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </VendorPageShell>
+      </DashboardLayout>
     );
   }
 
-  /**
-   * Status badge colors for booking statuses
-   */
-  const statusColors = {
-    pending: 'bg-yellow-100 text-yellow-800',
-    confirmed: 'bg-blue-100 text-blue-800',
-    completed: 'bg-green-100 text-green-800',
-    cancelled: 'bg-red-100 text-red-800',
-  };
+  if (salonError || analyticsError) {
+    return (
+      <DashboardLayout role={userRole}>
+        <VendorPageShell>
+        <div className="flex items-center justify-center min-h-[60vh] px-5">
+          <div className="bg-vendor-surface rounded-[16px] shadow-vendor-card p-6 max-w-md text-center w-full">
+            <FiAlertCircle className="text-vendor-danger text-5xl mx-auto mb-4" />
+            <h2 className="font-vendor text-[20px] font-bold text-vendor-text-primary mb-2">
+              Failed to Load Dashboard
+            </h2>
+            <p className="font-vendor text-[14px] text-vendor-text-secondary mb-4">
+              {salonError?.data?.detail ||
+                analyticsError?.data?.detail ||
+                'Unable to fetch dashboard data'}
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="w-full h-12 bg-vendor-orange text-white font-vendor text-[14px] font-semibold rounded-[16px]"
+            >
+              Retry
+            </button>
+          </div>
+        </div>
+        </VendorPageShell>
+      </DashboardLayout>
+    );
+  }
+
+  const featuredIdx = (() => {
+    const idx = recentBookings.findIndex((b) => ['pending', 'confirmed'].includes(b.status));
+    return idx >= 0 ? idx : 0;
+  })();
 
   return (
-    <DashboardLayout role={user?.role || "vendor"}>
-
-      {/* Main Dashboard Content - Only visible after payment */}
+    <DashboardLayout role={userRole}>
       {!isPaymentPending && (
-        <div className="space-y-6">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-display font-bold text-gray-900">
-                Welcome back, {user?.full_name || (isRegularBuyer ? 'Business Partner' : 'Vendor')}! 👋
-              </h1>
-              <p className="text-gray-600 font-body mt-1">
-                {salonProfile?.business_name ? `Managing ${salonProfile.business_name}` : `Here's what's happening with your ${isRegularBuyer ? 'business' : 'salon'} today`}
-              </p>
-            </div>
-          </div>
+        <VendorPageShell>
+            <main className="flex w-full flex-col gap-8 px-5 pb-6 pt-5 max-lg:mx-auto lg:gap-10 lg:px-0 lg:pt-0 lg:pb-0">
+              <VendorHeroBanner />
+              <VendorQuickActions isRegularBuyer={isRegularBuyer} />
 
-          {/* Analytics Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {stats.map((stat, index) => (
-                <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-gray-600 font-body mb-1">{stat.title}</p>
-                      <p className="text-3xl font-display font-bold text-gray-900">{stat.value}</p>
-                      {stat.change && (
-                        <p
-                          className={`text-sm font-body mt-2 ${
-                            stat.changeType === 'increase'
-                              ? 'text-green-600'
-                              : stat.changeType === 'decrease'
-                              ? 'text-red-600'
-                              : 'text-gray-600'
-                          }`}
-                        >
-                          {stat.change} from last month
-                        </p>
-                      )}
-                    </div>
-                    <div className={`w-14 h-14 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                      {stat.icon}
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-
-        {/* Quick Actions Section */}
-        <Card>
-          <h2 className="text-xl font-display font-bold text-gray-900 mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Standard Vendor Actions */}
-            {!isRegularBuyer && (
-              <>
-                <Link
-                  to="/vendor/services"
-                  className="flex items-center justify-between p-4 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors duration-200"
-                >
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-accent-orange rounded-lg flex items-center justify-center mr-3">
-                      <FiPlus className="text-white" size={20} />
-                    </div>
-                    <span className="font-body font-semibold text-gray-900">Add Service</span>
-                  </div>
-                  <FiArrowRight className="text-accent-orange" />
-                </Link>
-
-                <Link
-                  to="/vendor/bookings"
-                  className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors duration-200"
-                >
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mr-3">
-                      <FiCalendar className="text-white" size={20} />
-                    </div>
-                    <span className="font-body font-semibold text-gray-900">View Bookings</span>
-                  </div>
-                  <FiArrowRight className="text-green-600" />
-                </Link>
-              </>
-            )}
-
-            {/* Product Actions (Available to both Vendors and Regular Buyers) */}
-            <Link
-              to="/products"
-              className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors duration-200"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
-                  <FiShoppingBag className="text-white" size={20} />
+              <section>
+                <h2 className="font-vendor text-[14px] font-bold leading-5 text-vendor-text-primary uppercase tracking-wide mb-4">
+                  Overall Performance
+                </h2>
+                <div className="grid grid-cols-2 gap-4 lg:grid-cols-4 lg:gap-5">
+                  {metrics.map((m) => (
+                    <VendorMetricCard key={m.label} {...m} />
+                  ))}
                 </div>
-                <span className="font-body font-semibold text-gray-900">Browse Products</span>
-              </div>
-              <FiArrowRight className="text-blue-600" />
-            </Link>
+              </section>
 
-            <Link
-              to="/customer/my-orders"
-              className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors duration-200"
-            >
-              <div className="flex items-center">
-                <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center mr-3">
-                  <FiPackage className="text-white" size={20} />
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="font-vendor text-[14px] font-bold leading-5 text-vendor-text-primary uppercase tracking-wide">
+                    Recent Bookings
+                  </h2>
+                  <Link
+                    to={isRegularBuyer ? '/customer/my-orders' : '/vendor/bookings'}
+                    className="font-vendor text-[14px] font-semibold text-vendor-link"
+                  >
+                    View All
+                  </Link>
                 </div>
-                <span className="font-body font-semibold text-gray-900">View My Orders</span>
-              </div>
-              <FiArrowRight className="text-purple-600" />
-            </Link>
-          </div>
-        </Card>
 
-        {/* Recent Bookings Table */}
-        <Card>
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-display font-bold text-gray-900">
-              {isRegularBuyer ? 'Recent Orders' : 'Recent Bookings'}
-            </h2>
-            <Link
-              to={isRegularBuyer ? "/customer/my-orders" : "/vendor/bookings"}
-              className="text-accent-orange hover:text-orange-600 font-body font-medium text-sm"
-            >
-              View All →
-            </Link>
-          </div>
-
-          {bookingsLoading ? (
-            <div className="text-center py-8">
-              <div className="animate-spin h-8 w-8 border-2 border-accent-orange border-t-transparent rounded-full mx-auto"></div>
-            </div>
-          ) : recentBookings && recentBookings.length > 0 ? (
-            <>
-              {/* Desktop Table View */}
-              <div className="hidden md:block overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                        {isRegularBuyer ? 'Order ID' : 'Customer'}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                        {isRegularBuyer ? 'Items' : 'Service'}
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                        Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                        Status
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-body font-semibold text-gray-700 uppercase tracking-wider">
-                        Amount
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {recentBookings.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-body text-gray-900">
-                          {isRegularBuyer 
-                            ? (item.order_number || `#${item.id.slice(0, 8)}`) 
-                            : (item.customer_name || 'N/A')}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-body text-gray-900">
-                          {isRegularBuyer 
-                            ? `${item.items?.length || 0} items` 
-                            : getServiceNames(item)}
-                        </td>
-                        <td className="px-6 py-4 text-sm font-body text-gray-600">
-                          {item.booking_date || item.created_at ? (
-                            <>
-                              <div>
-                                {new Date(item.booking_date || item.created_at).toLocaleDateString("en-US", {
-                                  weekday: "short",
-                                  month: "short",
-                                  day: "numeric",
-                                  year: "numeric",
-                                })}
-                              </div>
-                              {!isRegularBuyer && (
-                                <div className="text-xs text-gray-500 mt-1">
-                                  {item.time_slots && item.time_slots.length > 0
-                                    ? item.time_slots.join(', ')
-                                    : 'N/A'}
-                                </div>
-                              )}
-                            </>
-                          ) : (
-                            'N/A'
-                          )}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-3 py-1 rounded-full text-xs font-body font-semibold ${
-                              statusColors[item.status] || 'bg-gray-100 text-gray-800'
-                            }`}
-                          >
-                            {item.status || 'pending'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-body font-semibold text-gray-900">
-                          ₹{item.total_amount || 0}
-                        </td>
-                      </tr>
+                {bookingsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <div className="w-10 h-10 border-2 border-vendor-orange border-t-transparent rounded-full animate-spin" />
+                  </div>
+                ) : recentBookings.length > 0 ? (
+                  <div className="flex flex-col gap-3 lg:grid lg:grid-cols-2 lg:gap-4">
+                    {recentBookings.map((booking, index) => (
+                      <VendorBookingCard
+                        key={booking.id}
+                        name={booking.customer_name || 'Guest'}
+                        serviceLine={formatServiceLine(booking)}
+                        status={mapBookingStatus(booking.status)}
+                        featured={index === featuredIdx}
+                      />
                     ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Mobile Card View */}
-              <div className="md:hidden space-y-4">
-                {recentBookings.map((booking) => (
-                  <div key={booking.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <p className="font-semibold text-gray-900">{booking.customer_name || 'N/A'}</p>
-                        <p className="text-sm text-gray-600 mt-1">{getServiceNames(booking)}</p>
-                      </div>
-                      <span
-                        className={`px-3 py-1 rounded-full text-xs font-body font-semibold ${
-                          statusColors[booking.status] || 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {booking.status || 'pending'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-gray-600">
-                        {booking.booking_date
-                          ? new Date(booking.booking_date).toLocaleDateString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                            }) + ` at ${booking.booking_time || ''}`
-                          : 'N/A'}
-                      </span>
-                      <span className="font-semibold text-gray-900">₹{booking.total_amount || 0}</span>
-                    </div>
                   </div>
-                ))}
-              </div>
-            </>
-          ) : (
-            <div className="text-center py-8">
-              <FiCalendar className="text-gray-400 text-4xl mx-auto mb-2" />
-              <p className="text-gray-600 font-body">No bookings yet</p>
-            </div>
-          )}
-        </Card>
-        </div>
+                ) : (
+                  <div className="text-center py-12 bg-vendor-surface-warm rounded-[16px]">
+                    <FiCalendar className="text-vendor-text-secondary text-4xl mx-auto mb-2" />
+                    <p className="font-vendor text-[14px] text-vendor-text-secondary">No bookings yet</p>
+                  </div>
+                )}
+              </section>
+            </main>
+        </VendorPageShell>
       )}
 
-      {/* Payment Pending Content - Shows locked state message */}
       {isPaymentPending && (
-        <div className="flex items-center justify-center min-h-[calc(100vh-200px)]">
-          <Card className="max-w-2xl mx-auto text-center py-16 px-8">
-            <div className="mb-8">
-              <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-xl">
-                <FiLock className="text-white text-5xl" />
-              </div>
-              <h2 className="text-3xl font-display font-bold text-gray-900 mb-3">
-                Dashboard Locked
-              </h2>
-              <p className="text-gray-600 font-body text-lg mb-8">
-                Your {isRegularBuyer ? 'business partner account' : 'salon'} has been verified by admin! Complete your registration payment to unlock full dashboard access and start managing your {isRegularBuyer ? 'business' : 'salon'}.
-              </p>
-              
-              {/* Payment Details */}
-              <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-xl p-6 mb-8 border border-orange-200 max-w-md mx-auto">
-                <div className="flex items-center justify-between mb-4 pb-4 border-b border-orange-200">
-                  <div className="flex items-center gap-2">
-                    <FiCheckCircle className="text-green-600 text-xl" />
-                    <span className="font-body font-bold text-gray-900">Admin Verified</span>
-                  </div>
-                  <span className="text-xs text-gray-600 font-body bg-white px-3 py-1 rounded-full">Approved ✓</span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <FiCreditCard className="text-orange-600 text-xl" />
-                    <span className="font-body font-semibold text-gray-900">Registration Fee</span>
-                  </div>
-                  <span className="text-2xl font-display font-bold text-orange-600">₹{salonProfile?.registration_fee_amount?.toLocaleString() ?? 'N/A'}</span>
-                </div>
-                <p className="text-xs text-gray-600 font-body mt-2">One-time payment • Includes GST</p>
-              </div>
-
-              {/* Locked Features */}
-              <div className="bg-gray-50 rounded-xl p-6 mb-8 max-w-md mx-auto">
-                <h3 className="font-body font-semibold text-gray-900 mb-3 flex items-center justify-center gap-2">
-                  <FiLock className="text-orange-600" />
-                  Features Locked Until Payment
-                </h3>
-                <ul className="space-y-2 text-sm text-gray-700 font-body text-left">
-                  <li className="flex items-center gap-2">
-                    <FiShoppingBag className="text-gray-400" />
-                    {isRegularBuyer ? 'Manage Product Orders' : 'Manage Services & Pricing'}
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <FiCalendar className="text-gray-400" />
-                    {isRegularBuyer ? 'Access Wholesale Catalog' : 'Accept Customer Bookings'}
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <FiStar className="text-gray-400" />
-                    {isRegularBuyer ? 'Update Business Profile' : 'Update Salon Profile'}
-                  </li>
-                </ul>
-              </div>
+        <VendorPageShell>
+        <div className="flex items-center justify-center min-h-[calc(100vh-200px)] px-5">
+          <div className="bg-vendor-surface rounded-[16px] shadow-vendor-card-lg p-6 max-w-lg w-full text-center border border-vendor-border">
+            <div className="w-20 h-20 bg-gradient-vendor rounded-full flex items-center justify-center mx-auto mb-6">
+              <FiLock className="text-white" size={36} />
             </div>
-            
-            {/* Action Button - Centered */}
-            <div className="flex justify-center">
-              <Button
-                onClick={handleMakePayment}
-                className="bg-gradient-to-r from-orange-500 to-orange-600 text-white hover:from-orange-600 hover:to-orange-700 font-heading font-bold py-3 px-8 shadow-lg text-lg"
-              >
-                <FiCreditCard className="inline mr-2" />
-                Complete Payment Now
-              </Button>
-            </div>
-            
-            {/* Security Note */}
-            <p className="text-center text-xs text-gray-500 font-body mt-6">
-              🔒 Secure payment powered by Razorpay
+            <h2 className="font-vendor text-[24px] font-bold text-vendor-text-primary mb-2">
+              Dashboard Locked
+            </h2>
+            <p className="font-vendor text-[14px] text-vendor-text-secondary mb-6 leading-relaxed">
+              Complete your registration payment to unlock the full dashboard.
             </p>
-          </Card>
+            <div className="bg-vendor-icon-bg rounded-[16px] p-4 mb-6 text-left border border-vendor-orange/20">
+              <div className="flex justify-between items-center pb-3 mb-3 border-b border-vendor-orange/20">
+                <span className="font-vendor text-[14px] font-bold text-vendor-text-primary">
+                  Admin Verified
+                </span>
+                <span className="font-vendor text-[10px] font-bold text-vendor-success bg-vendor-success-bg px-2 py-1 rounded-full">
+                  Approved
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="font-vendor text-[14px] font-semibold text-vendor-text-primary flex items-center gap-2">
+                  <FiCreditCard className="text-vendor-orange" />
+                  Registration Fee
+                </span>
+                <span className="font-vendor text-[24px] font-bold text-vendor-orange">
+                  ₹{salonProfile?.registration_fee_amount?.toLocaleString('en-IN') ?? 'N/A'}
+                </span>
+              </div>
+            </div>
+            <Button
+              onClick={handleMakePayment}
+              className="w-full h-12 bg-vendor-orange hover:bg-vendor-orange-dark text-white font-vendor font-semibold rounded-[16px] border-0"
+            >
+              <FiCreditCard className="inline mr-2" />
+              Complete Payment Now
+            </Button>
+          </div>
         </div>
+        </VendorPageShell>
       )}
     </DashboardLayout>
   );
 };
 
 export default VendorDashboard;
-
-

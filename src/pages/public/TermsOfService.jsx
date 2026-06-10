@@ -163,14 +163,14 @@ export default function TermsOfService() {
                 </p>
                 <div className="flex items-center gap-2 text-gray-700">
                   <span className="font-semibold w-16">Email:</span>
-                  <a href="mailto:support@lubist.in" className="hover:text-blue-600">
-                    support@lubist.in
+                  <a href="mailto:support@lubist.com" className="hover:text-blue-600">
+                    support@lubist.com
                   </a>
                 </div>
                 <div className="flex items-center gap-2 text-gray-700">
                   <span className="font-semibold w-16">Phone:</span>
-                  <a href="tel:7004950910" className="hover:text-blue-600">
-                    7004950910
+                  <a href="tel:+919204166560" className="hover:text-blue-600">
+                    +91 9204166560
                   </a>
                 </div>
               </div>

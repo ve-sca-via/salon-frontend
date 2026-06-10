@@ -45,7 +45,7 @@ const UserQuickDashboard = () => {
     return (
       <div className="w-full max-w-[1235px] mx-auto px-4 mt-2 mb-4 lg:-mt-16 lg:mb-0 relative z-40">
         <div className="bg-primary-white rounded-[5px] shadow-[0px_8px_44px_0px_rgba(65,65,65,0.19)] p-6 flex flex-row gap-4 justify-center items-center">
-          <p className="font-body text-[16px] text-neutral-gray-500 m-0">No active carts or upcoming bookings.</p>
+          <p className="font-body text-[16px] text-neutral-gray-700 m-0">No active carts or upcoming bookings.</p>
           <button onClick={() => navigate('/salons')} className="text-accent-orange font-semibold hover:underline">
             Browse Salons
           </button>

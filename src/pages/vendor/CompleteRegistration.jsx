@@ -33,7 +33,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
-import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { showSuccessToast, showErrorToast, showApiErrorToast } from '../../utils/toastConfig';
 import { FiLock, FiCheckCircle, FiAlertCircle, FiShield, FiCheck, FiUser, FiEye, FiEyeOff } from 'react-icons/fi';
 import { useCompleteVendorRegistrationMutation } from '../../services/api/vendorApi';
 import { setUser } from '../../store/slices/authSlice';
@@ -203,7 +203,7 @@ const CompleteRegistration = () => {
         navigate('/vendor/dashboard');
       }
     } catch (error) {
-      showErrorToast(error.message || 'Registration failed. Please try again.');
+      showApiErrorToast(error, 'Registration failed. Please try again.');
     }
   };
 

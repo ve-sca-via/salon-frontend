@@ -53,9 +53,9 @@ function Header() {
           <ScissorsIcon />
           <div className="h-[1px] w-[50px] bg-neutral-black"></div>
         </div>
-        <p className="font-body font-medium text-[16px] leading-[24px] text-neutral-gray-500 text-center max-w-[510px] mt-2">
-          Here's a list of popular locations across India, showcasing diverse
-          cities that are sought after for various reasons.
+        <p className="font-body font-medium text-[16px] leading-[24px] text-neutral-black/70 text-center max-w-[510px] mt-2">
+          Browse top cities with the most salons on our platform. Find trusted
+          hair, spa, and beauty services near you and book online with ease.
         </p>
       </div>
     </div>

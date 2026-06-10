@@ -8,6 +8,7 @@
 
 import { createApi } from '@reduxjs/toolkit/query/react';
 import axiosBaseQuery from './baseQuery';
+import { bookingApi } from './bookingApi';
 
 export const cartApi = createApi({
   reducerPath: 'cartApi',
@@ -143,8 +144,17 @@ export const cartApi = createApi({
         method: 'post',
         data: checkoutData,
       }),
-      // Invalidate cart cache after successful checkout
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
+      async onQueryStarted(_checkoutData, { dispatch, queryFulfilled }) {
+        try {
+          await queryFulfilled;
+          dispatch(
+            bookingApi.util.invalidateTags([{ type: 'CustomerBookings', id: 'LIST' }])
+          );
+        } catch {
+          // Checkout failed — cart cache unchanged
+        }
+      },
     }),
   }),
 });
