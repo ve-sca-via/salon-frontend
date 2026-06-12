@@ -147,12 +147,11 @@ export default function ProductCheckout() {
       setIsProcessingPayment(true);
       setPaymentStep(2); // Show processing overlay
 
+      // Server re-fetches price/name/image from the DB (anti-tampering), so we
+      // only send product_id + quantity.
       const itemsData = cart.items.map((item) => ({
         product_id: item.product_id || item.id,
-        product_name: item.name || item.product_name,
         quantity: item.quantity,
-        unit_price: item.price || item.unit_price,
-        image_url: item.image_url || (item.image_urls ? item.image_urls[0] : null),
       }));
 
       const orderResponse = await createOrder({

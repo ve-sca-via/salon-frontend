@@ -29,16 +29,6 @@ export const productApi = createApi({
       keepUnusedDataFor: 300, // Cache for 5 minutes
     }),
 
-    // Get single product by ID
-    getProductById: builder.query({
-      query: (productId) => ({
-        url: `/api/v1/products/${productId}`,
-        method: 'get',
-      }),
-      providesTags: (result, error, id) => [{ type: 'ProductDetails', id }],
-      keepUnusedDataFor: 600, // Cache for 10 minutes
-    }),
-
     // Get single product by Slug
     getProductBySlug: builder.query({
       query: (slug) => ({
@@ -63,7 +53,6 @@ export const productApi = createApi({
 
 export const {
   useGetProductsQuery,
-  useGetProductByIdQuery,
   useGetProductBySlugQuery,
   useGetProductCategoriesQuery,
 } = productApi;

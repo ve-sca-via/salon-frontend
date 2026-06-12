@@ -32,26 +32,6 @@ export const bookingApi = createApi({
       refetchOnReconnect: true,
     }),
 
-    // Create a booking
-    createBooking: builder.mutation({
-      query: (bookingData) => ({
-        url: '/api/v1/customers/bookings',
-        method: 'post',
-        data: bookingData,
-      }),
-      // Invalidate bookings cache after creating a booking
-      invalidatesTags: [{ type: 'CustomerBookings', id: 'LIST' }],
-      // Also invalidate cart since we might book from cart
-      async onQueryStarted(arg, { dispatch, queryFulfilled }) {
-        try {
-          await queryFulfilled;
-          // Could trigger cart refetch here if needed
-        } catch {
-          // Error handled by component
-        }
-      },
-    }),
-
     // Cancel a booking
     cancelBooking: builder.mutation({
       query: (bookingId) => ({
@@ -84,7 +64,6 @@ export const bookingApi = createApi({
 
 export const {
   useGetMyBookingsQuery,
-  useCreateBookingMutation,
   useCancelBookingMutation,
 } = bookingApi;
 
