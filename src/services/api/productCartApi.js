@@ -56,7 +56,7 @@ export const productCartApi = createApi({
             if (item) {
               item.quantity = quantity;
               draft.total_amount = draft.items.reduce(
-                (total, item) => total + (item.unit_price ?? item.price) * item.quantity,
+                (total, item) => total + item.price * item.quantity,
                 0
               );
               draft.item_count = draft.items.reduce(
@@ -89,7 +89,7 @@ export const productCartApi = createApi({
           productCartApi.util.updateQueryData('getProductCart', undefined, (draft) => {
             draft.items = draft.items?.filter((item) => item.id !== itemId) || [];
             draft.total_amount = draft.items.reduce(
-              (total, item) => total + (item.unit_price ?? item.price) * item.quantity,
+              (total, item) => total + item.price * item.quantity,
               0
             );
             draft.item_count = draft.items.reduce(
