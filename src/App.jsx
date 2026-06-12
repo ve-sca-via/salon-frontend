@@ -67,7 +67,6 @@ const ProductCart = lazy(() => import('./pages/public/ProductCart'));
 const Checkout = lazy(() => import('./pages/public/Checkout'));
 const ProductCheckout = lazy(() => import('./pages/public/ProductCheckout'));
 const OrderConfirmation = lazy(() => import('./pages/public/OrderConfirmation'));
-const Payment = lazy(() => import('./pages/public/Payment'));
 const BookingConfirmation = lazy(() => import('./pages/public/BookingConfirmation'));
 const Careers = lazy(() => import('./pages/public/Careers'));
 const About = lazy(() => import('./pages/public/About'));
@@ -228,11 +227,6 @@ function App() {
                     <OrderConfirmation />
                   </ErrorBoundary>
                 </ProtectedRoute>
-              } />
-              <Route path="/payment" element={
-                <ErrorBoundary fallback="page">
-                  <Payment />
-                </ErrorBoundary>
               } />
               <Route path="/booking-confirmation" element={<BookingConfirmation />} />
               <Route path="/careers" element={<Careers />} />

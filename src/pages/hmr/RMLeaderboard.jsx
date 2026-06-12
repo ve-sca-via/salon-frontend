@@ -224,7 +224,6 @@ const RMLeaderboard = () => {
                                     </span>
                                   )}
                                 </p>
-                                <p className="text-sm text-gray-500 font-body">{rm.profiles?.email || rm.email || 'N/A'}</p>
                               </div>
                             </div>
                           </td>
@@ -307,7 +306,6 @@ const RMLeaderboard = () => {
                                 </span>
                               )}
                             </p>
-                            <p className="text-xs text-gray-500">{rm.profiles?.email || rm.email || 'N/A'}</p>
                           </div>
                         </div>
                       </div>
