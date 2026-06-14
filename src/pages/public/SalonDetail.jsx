@@ -42,6 +42,7 @@ import { useAddToCartMutation, useGetCartQuery } from "../../services/api/cartAp
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
 import { NotFound } from "../../components/shared/ErrorFallback";
 import ShareModal from "../../components/shared/ShareModal";
+import RelatedSalons from "../../components/shared/RelatedSalons";
 import OffersSection from "../../components/shared/OffersSection";
 import { showErrorToast, showInfoToast, showSuccessToast } from "../../utils/toastConfig";
 
@@ -1520,6 +1521,9 @@ export default function SalonDetail() {
           </div>
         </div>
       </div>
+
+      {/* Related Salons — keeps browsing continuity at the end of the page */}
+      <RelatedSalons salonId={salon.id} />
 
       {/* Fixed Bottom Button - Mobile Only */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-[0px_-2px_10px_rgba(0,0,0,0.1)] z-40">
