@@ -45,9 +45,9 @@ const VENDOR_ACTIONS = [
     iconH: 16,
   },
   {
-    key: 'discounts',
-    label: 'Manage\nDiscounts',
-    to: '/vendor/services',
+    key: 'coupons',
+    label: 'Coupons',
+    to: '/vendor/coupons',
     iconSrc: '/vendor/quick-actions/manage-discounts.png',
     iconW: 16,
     iconH: 14,

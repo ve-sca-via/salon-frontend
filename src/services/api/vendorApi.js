@@ -10,7 +10,7 @@ import axiosBaseQuery from './baseQuery';
 export const vendorApi = createApi({
   reducerPath: 'vendorApi',
   baseQuery: axiosBaseQuery(),
-  tagTypes: ['VendorSalon', 'VendorServices', 'VendorBookings', 'VendorAnalytics', 'ServiceCategories', 'VendorPromotions'],
+  tagTypes: ['VendorSalon', 'VendorServices', 'VendorBookings', 'VendorAnalytics', 'ServiceCategories', 'VendorPromotions', 'VendorCoupons'],
   endpoints: (builder) => ({
     // Get vendor's salon
     getVendorSalon: builder.query({
@@ -160,6 +160,56 @@ export const vendorApi = createApi({
       invalidatesTags: ['VendorPromotions', { type: 'VendorServices', id: 'LIST' }],
     }),
 
+    // =====================================================
+    // COUPONS (code-based, this salon only)
+    // =====================================================
+    getVendorCoupons: builder.query({
+      query: () => ({
+        url: '/api/v1/vendors/coupons',
+        method: 'get',
+      }),
+      providesTags: (result) =>
+        Array.isArray(result)
+          ? [
+              ...result.map(({ id }) => ({ type: 'VendorCoupons', id })),
+              { type: 'VendorCoupons', id: 'LIST' },
+            ]
+          : [{ type: 'VendorCoupons', id: 'LIST' }],
+      keepUnusedDataFor: 120,
+    }),
+
+    createVendorCoupon: builder.mutation({
+      query: (data) => ({
+        url: '/api/v1/vendors/coupons',
+        method: 'post',
+        data,
+      }),
+      invalidatesTags: [{ type: 'VendorCoupons', id: 'LIST' }],
+    }),
+
+    updateVendorCoupon: builder.mutation({
+      query: ({ couponId, data }) => ({
+        url: `/api/v1/vendors/coupons/${couponId}`,
+        method: 'patch',
+        data,
+      }),
+      invalidatesTags: (result, error, { couponId }) => [
+        { type: 'VendorCoupons', id: couponId },
+        { type: 'VendorCoupons', id: 'LIST' },
+      ],
+    }),
+
+    deactivateVendorCoupon: builder.mutation({
+      query: (couponId) => ({
+        url: `/api/v1/vendors/coupons/${couponId}`,
+        method: 'delete',
+      }),
+      invalidatesTags: (result, error, couponId) => [
+        { type: 'VendorCoupons', id: couponId },
+        { type: 'VendorCoupons', id: 'LIST' },
+      ],
+    }),
+
     // Complete vendor registration
     completeVendorRegistration: builder.mutation({
       query: (data) => ({
@@ -186,6 +236,10 @@ export const {
   useCompleteVendorRegistrationMutation,
   useGetActiveVendorPromotionQuery,
   useApplyVendorPromotionMutation,
+  useGetVendorCouponsQuery,
+  useCreateVendorCouponMutation,
+  useUpdateVendorCouponMutation,
+  useDeactivateVendorCouponMutation,
 } = vendorApi;
 
 export default vendorApi;
