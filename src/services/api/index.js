@@ -14,6 +14,7 @@ export { reviewApi } from './reviewApi';
 export { vendorApi } from './vendorApi';
 export { rmApi } from './rmApi';
 export { paymentApi } from './paymentApi';
+export { bannerApi } from './bannerApi';
 
 // Export all hooks for convenience
 export * from './authApi';
@@ -25,3 +26,4 @@ export * from './reviewApi';
 export * from './vendorApi';
 export * from './rmApi';
 export * from './paymentApi';
+export * from './bannerApi';

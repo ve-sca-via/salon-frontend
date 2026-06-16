@@ -23,9 +23,10 @@
  * 4. Sign up or explore without account
  */
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { useGetBannersQuery } from "../../services/api/bannerApi";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import SearchBox from "../../components/shared/SearchBox";
@@ -66,22 +67,92 @@ function ArrowCircleRight() {
 }
 
 /**
+ * SlideMedia - Renders a single carousel item (image or video), wrapping it in a
+ * link when the item carries one. Admin-managed banners may include a `link_url`:
+ * http(s) links open in a new tab, anything else is treated as an in-app route.
+ */
+function SlideMedia({ item, index }) {
+  const media =
+    item.type === 'video' ? (
+      <video
+        src={item.src}
+        autoPlay
+        loop
+        muted
+        playsInline
+        className="w-full h-full object-cover"
+      />
+    ) : (
+      <img
+        src={item.src}
+        alt={item.title || `Salon background ${index + 1}`}
+        className="w-full h-full object-cover"
+      />
+    );
+
+  if (!item.link) return media;
+
+  const isExternal = /^https?:\/\//i.test(item.link);
+  return isExternal ? (
+    <a
+      href={item.link}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block w-full h-full"
+    >
+      {media}
+    </a>
+  ) : (
+    <Link to={item.link} className="block w-full h-full">
+      {media}
+    </Link>
+  );
+}
+
+/**
  * HeroSection - Main carousel section with rotating items
  * Features:
- * - 3 items including one video rotating every 5 seconds
- * - Manual navigation via arrows and dot indicators
+ * - Renders admin-managed banners (GET /api/v1/banners) when available, falling
+ *   back to the bundled images/video while loading or when no banners are set
+ * - Banners with a `link_url` are clickable (external or in-app route)
+ * - Auto-rotates every 5 seconds; manual nav via arrows and dot indicators
  * - Crossfade transition effect
- * - Responsive layout with overlay for text readability
  */
 function HeroSection() {
-  const carouselItems = [
-    { type: 'image', src: carouselImg1 },
-    { type: 'image', src: carouselImg2 },
-    { type: 'video', src: carouselVideo3 },
-  ];
-  
+  const { data: bannerData } = useGetBannersQuery();
+
+  // Bundled fallback shown while loading or when no banners are configured.
+  const fallbackItems = useMemo(
+    () => [
+      { type: 'image', src: carouselImg1 },
+      { type: 'image', src: carouselImg2 },
+      { type: 'video', src: carouselVideo3 },
+    ],
+    []
+  );
+
+  // Server returns active, in-window banners ordered by sort_order.
+  const carouselItems = useMemo(() => {
+    const banners = bannerData?.banners;
+    if (banners && banners.length > 0) {
+      return banners.map((b) => ({
+        type: 'image',
+        src: b.image_url,
+        link: b.link_url,
+        title: b.title,
+      }));
+    }
+    return fallbackItems;
+  }, [bannerData, fallbackItems]);
+
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const intervalRef = useRef(null);
+  const itemCount = carouselItems.length;
+
+  // Keep the active index in range if the item set changes (banners load in).
+  useEffect(() => {
+    setCurrentImageIndex((prev) => (prev >= itemCount ? 0 : prev));
+  }, [itemCount]);
 
   /**
    * Auto-rotate carousel images every 5 seconds
@@ -89,10 +160,9 @@ function HeroSection() {
    * Cleanup interval on component unmount
    */
   useEffect(() => {
+    if (itemCount <= 1) return undefined;
     intervalRef.current = setInterval(() => {
-      setCurrentImageIndex((prevIndex) => 
-        (prevIndex + 1) % carouselItems.length
-      );
+      setCurrentImageIndex((prevIndex) => (prevIndex + 1) % itemCount);
     }, 5000);
 
     return () => {
@@ -100,7 +170,7 @@ function HeroSection() {
         clearInterval(intervalRef.current);
       }
     };
-  }, []); // Empty dependency - carouselItems is constant
+  }, [itemCount]); // Re-arm when the item set changes (banners load in)
 
   /**
    * goToSlide - Jump to specific slide via dot indicator
@@ -162,27 +232,12 @@ function HeroSection() {
       {/* Carousel Items with Crossfade Transition */}
       {carouselItems.map((item, index) => (
         <div
-          key={index}
+          key={item.src || index}
           className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
             index === currentImageIndex ? "opacity-100 z-10" : "opacity-0 z-0"
           }`}
         >
-          {item.type === 'image' ? (
-            <img
-              src={item.src}
-              alt={`Salon background ${index + 1}`}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <video
-              src={item.src}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="w-full h-full object-cover"
-            />
-          )}
+          <SlideMedia item={item} index={index} />
         </div>
       ))}
 
