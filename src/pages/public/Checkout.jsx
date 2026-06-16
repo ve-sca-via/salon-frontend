@@ -55,7 +55,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
-import { useGetCartQuery, useCheckoutCartMutation } from "../../services/api/cartApi";
+import { useGetCartQuery, useCheckoutCartMutation, useValidateCouponMutation } from "../../services/api/cartApi";
 import { bookingApi } from "../../services/api/bookingApi";
 import { useCreateCartPaymentOrderMutation } from "../../services/api/paymentApi";
 import { useGetPublicConfigsQuery } from "../../services/api/configApi";
@@ -83,12 +83,18 @@ export default function Checkout() {
   // Mutations
   const [createPaymentOrder, { isLoading: isCreatingOrder }] = useCreateCartPaymentOrderMutation();
   const [checkoutCart, { isLoading: isCheckingOut }] = useCheckoutCartMutation();
-  
+  const [validateCoupon, { isLoading: isValidatingCoupon }] = useValidateCouponMutation();
+
   // State for appointment selection
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [checkoutComplete, setCheckoutComplete] = useState(false);
+
+  // Coupon state
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState(null); // CouponValidationResult (valid=true)
+  const [couponMessage, setCouponMessage] = useState(null); // { type: 'error' | 'info', text }
 
   // Get convenience fee from config (dynamically set by admin, no hardcoded fallback)
   const convenienceFeePercentage = configs?.convenience_fee_percentage;
@@ -272,13 +278,58 @@ export default function Checkout() {
     (total, item) => total + (Number(item?.service_details?.price) || Number(item?.unit_price) || 0) * (item?.quantity || 1),
     0
   );
-  const discountAmount = Math.max(0, originalServicesTotal - servicesTotalAmount);
+  // Automatic salon-sale discount (original - post-sale service total)
+  const saleDiscount = Math.max(0, originalServicesTotal - servicesTotalAmount);
   const convenienceFee = convenienceFeePercentage
     ? Math.round((originalServicesTotal * convenienceFeePercentage) / 100 * 100) / 100
     : 0;
-  const totalBookingAmount = convenienceFee;
-  const remainingAmount = servicesTotalAmount;
-  const grandTotal = servicesTotalAmount + convenienceFee;
+
+  // When a coupon is applied, the backend breakdown is the source of truth.
+  const breakdown = appliedCoupon?.valid ? appliedCoupon.breakdown : null;
+  const couponServiceDiscount = breakdown?.discount_amount || 0;
+  const couponFeeDiscount = breakdown?.convenience_fee_discount || 0;
+  const feeBase = breakdown?.convenience_fee_base ?? convenienceFee;
+  const feeDue = breakdown?.convenience_fee_due ?? convenienceFee;
+  const serviceDue = breakdown?.service_total_due ?? servicesTotalAmount;
+  const couponSavings = couponServiceDiscount + couponFeeDiscount;
+
+  const totalBookingAmount = feeDue;               // Pay now (online)
+  const remainingAmount = serviceDue;              // Pay at salon
+  const grandTotal = breakdown?.total_amount ?? (servicesTotalAmount + convenienceFee);
+
+  // Re-validate (clear) the applied coupon whenever the cart contents change —
+  // the discount depends on cart contents.
+  useEffect(() => {
+    setAppliedCoupon(null);
+    setCouponMessage(null);
+  }, [cart?.item_count, cart?.total_amount, cart?.salon_id]);
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    try {
+      const result = await validateCoupon(code).unwrap();
+      if (result.valid) {
+        setAppliedCoupon(result);
+        setCouponMessage(null);
+        showSuccessToast("Coupon applied");
+      } else {
+        setAppliedCoupon(null);
+        // "better discount already applied" is informational, not a hard error
+        const isInfo = /better discount/i.test(result.reason || "");
+        setCouponMessage({ type: isInfo ? "info" : "error", text: result.reason || "This coupon code is not valid." });
+      }
+    } catch (error) {
+      setAppliedCoupon(null);
+      setCouponMessage({ type: "error", text: error?.data?.detail || "Failed to validate coupon. Please try again." });
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponInput("");
+    setCouponMessage(null);
+  };
 
   /**
    * Handle time slot selection (max 3 slots)
@@ -318,8 +369,10 @@ export default function Checkout() {
     try {
       setIsProcessingPayment(true);
       
-      // Step 1: Create Razorpay order
-      const orderData = await createPaymentOrder().unwrap();
+      // Step 1: Create Razorpay order (coupon-aware — backend returns discounted amount)
+      const orderData = await createPaymentOrder(
+        appliedCoupon?.coupon_code ? { coupon_code: appliedCoupon.coupon_code } : undefined
+      ).unwrap();
       
       // Step 2: Open Razorpay checkout
       const options = {
@@ -333,7 +386,7 @@ export default function Checkout() {
           try {
             // Step 3: After successful payment, complete checkout
             await handleCheckoutSuccess(response);
-          } catch (error) {
+          } catch {
             setIsProcessingPayment(false);
             showErrorToast('Failed to complete booking. Please contact support with your payment ID.');
           }
@@ -376,7 +429,8 @@ export default function Checkout() {
         razorpay_payment_id: paymentResponse.razorpay_payment_id,
         razorpay_signature: paymentResponse.razorpay_signature,
         payment_method: 'razorpay',
-        notes: ''
+        notes: '',
+        ...(appliedCoupon?.coupon_code ? { coupon_code: appliedCoupon.coupon_code } : {})
       }).unwrap();
 
       // Prefetch fresh bookings so My Bookings shows the new appointment immediately
@@ -582,24 +636,83 @@ export default function Checkout() {
                 </p>
               </div>
 
+              {/* Coupon */}
+              <div className="mb-4 pb-3 sm:pb-4 border-b border-neutral-gray-600">
+                {appliedCoupon ? (
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 border border-green-200 px-3 py-1.5 text-[12px] sm:text-[13px] font-semibold text-green-700">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      {appliedCoupon.coupon_code}
+                    </span>
+                    <button
+                      onClick={handleRemoveCoupon}
+                      className="text-neutral-gray-500 hover:text-red-600 text-[12px] sm:text-[13px] font-semibold flex items-center gap-1"
+                    >
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponInput}
+                      onChange={(e) => setCouponInput(e.target.value.toUpperCase())}
+                      onKeyDown={(e) => { if (e.key === "Enter") handleApplyCoupon(); }}
+                      placeholder="Have a coupon?"
+                      className="flex-1 min-w-0 rounded-lg border border-neutral-gray-600 px-3 py-2 text-[13px] sm:text-[14px] font-body uppercase placeholder:normal-case focus:border-accent-orange focus:ring-1 focus:ring-accent-orange outline-none"
+                    />
+                    <button
+                      onClick={handleApplyCoupon}
+                      disabled={!couponInput.trim() || isValidatingCoupon}
+                      className="shrink-0 rounded-lg bg-neutral-black text-primary-white px-4 py-2 text-[13px] sm:text-[14px] font-body font-semibold disabled:opacity-50"
+                    >
+                      {isValidatingCoupon ? "..." : "Apply"}
+                    </button>
+                  </div>
+                )}
+                {couponMessage && (
+                  <p className={`mt-2 text-[12px] sm:text-[13px] font-body ${couponMessage.type === "info" ? "text-neutral-gray-500" : "text-red-600"}`}>
+                    {couponMessage.text}
+                  </p>
+                )}
+              </div>
+
               {/* Pricing Breakdown */}
               <div className="space-y-2.5 sm:space-y-3 mb-4 sm:mb-6">
                 <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
                   <span className="text-neutral-gray-500">Service Total</span>
                   <span className="text-neutral-black font-semibold">₹{originalServicesTotal.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
-                  <span className="text-neutral-gray-500">Discount</span>
-                  <span className="text-green-700 font-semibold">-₹{discountAmount.toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
-                  <span className="text-neutral-gray-500">Discounted Service Total</span>
-                  <span className="text-neutral-black font-semibold">₹{servicesTotalAmount.toFixed(2)}</span>
-                </div>
+                {saleDiscount > 0 && (
+                  <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
+                    <span className="text-neutral-gray-500">Salon sale</span>
+                    <span className="text-green-700 font-semibold">-₹{saleDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {couponServiceDiscount > 0 && (
+                  <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
+                    <span className="text-neutral-gray-500">Coupon discount</span>
+                    <span className="text-green-700 font-semibold">-₹{couponServiceDiscount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
                   <span className="text-neutral-gray-500">Convenience Fee</span>
-                  <span className="text-neutral-black font-semibold">₹{convenienceFee.toFixed(2)}</span>
+                  <span className="text-neutral-black font-semibold">₹{feeBase.toFixed(2)}</span>
                 </div>
+                {couponFeeDiscount > 0 && (
+                  <div className="flex justify-between font-body text-[13px] sm:text-[14px]">
+                    <span className="text-neutral-gray-500">Fee discount</span>
+                    <span className="text-green-700 font-semibold">-₹{couponFeeDiscount.toFixed(2)}</span>
+                  </div>
+                )}
+                {couponSavings > 0 && (
+                  <div className="flex justify-end">
+                    <span className="inline-block rounded-full bg-green-50 border border-green-200 px-2.5 py-0.5 text-[11px] sm:text-[12px] font-semibold text-green-700">
+                      You save ₹{couponSavings.toFixed(2)}
+                    </span>
+                  </div>
+                )}
                 <div className="pt-2.5 sm:pt-3 border-t border-neutral-gray-600">
                   <div className="flex justify-between font-body text-[15px] sm:text-[16px] mb-1">
                     <span className="text-neutral-black font-bold">Total</span>

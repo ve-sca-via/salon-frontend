@@ -105,6 +105,7 @@ const SalonProfile = lazy(() => import('./pages/vendor/SalonProfile'));
 const ServicesManagement = lazy(() => import('./pages/vendor/ServicesManagement'));
 const BookingsManagement = lazy(() => import('./pages/vendor/BookingsManagement'));
 const VendorRunPromo = lazy(() => import('./pages/vendor/VendorRunPromo'));
+const VendorCoupons = lazy(() => import('./pages/vendor/VendorCoupons'));
 const CompleteRegistration = lazy(() => import('./pages/vendor/CompleteRegistration'));
 const VendorPayment = lazy(() => import('./pages/vendor/VendorPayment'));
 
@@ -387,6 +388,15 @@ function App() {
                   <PaymentProtectionWrapper>
                     <ErrorBoundary fallback="page">
                       <VendorRunPromo />
+                    </ErrorBoundary>
+                  </PaymentProtectionWrapper>
+                </VendorProtectedRoute>
+              } />
+              <Route path="/vendor/coupons" element={
+                <VendorProtectedRoute>
+                  <PaymentProtectionWrapper>
+                    <ErrorBoundary fallback="page">
+                      <VendorCoupons />
                     </ErrorBoundary>
                   </PaymentProtectionWrapper>
                 </VendorProtectedRoute>

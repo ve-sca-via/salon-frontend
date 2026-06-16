@@ -115,4 +115,55 @@ describe('checkoutCart', () => {
     expect(body.booking_date).toBe('2026-07-01');
     expect(res.data.booking_number).toBe('BK1');
   });
+
+  it('forwards an applied coupon_code in the checkout body', async () => {
+    let body = null;
+    server.use(http.post(`${BASE}/cart/checkout`, async ({ request }) => {
+      body = await request.json();
+      return HttpResponse.json({
+        id: 'bk2', booking_number: 'BK2', status: 'confirmed',
+        coupon_code: body.coupon_code, discount_amount: 200,
+      });
+    }));
+    const res = await store.dispatch(cartApi.endpoints.checkoutCart.initiate(
+      { booking_date: '2026-07-01', time_slots: ['10:00'], coupon_code: 'SAVE20' }));
+    expect(body.coupon_code).toBe('SAVE20');
+    expect(res.data.discount_amount).toBe(200);
+  });
+});
+
+// =====================================================================
+// POST /customers/cart/validate-coupon  ("Apply coupon" at checkout)
+// =====================================================================
+describe('validateCoupon', () => {
+  it('POSTs { code } to /customers/cart/validate-coupon and returns the breakdown', async () => {
+    let p = null, body = null;
+    server.use(http.post(`${BASE}/cart/validate-coupon`, async ({ request }) => {
+      p = new URL(request.url).pathname; body = await request.json();
+      return HttpResponse.json({
+        valid: true, reason: null, coupon_id: 'c1', coupon_code: 'SAVE20',
+        breakdown: {
+          subtotal_service_price: 1000, discount_amount: 200, service_total_due: 800,
+          convenience_fee_base: 100, convenience_fee_discount: 0, convenience_fee_due: 100,
+          total_amount: 900, discount_source: 'coupon',
+        },
+      });
+    }));
+    const res = await store.dispatch(cartApi.endpoints.validateCoupon.initiate('SAVE20'));
+    expect(p).toBe('/api/v1/customers/cart/validate-coupon');
+    expect(body).toEqual({ code: 'SAVE20' });
+    expect(res.data.valid).toBe(true);
+    expect(res.data.breakdown.discount_amount).toBe(200);
+  });
+
+  it('returns valid:false with a reason for an ineligible coupon', async () => {
+    server.use(http.post(`${BASE}/cart/validate-coupon`, () =>
+      HttpResponse.json({
+        valid: false, reason: 'A better discount is already applied at this salon.',
+        coupon_id: null, coupon_code: null, breakdown: null,
+      })));
+    const res = await store.dispatch(cartApi.endpoints.validateCoupon.initiate('SAVE10'));
+    expect(res.data.valid).toBe(false);
+    expect(res.data.reason).toMatch(/better discount/i);
+  });
 });
