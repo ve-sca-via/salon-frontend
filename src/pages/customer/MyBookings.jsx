@@ -98,6 +98,13 @@ function BookingCard({ booking, onCancel }) {
     return total + (Number(originalUnitPrice) || 0) * quantity;
   }, 0);
   const bookingDiscountAmount = Math.max(0, bookingOriginalServicesTotal - (booking.service_price || 0));
+  // Coupon breakdown (new): separate the coupon discount from any salon sale.
+  const couponServiceDiscount = Number(booking.discount_amount || 0);
+  const couponFeeDiscount = Number(booking.convenience_fee_discount || 0);
+  const couponSavings = couponServiceDiscount + couponFeeDiscount;
+  const hasCoupon = Boolean(booking.coupon_code) && couponSavings > 0;
+  const saleDiscount = Math.max(0, bookingDiscountAmount - couponServiceDiscount);
+  const convenienceFeeBeforeDiscount = Number(booking.convenience_fee || 0) + couponFeeDiscount;
 
   return (
     <div className="bg-primary-white rounded-xl shadow-md hover:shadow-xl transition-all duration-200 overflow-hidden mb-6">
@@ -236,6 +243,16 @@ function BookingCard({ booking, onCancel }) {
 
         {/* Payment Details */}
         <div className="bg-bg-secondary rounded-lg p-4 mb-5">
+          {hasCoupon && (
+            <div className="flex items-center gap-2 mb-3 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <span className="font-body text-[12px] text-green-700 font-bold">
+                🎟 {booking.coupon_code}
+              </span>
+              <span className="font-body text-[12px] text-green-700">
+                applied — you saved ₹{couponSavings.toFixed(2)}
+              </span>
+            </div>
+          )}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="font-body text-[13px] text-neutral-gray-500">
@@ -245,7 +262,27 @@ function BookingCard({ booking, onCancel }) {
                 ₹{bookingOriginalServicesTotal.toFixed(2)}
               </span>
             </div>
-            {bookingDiscountAmount > 0 && (
+            {saleDiscount > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="font-body text-[13px] text-neutral-gray-500">
+                  Sale Discount
+                </span>
+                <span className="font-body text-[13px] text-green-700 font-semibold">
+                  -₹{saleDiscount.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {couponServiceDiscount > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="font-body text-[13px] text-neutral-gray-500">
+                  Coupon{booking.coupon_code ? ` (${booking.coupon_code})` : ''}
+                </span>
+                <span className="font-body text-[13px] text-green-700 font-semibold">
+                  -₹{couponServiceDiscount.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {saleDiscount === 0 && couponServiceDiscount === 0 && bookingDiscountAmount > 0 && (
               <div className="flex justify-between items-center">
                 <span className="font-body text-[13px] text-neutral-gray-500">
                   Discount
@@ -257,13 +294,33 @@ function BookingCard({ booking, onCancel }) {
             )}
             <div className="flex justify-between items-center">
               <span className="font-body text-[13px] text-neutral-gray-500">
-                Discounted Service Total
+                Service Total (Pay at Salon)
               </span>
               <span className="font-body text-[13px] text-neutral-black font-semibold">
                 ₹{(booking.service_price || 0).toFixed(2)}
               </span>
             </div>
-            {booking.convenience_fee > 0 && (
+            {couponFeeDiscount > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="font-body text-[13px] text-neutral-gray-500">
+                  Booking Fee
+                </span>
+                <span className="font-body text-[13px] text-neutral-gray-500 line-through">
+                  ₹{convenienceFeeBeforeDiscount.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {couponFeeDiscount > 0 && (
+              <div className="flex justify-between items-center">
+                <span className="font-body text-[13px] text-neutral-gray-500">
+                  Fee Discount{booking.coupon_code ? ` (${booking.coupon_code})` : ''}
+                </span>
+                <span className="font-body text-[13px] text-green-700 font-semibold">
+                  -₹{couponFeeDiscount.toFixed(2)}
+                </span>
+              </div>
+            )}
+            {booking.convenience_fee > 0 && couponFeeDiscount === 0 && (
               <div className="flex justify-between items-center">
                 <span className="font-body text-[13px] text-neutral-gray-500">
                   Booking Fee (Paid Online)

@@ -13,7 +13,7 @@ const STATUS_CONFIG = {
  * - Featured: 350×82, #F89E07, radius 24px
  * - Standard: 350×72, #FFFDFC, radius 16px
  */
-const VendorBookingCard = ({ name, serviceLine, status, featured = false }) => {
+const VendorBookingCard = ({ name, serviceLine, status, featured = false, couponCode = null }) => {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   const badgeClass = featured
     ? 'bg-vendor-progress-featured-bg text-vendor-progress-featured-text'
@@ -37,6 +37,9 @@ const VendorBookingCard = ({ name, serviceLine, status, featured = false }) => {
           <p className="font-vendor-accent text-[16px] font-bold leading-6 text-white truncate">{name}</p>
           <p className="font-vendor-accent text-[12px] font-medium leading-4 text-white/90 truncate mt-0.5">
             {serviceLine}
+            {couponCode && (
+              <span className="ml-1.5 font-bold">· 🎟 {couponCode}</span>
+            )}
           </p>
         </div>
         <span
@@ -57,6 +60,9 @@ const VendorBookingCard = ({ name, serviceLine, status, featured = false }) => {
         <p className="font-vendor text-[16px] font-bold leading-6 text-vendor-text-primary truncate">{name}</p>
         <p className="font-vendor text-[12px] font-normal leading-4 text-vendor-text-secondary truncate mt-0.5">
           {serviceLine}
+          {couponCode && (
+            <span className="ml-1.5 font-semibold text-vendor-success">· 🎟 {couponCode}</span>
+          )}
         </p>
       </div>
       <span

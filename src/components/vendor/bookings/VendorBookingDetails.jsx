@@ -62,6 +62,15 @@ const VendorBookingDetails = ({
   const subtotal = booking.service_price ?? 0;
   const convenienceFee = booking.convenience_fee ?? 0;
   const totalDue = booking.total_amount ?? subtotal + convenienceFee;
+  // Coupon breakdown
+  const serviceDiscount = Number(booking.discount_amount || 0);
+  const feeDiscount = Number(booking.convenience_fee_discount || 0);
+  const couponSavings = serviceDiscount + feeDiscount;
+  const hasCoupon = Boolean(booking.coupon_code) && couponSavings > 0;
+  const serviceTotalBeforeCoupon =
+    booking.subtotal_service_price != null
+      ? Number(booking.subtotal_service_price)
+      : subtotal + serviceDiscount;
   const staffLabel =
     booking.staff_name ||
     booking.assigned_staff ||
@@ -211,8 +220,38 @@ const VendorBookingDetails = ({
         <section className="mb-6 space-y-3">
           <SectionTitle className="text-[#623C00]">Payment Summary</SectionTitle>
           <div className="rounded-2xl bg-[#FFDDB9] px-5 py-4">
+            {hasCoupon && (
+              <div className="mb-3 inline-flex items-center gap-2 rounded-lg bg-[#1DB954]/15 px-3 py-1.5">
+                <span className="font-vendor text-sm font-bold text-[#1B7A3D]">
+                  🎟 {booking.coupon_code}
+                </span>
+                <span className="font-vendor text-sm text-[#1B7A3D]">
+                  saved {formatCurrency(couponSavings)}
+                </span>
+              </div>
+            )}
+            {hasCoupon && serviceDiscount > 0 && (
+              <>
+                <div className="flex justify-between py-1">
+                  <span className="font-vendor text-base text-[#534433]">Service Total</span>
+                  <span className="font-vendor text-base text-[#534433] line-through">
+                    {formatCurrency(serviceTotalBeforeCoupon)}
+                  </span>
+                </div>
+                <div className="flex justify-between py-1">
+                  <span className="font-vendor text-base text-[#534433]">
+                    Coupon Discount
+                  </span>
+                  <span className="font-vendor text-base font-semibold text-[#1B7A3D]">
+                    −{formatCurrency(serviceDiscount)}
+                  </span>
+                </div>
+              </>
+            )}
             <div className="flex justify-between py-1">
-              <span className="font-vendor text-base text-[#534433]">Subtotal</span>
+              <span className="font-vendor text-base text-[#534433]">
+                {hasCoupon && serviceDiscount > 0 ? 'Service Subtotal' : 'Subtotal'}
+              </span>
               <span className="font-vendor text-base font-semibold text-[#221A11]">
                 {formatCurrency(subtotal)}
               </span>

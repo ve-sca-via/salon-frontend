@@ -137,6 +137,15 @@ export const cartApi = createApi({
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
+    // Validate / preview a coupon against the current cart ("Apply coupon")
+    validateCoupon: builder.mutation({
+      query: (code) => ({
+        url: '/api/v1/customers/cart/validate-coupon',
+        method: 'post',
+        data: { code },
+      }),
+    }),
+
     // Checkout cart - create booking with payment details
     checkoutCart: builder.mutation({
       query: (checkoutData) => ({
@@ -165,6 +174,7 @@ export const {
   useUpdateCartItemMutation,
   useRemoveFromCartMutation,
   useClearCartMutation,
+  useValidateCouponMutation,
   useCheckoutCartMutation,
 } = cartApi;
 
