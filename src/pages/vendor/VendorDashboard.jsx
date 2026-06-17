@@ -237,6 +237,13 @@ const VendorDashboard = () => {
                         serviceLine={formatServiceLine(booking)}
                         status={mapBookingStatus(booking.status)}
                         featured={index === featuredIdx}
+                        couponCode={
+                          booking.coupon_code &&
+                          (Number(booking.discount_amount || 0) +
+                            Number(booking.convenience_fee_discount || 0)) > 0
+                            ? booking.coupon_code
+                            : null
+                        }
                       />
                     ))}
                   </div>
