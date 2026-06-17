@@ -277,27 +277,9 @@ const VendorCoupons = () => {
                   </div>
                 </div>
 
-                <div>
-                  <span className={fieldLabelClass}>Applies To</span>
-                  <div className="grid grid-cols-2 gap-2 rounded-xl bg-[#F3F3F3] p-1">
-                    {[
-                      { v: 'service', l: 'Service price' },
-                      { v: 'convenience_fee', l: 'Convenience fee' },
-                    ].map((opt) => (
-                      <button
-                        key={opt.v}
-                        type="button"
-                        disabled={isEdit}
-                        onClick={() => updateField('applies_to', opt.v)}
-                        className={`rounded-lg py-2.5 font-vendor text-sm font-semibold transition-colors ${
-                          form.applies_to === opt.v ? 'bg-white text-[#865300] shadow-sm' : 'text-[#6B7280]'
-                        } ${isEdit ? 'opacity-60' : ''}`}
-                      >
-                        {opt.l}
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                {/* Vendor coupons always discount the service price. The
+                    convenience fee is platform revenue, so vendors cannot waive
+                    it (enforced by the backend); the selector was removed. */}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
