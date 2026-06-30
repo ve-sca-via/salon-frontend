@@ -12,10 +12,12 @@ export const paymentApi = createApi({
   baseQuery: axiosBaseQuery(),
   endpoints: (builder) => ({
     // Cart Checkout Payment - Create Razorpay Order
+    // Optionally pass { coupon_code } to apply a coupon to this order.
     createCartPaymentOrder: builder.mutation({
-      query: () => ({
+      query: (body) => ({
         url: '/api/v1/payments/cart/create-order',
         method: 'post',
+        data: body?.coupon_code ? { coupon_code: body.coupon_code } : {},
       }),
     }),
 

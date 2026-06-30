@@ -626,6 +626,13 @@ const BookingsManagement = () => {
                           ₹{booking.service_price?.toLocaleString() || 0}
                         </div>
                         <p className="font-vendor text-xs text-[#867461]">To collect</p>
+                        {booking.coupon_code &&
+                          (Number(booking.discount_amount || 0) +
+                            Number(booking.convenience_fee_discount || 0)) > 0 && (
+                            <span className="mt-1 inline-flex items-center gap-1 rounded bg-[#1DB954]/15 px-1.5 py-0.5 font-vendor text-[10px] font-semibold text-[#1B7A3D]">
+                              🎟 {booking.coupon_code}
+                            </span>
+                          )}
                       </td>
                       <td className="px-4 py-3">
                         <span
