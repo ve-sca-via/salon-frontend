@@ -17,6 +17,18 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
+import { post } from "../../services/apiClient";
+
+const SHOP_TYPES = ["Salon", "Spa", "Clinic", "Other"];
+
+const INITIAL_FORM = {
+  owner_name: "",
+  shop_name: "",
+  shop_type: "",
+  email: "",
+  phone: "",
+  location: "",
+};
 
 /**
  * Key benefits of partnering with Lubist
@@ -61,19 +73,41 @@ const steps = [
 ];
 
 const PartnerWithUs = () => {
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [form, setForm] = useState(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     setIsSubmitting(true);
-    
-    // Simulate form submission
-    setTimeout(() => {
-      alert("Thank you! We'll send you a verification code shortly.");
+
+    try {
+      await post("/api/v1/partners/apply", {
+        owner_name: form.owner_name.trim(),
+        shop_name: form.shop_name.trim(),
+        shop_type: form.shop_type,
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        location: form.location.trim(),
+      });
+      setSubmitted(true);
+      setForm(INITIAL_FORM);
+    } catch (err) {
+      setError(
+        err?.data?.detail ||
+          err?.message ||
+          "Something went wrong. Please try again."
+      );
+    } finally {
       setIsSubmitting(false);
-      setPhoneNumber("");
-    }, 1000);
+    }
   };
 
   return (
@@ -173,47 +207,154 @@ const PartnerWithUs = () => {
               Want to Partner With Us?
             </h2>
             <p className="text-neutral-gray-400 text-center mb-8">
-              We'll send you a verification code to get started.
+              Share a few details and our team will reach out to get you onboarded.
             </p>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <label
-                  htmlFor="phone"
-                  className="block text-neutral-black font-accent font-semibold mb-2"
-                >
-                  Contact Number
-                </label>
-                <input
-                  type="tel"
-                  id="phone"
-                  placeholder="Enter your contact number"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  required
-                  pattern="[0-9]{10}"
-                  className="w-full px-4 py-3 border border-neutral-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent transition-all"
-                />
-                <p className="text-sm text-neutral-gray-500 mt-2">
-                  Enter a 10-digit mobile number
+            {submitted ? (
+              <div className="text-center py-8">
+                <div className="text-5xl mb-4">🎉</div>
+                <h3 className="font-accent font-bold text-2xl text-neutral-black mb-2">
+                  Request Received!
+                </h3>
+                <p className="text-neutral-gray-400 mb-6">
+                  Thank you for your interest. Our team will contact you soon.
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setSubmitted(false)}
+                  className="text-accent-orange font-semibold hover:underline"
+                >
+                  Submit another request
+                </button>
               </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+                    {error}
+                  </div>
+                )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-accent-orange text-primary-white font-accent font-bold py-4 rounded-lg hover:bg-opacity-90 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
-              >
-                {isSubmitting ? "Submitting..." : "Continue"}
-              </button>
+                <div>
+                  <label htmlFor="owner_name" className="block text-neutral-black font-accent font-semibold mb-2">
+                    Owner Name
+                  </label>
+                  <input
+                    type="text"
+                    id="owner_name"
+                    name="owner_name"
+                    placeholder="Enter owner's full name"
+                    value={form.owner_name}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-neutral-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent transition-all"
+                  />
+                </div>
 
-              <p className="text-center text-[12px] text-neutral-gray-500 mt-2">
-                By continuing, you agree to our Terms of Service and{" "}
-                <Link to="/privacy-policy" className="text-accent-orange hover:underline font-medium">
-                  Privacy Policy
-                </Link>
-              </p>
-            </form>
+                <div>
+                  <label htmlFor="shop_name" className="block text-neutral-black font-accent font-semibold mb-2">
+                    Shop Name
+                  </label>
+                  <input
+                    type="text"
+                    id="shop_name"
+                    name="shop_name"
+                    placeholder="Enter your shop / business name"
+                    value={form.shop_name}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-neutral-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="shop_type" className="block text-neutral-black font-accent font-semibold mb-2">
+                    Shop Type
+                  </label>
+                  <select
+                    id="shop_type"
+                    name="shop_type"
+                    value={form.shop_type}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-neutral-gray-600 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent transition-all"
+                  >
+                    <option value="" disabled>
+                      Select shop type
+                    </option>
+                    {SHOP_TYPES.map((type) => (
+                      <option key={type} value={type}>
+                        {type}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="block text-neutral-black font-accent font-semibold mb-2">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    placeholder="owner@example.com"
+                    value={form.email}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-neutral-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="phone" className="block text-neutral-black font-accent font-semibold mb-2">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    placeholder="Enter a 10-digit mobile number"
+                    value={form.phone}
+                    onChange={handleChange}
+                    required
+                    pattern="[0-9]{10}"
+                    className="w-full px-4 py-3 border border-neutral-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="location" className="block text-neutral-black font-accent font-semibold mb-2">
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    id="location"
+                    name="location"
+                    placeholder="City / area where your shop is located"
+                    value={form.location}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-4 py-3 border border-neutral-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-accent-orange focus:border-transparent transition-all"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="w-full bg-accent-orange text-primary-white font-accent font-bold py-4 rounded-lg hover:bg-opacity-90 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl transform hover:scale-[1.02]"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Request"}
+                </button>
+
+                <p className="text-center text-[12px] text-neutral-gray-500 mt-2">
+                  By continuing, you agree to our Terms of Service and{" "}
+                  <Link to="/privacy-policy" className="text-accent-orange hover:underline font-medium">
+                    Privacy Policy
+                  </Link>
+                </p>
+              </form>
+            )}
 
             <div className="mt-8 text-center">
               <p className="text-neutral-gray-400 text-sm">
