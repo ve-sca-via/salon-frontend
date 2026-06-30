@@ -39,6 +39,17 @@ export const productApi = createApi({
       keepUnusedDataFor: 600, // Cache for 10 minutes
     }),
 
+    // Get related products (for the "Related Products" section on the detail page)
+    getRelatedProducts: builder.query({
+      query: ({ productId, limit = 10 }) => ({
+        url: `/api/v1/products/${productId}/related`,
+        method: 'get',
+        params: { limit },
+      }),
+      providesTags: (result, error, { productId }) => [{ type: 'ProductDetails', id: `RELATED-${productId}` }],
+      keepUnusedDataFor: 600, // Cache for 10 minutes
+    }),
+
     // Get product categories
     getProductCategories: builder.query({
       query: () => ({
@@ -54,6 +65,7 @@ export const productApi = createApi({
 export const {
   useGetProductsQuery,
   useGetProductBySlugQuery,
+  useGetRelatedProductsQuery,
   useGetProductCategoriesQuery,
 } = productApi;
 
