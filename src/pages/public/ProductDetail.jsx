@@ -7,6 +7,7 @@ import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 import { FiShoppingCart, FiCreditCard, FiChevronLeft, FiStar, FiTruck, FiShield, FiRotateCcw } from 'react-icons/fi';
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
+import RelatedProducts from '../../components/shared/RelatedProducts';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -255,6 +256,9 @@ const ProductDetail = () => {
           </div>
         </div>
       </main>
+
+      {/* Related Products — keeps browsing continuity at the end of the page */}
+      <RelatedProducts productId={product.id} />
 
       <Footer />
     </div>

@@ -52,6 +52,17 @@ export const salonApi = createApi({
       keepUnusedDataFor: 120, // Cache searches for 2 minutes
     }),
 
+    // Get related salons (for the "Related Salons" section on the detail page)
+    getRelatedSalons: builder.query({
+      query: ({ salonId, limit = 10 }) => ({
+        url: `/api/v1/salons/${salonId}/related`,
+        method: 'get',
+        params: { limit },
+      }),
+      providesTags: (result, error, { salonId }) => [{ type: 'SalonDetails', id: `RELATED-${salonId}` }],
+      keepUnusedDataFor: 600, // Cache for 10 minutes
+    }),
+
     // Get salon services
     getSalonServices: builder.query({
       query: (salonId) => ({
@@ -91,6 +102,7 @@ export const salonApi = createApi({
 export const {
   useGetSalonsQuery,
   useGetSalonByIdQuery,
+  useGetRelatedSalonsQuery,
   useSearchSalonsQuery,
   useGetSalonServicesQuery,
   useGetSalonAvailableSlotsQuery,
