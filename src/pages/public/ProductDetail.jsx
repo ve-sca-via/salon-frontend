@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useGetProductBySlugQuery } from '../../services/api/productApi';
 import { useAddToProductCartMutation, productCartApi } from '../../services/api/productCartApi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { hasAccessToken } from '../../utils/helpers';
 import { FiShoppingCart, FiCreditCard, FiChevronLeft, FiStar, FiTruck, FiShield, FiRotateCcw } from 'react-icons/fi';
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
@@ -70,7 +71,7 @@ const ProductDetail = () => {
     : 0;
 
   const handleAction = async (actionType) => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !hasAccessToken()) {
       // Redirect to login, but remember where we came from
       navigate('/login', { state: { from: location } });
       return;

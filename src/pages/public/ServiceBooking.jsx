@@ -36,6 +36,7 @@ import Footer from "../../components/layout/Footer";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
 import { useGetCartQuery, useAddToCartMutation } from "../../services/api/cartApi";
 import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
+import { hasAccessToken } from "../../utils/helpers";
 import { NotFound, NetworkError } from "../../components/shared/ErrorFallback";
 import { FiScissors } from "react-icons/fi";
 
@@ -255,10 +256,12 @@ export default function ServiceBooking() {
    */
   const handleAddToCart = async (service) => {
     // Check if user is authenticated
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !hasAccessToken()) {
+      // Pass the full location object so Login can return here (it reads
+      // `location.state.from.pathname`); a bare string wouldn't resolve.
       navigate("/login", {
         replace: true,
-        state: { from: `/salons/${id}/book` }
+        state: { from: location }
       });
       return;
     }

@@ -4,6 +4,7 @@ import { FiPlus } from 'react-icons/fi';
 import OptimizedImage from './OptimizedImage';
 import { useAddToProductCartMutation, productCartApi } from '../../services/api/productCartApi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
+import { hasAccessToken } from '../../utils/helpers';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 
@@ -18,7 +19,7 @@ const ProductCard = ({ product, compact = false }) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !hasAccessToken()) {
       navigate('/login', { state: { from: location } });
       return;
     }
@@ -36,7 +37,7 @@ const ProductCard = ({ product, compact = false }) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!isAuthenticated) {
+    if (!isAuthenticated || !hasAccessToken()) {
       navigate('/login', { state: { from: location } });
       return;
     }

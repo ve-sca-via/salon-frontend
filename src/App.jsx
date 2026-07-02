@@ -31,6 +31,8 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { useDispatch } from 'react-redux';
 import { getUserLocation } from './store/slices/locationSlice';
+import { clearUser } from './store/slices/authSlice';
+import { hasAccessToken } from './utils/helpers';
 
 // Error Boundary for crash protection
 import ErrorBoundary from './components/shared/ErrorBoundary';
@@ -120,6 +122,17 @@ function App() {
       localStorage.removeItem('token');
     }
   }, []);
+
+  // Reconcile persisted auth with the real session on load.
+  // redux-persist rehydrates `user`/`isAuthenticated` from localStorage, but the
+  // JWT lives separately and may have expired or been cleared. Without a token
+  // the persisted user is stale (navbar shows the name while requests 401), so
+  // clear it. Runs after the migration above so a migrated token still counts.
+  useEffect(() => {
+    if (!hasAccessToken()) {
+      dispatch(clearUser());
+    }
+  }, [dispatch]);
 
   // Fetch user location on app mount
   useEffect(() => {

@@ -1,3 +1,11 @@
+// Whether the user currently has a usable auth session.
+// The Redux `isAuthenticated` flag is persisted (redux-persist) and can go stale
+// after a token expires or is cleared by the axios interceptor, so a real access
+// token must also be present. Use this (not `isAuthenticated` alone) to gate
+// actions that hit authenticated endpoints, so we redirect to login instead of
+// firing a request that 401s with "Not authenticated".
+export const hasAccessToken = () => !!localStorage.getItem('access_token');
+
 // Format date to readable string
 export const formatDate = (dateString) => {
   const date = new Date(dateString);
