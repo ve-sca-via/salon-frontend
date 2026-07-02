@@ -28,14 +28,14 @@
  * 5. Navigate to /cart for checkout
  */
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/api/salonApi";
-import { useGetCartQuery, useAddToCartMutation, useRemoveFromCartMutation } from "../../services/api/cartApi";
-import { showSuccessToast, showErrorToast, showInfoToast } from "../../utils/toastConfig";
+import { useGetCartQuery, useAddToCartMutation } from "../../services/api/cartApi";
+import { showSuccessToast, showErrorToast } from "../../utils/toastConfig";
 import { NotFound, NetworkError } from "../../components/shared/ErrorFallback";
 import { FiScissors } from "react-icons/fi";
 
@@ -78,6 +78,29 @@ const getCategoryImage = (categoryName) => {
 
   // Default image
   return 'https://images.unsplash.com/photo-1560066984-138dadb4c035?w=300&h=300&fit=crop';
+};
+
+/**
+ * groupBySubcat - Groups a flat service list by its subcategory node.
+ * Returns { groups: [{ id, name, services }], noSub: [...] } where `noSub`
+ * holds services that aren't attached to any subcategory. This is what makes
+ * the 3-level taxonomy (category > subcategory > service) render correctly.
+ */
+const groupBySubcat = (list) => {
+  const groups = {};
+  const noSub = [];
+  list.forEach((s) => {
+    if (s.subcategory_id) {
+      const id = s.subcategory_id;
+      if (!groups[id]) {
+        groups[id] = { id, name: s.service_subcategories?.name || 'Other', services: [] };
+      }
+      groups[id].services.push(s);
+    } else {
+      noSub.push(s);
+    }
+  });
+  return { groups: Object.values(groups), noSub };
 };
 
 /**
@@ -131,8 +154,7 @@ export default function ServiceBooking() {
   const { data: servicesData, isLoading: servicesLoading } = useGetSalonServicesQuery(id);
   const { data: cart } = useGetCartQuery();
   const [addToCart] = useAddToCartMutation();
-  const [removeFromCart] = useRemoveFromCartMutation();
-  
+
   const salon = salonData?.salon || salonData;
   const services = servicesData?.services || servicesData || [];
   const loading = salonLoading;
@@ -141,8 +163,9 @@ export default function ServiceBooking() {
   // Local UI state
   const [selectedCategory, setSelectedCategory] = useState(location.state?.selectedCategory || null);
   const [filterGender, setFilterGender] = useState('all');
-  const [expandedPlan, setExpandedPlan] = useState(null);
-  const categoryScrollRef = useRef(null);
+  // Mobile accordion: id of the currently open subcategory (null = default first open, '' = all closed)
+  const [openSubcatId, setOpenSubcatId] = useState(null);
+  const [serviceSearch, setServiceSearch] = useState('');
 
   /**
    * ✅ OPTIMIZED: groupServicesByCategory - Memoized with useCallback
@@ -210,6 +233,12 @@ export default function ServiceBooking() {
     // Intentionally blank to prevent auto-selection
   }, []);
 
+  // Reset the mobile accordion + search whenever the selected category changes
+  useEffect(() => {
+    setOpenSubcatId(null);
+    setServiceSearch('');
+  }, [selectedCategory]);
+
   /**
    * handleAddToCart - Adds service to cart with validation
    * 
@@ -269,68 +298,11 @@ export default function ServiceBooking() {
   };
 
   /**
-   * handleRemoveFromCart - Removes service from cart
-   * Finds cart item by service_id and removes using cart item id
-   */
-  const handleRemoveFromCart = async (service) => {
-    const cartItem = cart?.items?.find((item) => item.service_id === service.id);
-
-    if (cartItem) {
-      try {
-        await removeFromCart(cartItem.id).unwrap();
-        showInfoToast(`${service.name} removed from services!`);
-      } catch (error) {
-        showErrorToast('Failed to remove from cart');
-      }
-    }
-  };
-
-  /**
    * isServiceInCart - Checks if service already exists in cart
    * Returns boolean for conditional rendering of "Add" vs "Added" button
    */
   const isServiceInCart = (service) => {
     return cart?.items?.some((item) => item.service_id === service.id) || false;
-  };
-
-  /**
-   * handleCategoryNavigation - Changes selection and scrolls to category
-   * Moves from one category to another based on direction
-   */
-  const handleCategoryNavigation = (direction) => {
-    if (serviceCategories.length === 0) return;
-    
-    const currentIndex = serviceCategories.findIndex(cat => cat.name === selectedCategory);
-    let nextIndex;
-    
-    if (direction === "left") {
-      nextIndex = currentIndex > 0 ? currentIndex - 1 : serviceCategories.length - 1;
-    } else {
-      nextIndex = currentIndex < serviceCategories.length - 1 ? currentIndex + 1 : 0;
-    }
-    
-    const nextCategory = serviceCategories[nextIndex];
-    setSelectedCategory(nextCategory.name);
-
-    // Smoothly scroll the container to center the new category
-    if (categoryScrollRef.current) {
-      const container = categoryScrollRef.current;
-      const activeItem = container.children[nextIndex];
-      
-      if (activeItem) {
-        const containerWidth = container.offsetWidth;
-        const itemLeft = activeItem.offsetLeft;
-        const itemWidth = activeItem.offsetWidth;
-        
-        // Calculate scroll position to center the item
-        const scrollPos = itemLeft - (containerWidth / 2) + (itemWidth / 2);
-        
-        container.scrollTo({
-          left: scrollPos,
-          behavior: "smooth"
-        });
-      }
-    }
   };
 
   // Loading state - shows spinner while fetching data
@@ -413,7 +385,8 @@ export default function ServiceBooking() {
     );
   }
 
-  // Filter services for currently selected category and selected gender
+  // Filter services for currently selected category, gender, and search query
+  const searchQuery = serviceSearch.trim().toLowerCase();
   const currentServices = (selectedCategory ? (groupedServices[selectedCategory] || []) : [])
     .filter(service => {
       if (filterGender === 'all') return true;
@@ -421,7 +394,159 @@ export default function ServiceBooking() {
       if (filterGender === 'male') return cat === 'male' || cat === 'both';
       if (filterGender === 'female') return cat === 'female' || cat === 'both';
       return true;
+    })
+    .filter(service => {
+      if (!searchQuery) return true;
+      return (service.name || '').toLowerCase().includes(searchQuery);
     });
+
+  // Group a flat service list by subcategory (level 3 nesting: category > subcategory > service)
+  const { groups: subcatGroups, noSub: noSubcatServices } = groupBySubcat(currentServices);
+
+  // Mobile accordion groups = subcategory groups (+ a bucket for services with no subcategory)
+  const mobileAccordion = [...subcatGroups];
+  if (noSubcatServices.length > 0) {
+    mobileAccordion.push({
+      id: '__more__',
+      name: subcatGroups.length > 0 ? 'More Services' : (selectedCategory || 'Services'),
+      services: noSubcatServices,
+    });
+  }
+
+  // Desktop service card (existing compact layout)
+  const renderServiceItem = (service) => (
+    <div
+      key={service.id}
+      className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 hover:shadow-md transition-all flex items-center justify-between"
+    >
+      {/* Left: Name and Duration */}
+      <div className="flex flex-col pr-3">
+        <h3 className="font-display font-bold text-[14px] text-neutral-black leading-tight line-clamp-2 mb-1" title={service.name}>
+          {service.name}
+        </h3>
+
+        <div className="flex flex-wrap items-center gap-2 mt-1">
+          <div className="flex items-center gap-1 text-neutral-gray-500">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span className="font-body text-[12px] whitespace-nowrap">
+              {service.duration_minutes}m
+            </span>
+          </div>
+          {service.gender_category && service.gender_category !== 'both' && (
+            <span className={`px-1.5 py-0.5 text-[9px] rounded-sm uppercase tracking-wider font-semibold ${
+              service.gender_category === 'male' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-pink-50 text-pink-600 border border-pink-200'
+            }`}>
+              {service.gender_category}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Right: Price and Add Button */}
+      <div className="flex flex-col items-end shrink-0 ml-2 gap-1.5">
+        {service.discounted_price !== null && service.discounted_price !== undefined ? (
+          <div className="flex flex-col items-end leading-tight">
+            <span className="font-display font-extrabold text-[14px] text-accent-orange">
+              ₹{service.discounted_price}
+            </span>
+            <span className="font-body text-[11px] text-neutral-gray-500 line-through">
+              ₹{service.price}
+            </span>
+            {service.discount_percentage !== null && service.discount_percentage !== undefined && (
+              <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-body font-semibold text-[9px] uppercase tracking-wide mt-0.5">
+                {service.discount_percentage}% off
+              </span>
+            )}
+          </div>
+        ) : (
+          <span className="font-display font-extrabold text-[14px] text-accent-orange">
+            ₹{service.price}
+          </span>
+        )}
+        {isServiceInCart(service) ? (
+          <button
+            disabled
+            className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-[5px] font-body font-bold text-[10px] cursor-not-allowed uppercase tracking-wide"
+          >
+            Added
+          </button>
+        ) : (
+          <button
+            onClick={() => handleAddToCart(service)}
+            className="px-3 py-1.5 bg-accent-orange/10 text-accent-orange border border-accent-orange/20 rounded-[5px] font-body font-bold text-[10px] hover:bg-accent-orange hover:text-white transition-colors uppercase tracking-wide"
+          >
+            + Add
+          </button>
+        )}
+      </div>
+    </div>
+  );
+
+  // Mobile accordion service row (small icon · name · description · price · ADD pill)
+  const renderAccordionService = (service) => {
+    const inCart = isServiceInCart(service);
+    const hasDiscount = service.discounted_price !== null && service.discounted_price !== undefined;
+    return (
+      <div key={service.id} className="flex items-start justify-between gap-3 py-4 first:pt-1">
+        {/* Left: icon + details */}
+        <div className="flex-1 min-w-0">
+          <FiScissors className="w-3 h-3 text-accent-orange/70 mb-1" />
+          <h3 className="font-body font-medium text-[15px] text-neutral-black leading-snug">
+            {service.name}
+          </h3>
+          {service.description && (
+            <p className="font-body text-[13px] text-neutral-gray-500 mt-0.5 line-clamp-2">
+              {service.description}
+            </p>
+          )}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1.5">
+            {hasDiscount ? (
+              <>
+                <span className="font-body font-semibold text-[14px] text-neutral-black">₹{service.discounted_price}</span>
+                <span className="font-body text-[12px] text-neutral-gray-400 line-through">₹{service.price}</span>
+                {service.discount_percentage !== null && service.discount_percentage !== undefined && (
+                  <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-body font-semibold text-[9px] uppercase tracking-wide">
+                    {service.discount_percentage}% off
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="font-body font-semibold text-[14px] text-neutral-black">₹{service.price}</span>
+            )}
+            {service.duration_minutes ? (
+              <span className="font-body text-[12px] text-neutral-gray-400">· {service.duration_minutes}m</span>
+            ) : null}
+            {service.gender_category && service.gender_category !== 'both' && (
+              <span className={`px-1.5 py-0.5 text-[9px] rounded-sm uppercase tracking-wider font-semibold ${
+                service.gender_category === 'male' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-pink-50 text-pink-600 border border-pink-200'
+              }`}>
+                {service.gender_category}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Right: ADD pill */}
+        {inCart ? (
+          <button
+            disabled
+            className="shrink-0 px-5 py-2 rounded-[20px] border border-gray-200 bg-gray-50 text-gray-400 font-body font-semibold text-[13px] uppercase tracking-wide cursor-not-allowed"
+          >
+            Added
+          </button>
+        ) : (
+          <button
+            onClick={() => handleAddToCart(service)}
+            className="shrink-0 px-5 py-2 rounded-[20px] border border-accent-orange/30 bg-white text-accent-orange font-body font-semibold text-[13px] uppercase tracking-wide shadow-sm hover:bg-accent-orange hover:text-white transition-colors"
+          >
+            Add
+          </button>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-bg-secondary">
@@ -570,120 +695,104 @@ export default function ServiceBooking() {
             <div className="flex justify-center items-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-accent-orange"></div>
             </div>
-          ) : currentServices.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="font-body text-neutral-gray-500">
-                No services available in this category
-              </p>
-            </div>
           ) : (
-            <div className="space-y-8 px-2">
-              {(() => {
-                // Group currentServices by subcategory_id
-                const subcatGroups = {};
-                const noSubcatServices = [];
-                
-                currentServices.forEach(s => {
-                  if (s.subcategory_id) {
-                    const subcatId = s.subcategory_id;
-                    const subcatName = s.service_subcategories?.name || 'Other';
-                    const subcatIcon = s.service_subcategories?.icon_url || null;
-                    if (!subcatGroups[subcatId]) {
-                      subcatGroups[subcatId] = { name: subcatName, icon: subcatIcon, services: [] };
-                    }
-                    subcatGroups[subcatId].services.push(s);
-                  } else {
-                    noSubcatServices.push(s);
-                  }
-                });
-
-                const renderServiceItem = (service) => (
-                  <div
-                    key={service.id}
-                    className="bg-white border border-gray-200 shadow-sm rounded-lg p-3 hover:shadow-md transition-all flex items-center justify-between"
-                  >
-                    {/* Left: Name and Duration */}
-                    <div className="flex flex-col pr-3">
-                      <h3 className="font-display font-bold text-[14px] text-neutral-black leading-tight line-clamp-2 mb-1" title={service.name}>
-                        {service.name}
-                      </h3>
-                      
-                      <div className="flex flex-wrap items-center gap-2 mt-1">
-                        <div className="flex items-center gap-1 text-neutral-gray-500">
-                          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span className="font-body text-[12px] whitespace-nowrap">
-                            {service.duration_minutes}m
-                          </span>
+            <>
+              {/* ---------- MOBILE: category strip + search + collapsible subcategories ---------- */}
+              <div className="lg:hidden">
+                {/* Category selector (horizontal scroll) */}
+                <div className="-mx-3 px-3 mb-4 flex gap-5 overflow-x-auto scrollbar-hide">
+                  {serviceCategories.map((cat) => {
+                    const active = cat.name === selectedCategory;
+                    return (
+                      <button
+                        key={cat.id}
+                        onClick={() => setSelectedCategory(cat.name)}
+                        className="flex flex-col items-center gap-1.5 flex-shrink-0 w-16"
+                      >
+                        <div className={`w-16 h-16 rounded-full overflow-hidden border-2 transition-all ${active ? "border-accent-orange shadow-md" : "border-transparent"}`}>
+                          <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" />
                         </div>
-                        {service.gender_category && service.gender_category !== 'both' && (
-                          <span className={`px-1.5 py-0.5 text-[9px] rounded-sm uppercase tracking-wider font-semibold ${
-                            service.gender_category === 'male' ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-pink-50 text-pink-600 border border-pink-200'
-                          }`}>
-                            {service.gender_category}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Right: Price and Add Button */}
-                    <div className="flex flex-col items-end shrink-0 ml-2 gap-1.5">
-                      {service.discounted_price !== null && service.discounted_price !== undefined ? (
-                        <div className="flex flex-col items-end leading-tight">
-                          <span className="font-display font-extrabold text-[14px] text-accent-orange">
-                            ₹{service.discounted_price}
-                          </span>
-                          <span className="font-body text-[11px] text-neutral-gray-500 line-through">
-                            ₹{service.price}
-                          </span>
-                          {service.discount_percentage !== null && service.discount_percentage !== undefined && (
-                            <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-body font-semibold text-[9px] uppercase tracking-wide mt-0.5">
-                              {service.discount_percentage}% off
-                            </span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="font-display font-extrabold text-[14px] text-accent-orange">
-                          ₹{service.price}
+                        <span className={`font-body text-[12px] leading-tight text-center ${active ? "text-neutral-black font-semibold" : "text-neutral-gray-500"}`}>
+                          {cat.name}
                         </span>
-                      )}
-                        {isServiceInCart(service) ? (
-                          <button
-                            disabled
-                            className="px-3 py-1.5 bg-gray-100 text-gray-500 rounded-[5px] font-body font-bold text-[10px] cursor-not-allowed uppercase tracking-wide"
-                          >
-                            Added
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleAddToCart(service)}
-                            className="px-3 py-1.5 bg-accent-orange/10 text-accent-orange border border-accent-orange/20 rounded-[5px] font-body font-bold text-[10px] hover:bg-accent-orange hover:text-white transition-colors uppercase tracking-wide"
-                          >
-                            + Add
-                          </button>
-                        )}
-                    </div>
-                  </div>
-                );
+                        <span className={`h-0.5 w-8 rounded-full ${active ? "bg-accent-orange" : "bg-transparent"}`} />
+                      </button>
+                    );
+                  })}
+                </div>
 
-                return (
-                  <>
-                    {Object.values(subcatGroups).map((group, idx) => (
-                      <div key={idx} className="mb-6">
-                        <div className="flex items-center mb-3">
-                          {group.icon && (
-                            <img 
-                              src={group.icon} 
-                              alt={group.name} 
-                              className="w-8 h-8 rounded-full bg-orange-50 p-1.5 mr-2 object-contain"
-                              onError={(e) => {
-                                e.target.onerror = null;
-                                e.target.style.display = 'none';
-                              }}
-                            />
+                {/* Search */}
+                <div className="relative mb-4">
+                  <svg className="w-5 h-5 text-neutral-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M11 19a8 8 0 100-16 8 8 0 000 16z" />
+                  </svg>
+                  <input
+                    type="text"
+                    value={serviceSearch}
+                    onChange={(e) => setServiceSearch(e.target.value)}
+                    placeholder="Search for service..."
+                    className="w-full h-11 pl-10 pr-3 rounded-lg border border-gray-200 bg-gray-50 font-body text-[14px] text-neutral-black placeholder:text-neutral-gray-400 focus:outline-none focus:ring-2 focus:ring-accent-orange/30 focus:border-accent-orange"
+                  />
+                </div>
+
+                {/* Collapsible subcategory accordion */}
+                {currentServices.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="font-body text-neutral-gray-500">
+                      {searchQuery ? "No services match your search" : "No services available in this category"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {mobileAccordion.map((group, idx) => {
+                      const isOpen = openSubcatId === null ? idx === 0 : openSubcatId === group.id;
+                      return (
+                        <div key={group.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                          <button
+                            onClick={() =>
+                              setOpenSubcatId((prev) => {
+                                const currentlyOpen = prev === null ? idx === 0 : prev === group.id;
+                                return currentlyOpen ? "" : group.id;
+                              })
+                            }
+                            className="w-full flex items-center justify-between px-5 py-4 text-left"
+                          >
+                            <span className="font-display font-semibold text-[16px] text-neutral-black">
+                              {group.name} ({group.services.length})
+                            </span>
+                            <svg
+                              className={`w-5 h-5 text-neutral-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`}
+                              fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </button>
+                          {isOpen && (
+                            <div className="px-5 pb-4 divide-y divide-gray-100">
+                              {group.services.map(renderAccordionService)}
+                            </div>
                           )}
-                          <h3 className="font-body font-semibold text-[18px] text-gray-800">
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* ---------- DESKTOP: grouped grid ---------- */}
+              <div className="hidden lg:block">
+                {currentServices.length === 0 ? (
+                  <div className="text-center py-12">
+                    <p className="font-body text-neutral-gray-500">
+                      No services available in this category
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-8 px-2">
+                    {subcatGroups.map((group) => (
+                      <div key={group.id} className="mb-6">
+                        <div className="flex items-center mb-3">
+                          <h3 className="font-body font-semibold text-[18px] text-gray-800 pl-3 border-l-4 border-accent-orange">
                             {group.name}
                           </h3>
                         </div>
@@ -692,10 +801,10 @@ export default function ServiceBooking() {
                         </div>
                       </div>
                     ))}
-                    
+
                     {noSubcatServices.length > 0 && (
                       <div className="mb-6">
-                        {Object.keys(subcatGroups).length > 0 && (
+                        {subcatGroups.length > 0 && (
                           <h3 className="font-body font-semibold text-[16px] text-gray-800 mb-3 pl-3 border-l-4 border-accent-orange">
                             More Services
                           </h3>
@@ -705,10 +814,10 @@ export default function ServiceBooking() {
                         </div>
                       </div>
                     )}
-                  </>
-                );
-              })()}
-            </div>
+                  </div>
+                )}
+              </div>
+            </>
           )}
         </div>
         )}
