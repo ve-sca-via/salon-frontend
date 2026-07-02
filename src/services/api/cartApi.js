@@ -137,6 +137,17 @@ export const cartApi = createApi({
       invalidatesTags: [{ type: 'Cart', id: 'LIST' }],
     }),
 
+    // Available coupons the customer can discover for a salon (platform + that
+    // salon's vendor coupons). Used to show applicable offers at checkout.
+    getAvailableCoupons: builder.query({
+      query: (salonId) => ({
+        url: '/api/v1/customers/available-coupons',
+        method: 'get',
+        params: salonId ? { salon_id: salonId } : undefined,
+      }),
+      keepUnusedDataFor: 120,
+    }),
+
     // Validate / preview a coupon against the current cart ("Apply coupon")
     validateCoupon: builder.mutation({
       query: (code) => ({
@@ -174,6 +185,7 @@ export const {
   useUpdateCartItemMutation,
   useRemoveFromCartMutation,
   useClearCartMutation,
+  useGetAvailableCouponsQuery,
   useValidateCouponMutation,
   useCheckoutCartMutation,
 } = cartApi;

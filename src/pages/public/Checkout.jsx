@@ -55,7 +55,7 @@ import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
-import { useGetCartQuery, useCheckoutCartMutation, useValidateCouponMutation } from "../../services/api/cartApi";
+import { useGetCartQuery, useCheckoutCartMutation, useValidateCouponMutation, useGetAvailableCouponsQuery } from "../../services/api/cartApi";
 import { bookingApi } from "../../services/api/bookingApi";
 import { useCreateCartPaymentOrderMutation } from "../../services/api/paymentApi";
 import { useGetPublicConfigsQuery } from "../../services/api/configApi";
@@ -79,6 +79,11 @@ export default function Checkout() {
   
   // Fetch public configs
   const { data: configs } = useGetPublicConfigsQuery();
+
+  // Available coupons for this salon (platform + this salon's vendor coupons)
+  const { data: availableCoupons } = useGetAvailableCouponsQuery(cart?.salon_id, {
+    skip: !cart?.salon_id,
+  });
   
   // Mutations
   const [createPaymentOrder, { isLoading: isCreatingOrder }] = useCreateCartPaymentOrderMutation();
@@ -304,13 +309,14 @@ export default function Checkout() {
     setCouponMessage(null);
   }, [cart?.item_count, cart?.total_amount, cart?.salon_id]);
 
-  const handleApplyCoupon = async () => {
-    const code = couponInput.trim().toUpperCase();
+  const handleApplyCoupon = async (codeArg) => {
+    const code = (typeof codeArg === "string" ? codeArg : couponInput).trim().toUpperCase();
     if (!code) return;
     try {
       const result = await validateCoupon(code).unwrap();
       if (result.valid) {
         setAppliedCoupon(result);
+        setCouponInput(code);
         setCouponMessage(null);
         showSuccessToast("Coupon applied");
       } else {
@@ -675,6 +681,46 @@ export default function Checkout() {
                   <p className={`mt-2 text-[12px] sm:text-[13px] font-body ${couponMessage.type === "info" ? "text-neutral-gray-500" : "text-red-600"}`}>
                     {couponMessage.text}
                   </p>
+                )}
+
+                {/* Available coupons for this salon — tap to apply */}
+                {!appliedCoupon && availableCoupons?.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="font-body text-[11px] sm:text-[12px] font-semibold text-neutral-gray-500 uppercase tracking-wide">
+                      Available Offers
+                    </p>
+                    {availableCoupons.map((coupon) => (
+                      <button
+                        key={coupon.id}
+                        type="button"
+                        onClick={() => handleApplyCoupon(coupon.code)}
+                        disabled={isValidatingCoupon}
+                        className="w-full text-left rounded-lg border border-dashed border-accent-orange/60 bg-orange-50/40 hover:bg-orange-50 active:bg-orange-100 transition-colors p-3 disabled:opacity-50"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <svg className="w-3.5 h-3.5 text-accent-orange shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5a1.99 1.99 0 011.414.586l7 7a2 2 0 010 2.828l-5 5a2 2 0 01-2.828 0l-7-7A2 2 0 013 8V3a1 1 0 011-1z" /></svg>
+                              <span className="font-body font-bold text-[13px] sm:text-[14px] text-neutral-black break-words">
+                                {coupon.summary}
+                              </span>
+                            </div>
+                            {coupon.subtitle && (
+                              <p className="font-body text-[11px] sm:text-[12px] text-neutral-gray-500 mt-0.5">
+                                {coupon.subtitle}
+                              </p>
+                            )}
+                            <span className="inline-block mt-1 rounded border border-neutral-gray-600 bg-white px-1.5 py-0.5 text-[10px] sm:text-[11px] font-mono font-semibold text-neutral-black tracking-wide">
+                              {coupon.code}
+                            </span>
+                          </div>
+                          <span className="shrink-0 text-accent-orange font-body font-semibold text-[12px] sm:text-[13px]">
+                            Apply
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
 
