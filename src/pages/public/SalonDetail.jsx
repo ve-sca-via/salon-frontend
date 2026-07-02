@@ -38,7 +38,6 @@ import { useGetSalonByIdQuery, useGetSalonServicesQuery } from "../../services/a
 import { useGetSalonReviewsQuery } from "../../services/api/reviewApi";
 import { FiStar, FiMapPin, FiPhone, FiMail, FiClock, FiHeart, FiNavigation, FiShare2 } from "react-icons/fi";
 import { useAddFavoriteMutation, useGetFavoritesQuery, useRemoveFavoriteMutation } from "../../services/api/favoriteApi";
-import { useAddToCartMutation, useGetCartQuery } from "../../services/api/cartApi";
 import { SkeletonServiceCard, SkeletonText } from "../../components/shared/Skeleton";
 import { NotFound } from "../../components/shared/ErrorFallback";
 import ShareModal from "../../components/shared/ShareModal";
@@ -136,43 +135,6 @@ function Breadcrumb({ city, salonName }) {
 }
 
 /**
- * ServiceCard - Individual service preview card
- * Displays service image, name, price, duration
- * Clickable to navigate to booking page
- * Hover effects: shadow lift, image scale
- */
-function ServiceCard({ service, onBook }) {
-  const categoryImage = service.image_url || getCategoryImage(service.category_name, service.name);
-  
-  return (
-    <div 
-      className="flex flex-col items-center text-center group cursor-pointer"
-      onClick={() => onBook(service)}
-    >
-      <div className="relative w-[140px] h-[140px] rounded-2xl overflow-hidden mb-3 shadow-md group-hover:shadow-xl transition-all">
-        <img
-          src={categoryImage}
-          alt={service.name}
-          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-        />
-        {/* Price Badge */}
-        <div className="absolute bottom-2 right-2 bg-accent-orange text-white px-2 py-1 rounded-full text-xs font-bold">
-          ₹{service.price}
-        </div>
-      </div>
-      <h4 className="font-body font-semibold text-[15px] text-neutral-black leading-tight max-w-[140px] mb-1 group-hover:text-accent-orange transition-colors">
-        {service.name}
-      </h4>
-      {service.duration_minutes && (
-        <p className="font-body text-[12px] text-neutral-gray-600">
-          {service.duration_minutes} min
-        </p>
-      )}
-    </div>
-  );
-}
-
-/**
  * CategoryCard - Service category navigation card
  * Shows category icon and name
  * Clicking scrolls to category section
@@ -249,8 +211,6 @@ export default function SalonDetail() {
   const { data: salonData, isLoading: loading, error } = useGetSalonByIdQuery(id);
   const { data: servicesData, isLoading: servicesLoading } = useGetSalonServicesQuery(id);
   const { data: reviewsData, isLoading: reviewsLoading } = useGetSalonReviewsQuery(id);
-  const { data: cart } = useGetCartQuery();
-  const [addToCart] = useAddToCartMutation();
   const isCustomer = user?.role === "customer";
   const { data: favoritesData } = useGetFavoritesQuery(undefined, {
     skip: !isAuthenticated || !isCustomer,
@@ -292,7 +252,6 @@ export default function SalonDetail() {
 
   // Local UI state
   const [activeTab, setActiveTab] = useState("services");
-  const [selectedParentCategory, setSelectedParentCategory] = useState(null);
   const [selectedImage, setSelectedImage] = useState(0);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -308,7 +267,11 @@ export default function SalonDetail() {
     salon?.description ||
     "Welcome to our salon! We provide premium beauty and grooming services with experienced professionals.";
 
+  // When navigating between salons (e.g. via "Related Salons"), the route
+  // component stays mounted and only `id` changes, so the browser keeps the
+  // previous scroll position. Reset to the top so it reads like a fresh page.
   useEffect(() => {
+    window.scrollTo(0, 0);
     setAboutExpanded(false);
   }, [id]);
 
@@ -406,50 +369,6 @@ export default function SalonDetail() {
     }, 0);
     return max > 0 ? max : 10;
   }, [services]);
-
-  const handleBookService = async (service) => {
-    if (!isAuthenticated) {
-      navigate("/login", {
-        replace: true,
-        state: { from: `/salons/${id}` },
-      });
-      return;
-    }
-
-    // Prevent mixing salons in cart
-    if (cart?.salon_id && String(cart.salon_id) !== String(id)) {
-      showErrorToast(
-        `Your selected services contain items from ${cart.salon_name}. Please clear your selection to add items from a different salon.`,
-        { autoClose: 4000 }
-      );
-      return;
-    }
-
-    const cartItem = {
-      salon_id: id,
-      salon_name: salon?.business_name || salon?.name,
-      service_id: service.id,
-      service_name: service.name,
-      plan_name: service.plan_name || "Standard",
-      category: service.service_subcategories?.name
-        ? `${service.service_categories?.name || "Category"} > ${service.service_subcategories.name}`
-        : (service.service_categories?.name || service.category_name || "Other"),
-      subcategory_id: service.subcategory_id || null,
-      duration: service.duration_minutes || 0,
-      price: parseFloat(service.price) || 0,
-      description: service.description || `${service.duration_minutes} minutes`,
-      quantity: 1,
-    };
-
-    try {
-      await addToCart(cartItem).unwrap();
-      showSuccessToast(`${service.name} added to services!`);
-      navigate("/cart");
-    } catch (addErr) {
-      const msg = addErr?.data?.detail || addErr?.data?.message || "Failed to add to cart";
-      showErrorToast(msg);
-    }
-  };
 
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
@@ -1029,185 +948,20 @@ export default function SalonDetail() {
                         ))}
                       </div>
                     ) : serviceCategories.length > 0 ? (
-                      !selectedParentCategory ? (
-                        /* View 1: Parent Categories */
-                        <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 transition-opacity duration-300">
-                          {serviceCategories.map((category) => (
-                            <CategoryCard
-                              key={category.id}
-                              category={category}
-                              onClick={() => setSelectedParentCategory(category)}
-                            />
-                          ))}
-                        </div>
-                      ) : (
-                        /* View 2: Subcategories and Services */
-                        <div className="animate-fade-in">
-                          <div className="mb-6 flex flex-col gap-4">
-                            <nav className="flex items-center gap-2 text-sm font-body text-gray-500">
-                              <button 
-                                onClick={() => setSelectedParentCategory(null)}
-                                className="hover:text-accent-orange font-medium transition-colors"
-                              >
-                                Categories
-                              </button>
-                              <span className="text-gray-400 text-xs">▶</span>
-                              <span className="text-neutral-black font-semibold">
-                                {selectedParentCategory.name}
-                              </span>
-                              <span className="text-gray-400 text-xs">▶</span>
-                              <span className="text-neutral-black font-semibold">
-                                Services
-                              </span>
-                            </nav>
-
-                            <button
-                              onClick={() => setSelectedParentCategory(null)}
-                              className="flex items-center w-fit text-accent-orange font-body font-medium hover:opacity-80 transition-opacity"
-                            >
-                              <svg className="w-5 h-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                              </svg>
-                              Back to Categories
-                            </button>
-                          </div>
-                          
-                          <div className="flex items-center mb-6">
-                            {selectedParentCategory.icon_url && (
-                              <img 
-                                src={selectedParentCategory.icon_url} 
-                                alt={selectedParentCategory.name} 
-                                className="w-10 h-10 rounded-full bg-orange-50 p-2 mr-3 object-contain"
-                                onError={(e) => {
-                                  e.target.onerror = null;
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                            )}
-                            <h3 className="text-2xl font-display font-bold text-neutral-black">
-                              {selectedParentCategory.name} Services
-                            </h3>
-                          </div>
-
-                          {/* Render Services grouped by Subcategory (L2), then Sub-subcategory (L3) */}
-                          {(() => {
-                            const categoryServices = services.filter(s => s.category_id === selectedParentCategory.id);
-
-                            // Build a 3-level grouping using the taxonomy path the API
-                            // attaches per service: category -> subcategory (L2) -> sub_subcategory (L3).
-                            const subcatGroups = {};      // keyed by L2 id
-                            const noSubcatServices = [];  // services with no L2 node at all
-
-                            categoryServices.forEach(s => {
-                              const tax = s.taxonomy;
-                              let sub, subSub;
-                              if (tax) {
-                                sub = tax.subcategory;
-                                subSub = tax.sub_subcategory;
-                              } else {
-                                // Legacy fallback when the API didn't attach a taxonomy path.
-                                sub = s.subcategory_id
-                                  ? { id: s.subcategory_id, name: s.service_subcategories?.name || 'Other' }
-                                  : null;
-                                subSub = null;
-                              }
-
-                              if (sub && sub.id) {
-                                if (!subcatGroups[sub.id]) {
-                                  subcatGroups[sub.id] = { name: sub.name || 'Other', directServices: [], subSubGroups: {} };
-                                }
-                                const group = subcatGroups[sub.id];
-                                if (subSub && subSub.id) {
-                                  if (!group.subSubGroups[subSub.id]) {
-                                    group.subSubGroups[subSub.id] = { name: subSub.name || 'Other', services: [] };
-                                  }
-                                  group.subSubGroups[subSub.id].services.push(s);
-                                } else {
-                                  group.directServices.push(s);
-                                }
-                              } else {
-                                noSubcatServices.push(s);
-                              }
-                            });
-
-                            return (
-                              <div className="space-y-8">
-                                {Object.values(subcatGroups).map((group, idx) => (
-                                  <div key={idx} className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                                    <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
-                                      <h4 className="font-body font-semibold text-[16px] text-gray-800">
-                                        {group.name}
-                                      </h4>
-                                    </div>
-                                    <div className="p-4 space-y-6">
-                                      {/* Services attached directly to the subcategory (no sub-type) */}
-                                      {group.directServices.length > 0 && (
-                                        <div className="flex flex-wrap gap-4">
-                                          {group.directServices.map(service => (
-                                            <ServiceCard
-                                              key={service.id}
-                                              service={service}
-                                              onBook={handleBookService}
-                                            />
-                                          ))}
-                                        </div>
-                                      )}
-
-                                      {/* Sub-subcategory (L3) sub-groups */}
-                                      {Object.values(group.subSubGroups).map((subGroup, sIdx) => (
-                                        <div key={sIdx} className="space-y-3">
-                                          <div className="flex items-center gap-2">
-                                            <span className="h-1.5 w-1.5 rounded-full bg-accent-orange" />
-                                            <h5 className="font-body font-semibold text-[14px] text-gray-600">
-                                              {subGroup.name}
-                                            </h5>
-                                          </div>
-                                          <div className="flex flex-wrap gap-4 pl-3.5">
-                                            {subGroup.services.map(service => (
-                                              <ServiceCard
-                                                key={service.id}
-                                                service={service}
-                                                onBook={handleBookService}
-                                              />
-                                            ))}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ))}
-
-                                {noSubcatServices.length > 0 && (
-                                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                                    {Object.keys(subcatGroups).length > 0 && (
-                                      <div className="bg-gray-50 px-4 py-3 border-b border-gray-100">
-                                        <h4 className="font-body font-semibold text-[16px] text-gray-800">
-                                          More Services
-                                        </h4>
-                                      </div>
-                                    )}
-                                    <div className="p-4 flex flex-wrap gap-4">
-                                      {noSubcatServices.map(service => (
-                                        <ServiceCard
-                                          key={service.id}
-                                          service={service}
-                                          onBook={handleBookService}
-                                        />
-                                      ))}
-                                    </div>
-                                  </div>
-                                )}
-
-                                {categoryServices.length === 0 && (
-                                  <div className="text-center py-8 text-gray-500 font-body">
-                                    No services available in this category.
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </div>
-                      )
+                      /* Category grid — clicking a category opens the booking page with that category pre-selected */
+                      <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 transition-opacity duration-300">
+                        {serviceCategories.map((category) => (
+                          <CategoryCard
+                            key={category.id}
+                            category={category}
+                            onClick={() =>
+                              navigate(`/salons/${id}/book`, {
+                                state: { selectedCategory: category.name },
+                              })
+                            }
+                          />
+                        ))}
+                      </div>
                     ) : (
                       <div className="text-center py-12 bg-neutral-gray-100 rounded-xl">
                         <p className="text-neutral-gray-600 font-body text-[15px]">
