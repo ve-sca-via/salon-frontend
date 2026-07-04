@@ -234,8 +234,13 @@ export default function ServiceBooking() {
     // Intentionally blank to prevent auto-selection
   }, []);
 
-  // Reset the mobile accordion + search whenever the selected category changes
+  // Land at the top of the page on mount and whenever the selected category
+  // changes. Arriving from a category tile on the salon detail page keeps the
+  // previous scroll offset otherwise (SPA navigation doesn't reset it), which
+  // dropped the vendor into the middle/bottom of the services list.
+  // Reset the mobile accordion + search whenever the selected category changes.
   useEffect(() => {
+    window.scrollTo(0, 0);
     setOpenSubcatId(null);
     setServiceSearch('');
   }, [selectedCategory]);
