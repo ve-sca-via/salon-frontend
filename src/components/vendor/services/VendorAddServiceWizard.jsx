@@ -164,13 +164,21 @@ const VendorAddServiceWizard = ({
   const openCustomConfigureForm = (fromStep = WIZARD_STEPS.CATEGORY) => {
     setIsCustomServiceFlow(true);
     setCustomEntryStep(fromStep);
+    // Carry over any catalog category/subcategory the vendor already picked so
+    // the custom form opens pre-filled (editable) instead of asking for the
+    // category name again from scratch — e.g. when they select a category, then
+    // switch to a custom service from the subcategory step.
+    const selectedCat = categories.find((c) => c.id === formData.category_id);
+    const selectedSub = selectedCat?.subcategories?.find(
+      (s) => s.id === formData.subcategory_id
+    );
     const emptyForm = {
       ...formData,
       category_id: '',
       subcategory_id: '',
       sub_subcategory_id: '',
-      custom_category_name: '',
-      custom_subcategory_name: '',
+      custom_category_name: selectedCat?.name || '',
+      custom_subcategory_name: selectedSub?.name || '',
       custom_sub_subcategory_name: '',
       name: '',
       description: '',

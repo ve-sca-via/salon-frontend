@@ -756,10 +756,18 @@ export default function SalonDetail() {
                       <span className="font-body font-semibold text-[16px] text-neutral-black">
                         {Number(salon.average_rating || 0).toFixed(1)}
                       </span>
-                      <span className="font-body text-[14px] text-neutral-gray-600">
+                      <span className="font-body text-[14px] text-neutral-gray-400">
                         ({salon.total_reviews || displayReviews.length || 0} reviews)
                       </span>
                     </div>
+                    {(salon.address || salon.city) && (
+                      <div className="flex items-start gap-1.5">
+                        <FiMapPin className="w-4 h-4 text-accent-orange mt-0.5 flex-shrink-0" />
+                        <span className="font-body text-[13px] text-neutral-gray-400 leading-snug break-words">
+                          {salon.address || `${salon.city}, ${salon.state}`}
+                        </span>
+                      </div>
+                    )}
                     <div className="grid grid-cols-2 gap-2">
                       <a
                         href={getMapDirectionUrl()}

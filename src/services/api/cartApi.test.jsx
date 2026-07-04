@@ -167,3 +167,41 @@ describe('validateCoupon', () => {
     expect(res.data.reason).toMatch(/better discount/i);
   });
 });
+
+// =====================================================================
+// GET /customers/available-coupons  ("Available offers" at checkout)
+// =====================================================================
+describe('getAvailableCoupons', () => {
+  it('GETs /customers/available-coupons with salon_id and returns the coupon list', async () => {
+    let p = null, salonId = null;
+    server.use(http.get(`${BASE}/available-coupons`, ({ request }) => {
+      const url = new URL(request.url);
+      p = url.pathname; salonId = url.searchParams.get('salon_id');
+      return HttpResponse.json([
+        {
+          id: 'c1', code: 'SAVE20', title: '20% off', scope: 'platform', salon_id: null,
+          applies_to: 'service', discount_type: 'percentage', discount_value: 20,
+          max_discount_cap: 100, min_order_amount: 499, first_time_scope: null,
+          valid_until: null, summary: '20% OFF up to ₹100', subtitle: 'On orders above ₹499',
+        },
+      ]);
+    }));
+    const res = await store.dispatch(cartApi.endpoints.getAvailableCoupons.initiate('s1'));
+    expect(p).toBe('/api/v1/customers/available-coupons');
+    expect(salonId).toBe('s1');
+    expect(res.data).toHaveLength(1);
+    expect(res.data[0].code).toBe('SAVE20');
+    expect(res.data[0].summary).toBe('20% OFF up to ₹100');
+  });
+
+  it('omits the salon_id param when called without a salon', async () => {
+    let hasSalonId = true;
+    server.use(http.get(`${BASE}/available-coupons`, ({ request }) => {
+      hasSalonId = new URL(request.url).searchParams.has('salon_id');
+      return HttpResponse.json([]);
+    }));
+    const res = await store.dispatch(cartApi.endpoints.getAvailableCoupons.initiate(undefined));
+    expect(hasSalonId).toBe(false);
+    expect(res.data).toEqual([]);
+  });
+});
