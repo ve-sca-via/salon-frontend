@@ -192,21 +192,11 @@ const AddSalonForm = () => {
         ? Math.min(Math.max(savedStep, 1), 5) // Cap between 1-5 (Review step is 5)
         : 1;
 
-      console.log('=== DRAFT LOADING DEBUG ===');
-      console.log('Draft ID:', draftId);
-      console.log('Saved Step:', savedStep);
-      console.log('Starting at Step:', startStep);
-      console.log('Draft Request Type:', draft.request_type);
-      console.log('URL Query Type:', typeFromQuery);
-      
       // Determine request type with priority:
       // 1. URL Query (explicit intent from Sidebar/Edit link)
       // 2. Draft data (saved state)
       // 3. Default 'salon'
       const finalType = typeFromQuery || draft.request_type || 'salon';
-      
-      console.log('Final Calculated Type:', finalType);
-      console.log('==========================');
 
       setRequestType(finalType);
       
@@ -299,21 +289,7 @@ const AddSalonForm = () => {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        const { latitude, longitude, accuracy, altitude, altitudeAccuracy, heading, speed } = position.coords;
-        const timestamp = new Date(position.timestamp).toLocaleString();
-
-        // Console log all the details
-        console.log('=== GEOLOCATION DATA ===');
-        console.log('Latitude:', latitude);
-        console.log('Longitude:', longitude);
-        console.log('Accuracy:', accuracy, 'meters');
-        console.log('Altitude:', altitude, 'meters');
-        console.log('Altitude Accuracy:', altitudeAccuracy, 'meters');
-        console.log('Heading:', heading, 'degrees');
-        console.log('Speed:', speed, 'm/s');
-        console.log('Timestamp:', timestamp);
-        console.log('Full Position Object:', position);
-        console.log('========================');
+        const { latitude, longitude, accuracy } = position.coords;
 
         // Set the latitude and longitude in the form
         setValue('latitude', latitude.toFixed(6));
@@ -453,15 +429,6 @@ const AddSalonForm = () => {
         }
       };
 
-      // Console log the vendor request data including lat/long
-      console.log('=== FORM SUBMISSION DATA ===');
-      console.log('Business Name:', vendorRequestData.business_name);
-      console.log('Latitude:', vendorRequestData.latitude);
-      console.log('Longitude:', vendorRequestData.longitude);
-      console.log('Full Address:', vendorRequestData.business_address);
-      console.log('City:', vendorRequestData.city, 'State:', vendorRequestData.state);
-      console.log('Full Vendor Request Data:', vendorRequestData);
-      console.log('============================');
 
       // Update existing draft or create new using RTK Query mutations
       if (isEditMode && draftId) {
@@ -570,8 +537,6 @@ const AddSalonForm = () => {
         'Owner Name': allValues.owner_name,
         'Owner Email': allValues.owner_email,
         'Owner Phone': allValues.owner_phone,
-        'Salon Email': allValues.email,
-        'Salon Phone': allValues.phone,
         'Address': allValues.address_line1,
         'City': allValues.city,
         'State': allValues.state,
@@ -878,6 +843,7 @@ const AddSalonForm = () => {
                   })}
                   error={errors.owner_email?.message}
                   placeholder="owner@example.com"
+                  helperText="This email receives account creation and login credentials"
                   required
                 />
 
@@ -897,10 +863,9 @@ const AddSalonForm = () => {
                 />
 
                 <InputField
-                  label="Salon Email"
+                  label="Salon Email (optional)"
                   type="email"
                   {...register('email', {
-                    required: 'Email is required',
                     pattern: {
                       value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                       message: 'Invalid email address'
@@ -908,15 +873,13 @@ const AddSalonForm = () => {
                   })}
                   error={errors.email?.message}
                   placeholder="salon@example.com"
-                  helperText="This email will receive account creation and login credentials"
-                  required
+                  helperText="Optional public contact email for the salon"
                 />
 
                 <InputField
-                  label="Salon Phone"
+                  label="Salon Phone (optional)"
                   type="tel"
                   {...register('phone', {
-                    required: 'Phone is required',
                     pattern: {
                       value: /^[6-9]\d{9}$/,
                       message: 'Enter valid 10-digit mobile number'
@@ -924,7 +887,6 @@ const AddSalonForm = () => {
                   })}
                   error={errors.phone?.message}
                   placeholder="9876543210"
-                  required
                 />
 
                 <InputField
@@ -1868,8 +1830,8 @@ const AddSalonForm = () => {
                     Submission Checklist
                   </h4>
                   <div className="space-y-2 font-body text-sm">
-                    <div className={`flex items-center gap-2 ${watch('name') && watch('business_type') && watch('owner_name') && watch('owner_email') && watch('owner_phone') && watch('email') && watch('phone') ? 'text-green-700' : 'text-gray-600'}`}>
-                      {watch('name') && watch('business_type') && watch('owner_name') && watch('owner_email') && watch('owner_phone') && watch('email') && watch('phone') ? (
+                    <div className={`flex items-center gap-2 ${watch('name') && watch('business_type') && watch('owner_name') && watch('owner_email') && watch('owner_phone') ? 'text-green-700' : 'text-gray-600'}`}>
+                      {watch('name') && watch('business_type') && watch('owner_name') && watch('owner_email') && watch('owner_phone') ? (
                         <FiCheck className="text-green-600" size={16} />
                       ) : (
                         <div className="w-4 h-4 border-2 border-gray-400 rounded"></div>
