@@ -4,19 +4,18 @@ import {
   ServiceWizardShell,
   ServiceWizardPrimaryButton,
   ServiceWizardSelectableCard,
-  ServiceWizardCustomCard,
 } from './ServiceWizardUI';
 import { WIZARD_STEPS } from './serviceWizardConstants';
 
-/** Figma node 3:805 — Pick catalog subcategory or create fully custom service */
+/** Figma node 3:805 — Pick a catalog subcategory or add a new one under the chosen category */
 const VendorServiceWizardStep3Subcategory = ({
   salonName,
   formData,
   categories,
   onSelectSubcategory,
+  onChangeCustomSubcategory,
   onSelectSubSubcategory,
   onChangeCustomSubSubcategory,
-  onCustomService,
   onBack,
   onContinue,
 }) => {
@@ -41,7 +40,8 @@ const VendorServiceWizardStep3Subcategory = ({
     );
   }, [subcategories, search]);
 
-  const canContinue = Boolean(formData.subcategory_id);
+  const hasCustomSubcategory = Boolean(formData.custom_subcategory_name?.trim());
+  const canContinue = Boolean(formData.subcategory_id) || hasCustomSubcategory;
 
   return (
     <ServiceWizardShell
@@ -65,14 +65,12 @@ const VendorServiceWizardStep3Subcategory = ({
           )}
         </div>
 
-        <ServiceWizardCustomCard onClick={onCustomService} compact />
-
         <div className="relative">
           <input
             type="search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search available services..."
+            placeholder="Search subcategories..."
             className="h-12 w-full rounded-xl border-0 bg-white pl-4 pr-11 font-vendor text-base text-[#111827] shadow-[0_2px_12px_rgba(34,26,17,0.06)] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#F89E07]/35"
           />
           <FiSearch
@@ -84,8 +82,8 @@ const VendorServiceWizardStep3Subcategory = ({
         {filtered.length === 0 ? (
           <p className="py-6 text-center font-vendor text-sm text-[#6B7280]">
             {search
-              ? 'No services match your search'
-              : 'No catalog services in this category. Use Create Custom Service above.'}
+              ? 'No subcategories match your search'
+              : 'No subcategories here yet. Add a new one below.'}
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
@@ -102,8 +100,28 @@ const VendorServiceWizardStep3Subcategory = ({
           </div>
         )}
 
-        {/* Optional 3rd level — only after a subcategory is chosen. */}
-        {formData.subcategory_id && (
+        {/* Add a new subcategory under the chosen category. Typing one creates it
+            in the catalog, so it appears as a selectable card next time. */}
+        <div className="space-y-2 rounded-2xl border border-dashed border-[#F0E0D1] bg-white p-4">
+          <div className="space-y-0.5">
+            <p className="font-vendor text-sm font-bold text-[#111827]">
+              Add a new subcategory
+            </p>
+            <p className="font-vendor text-xs text-[#6B7280]">
+              Not in the list above? Type it here, e.g. “Kids Haircut”.
+            </p>
+          </div>
+          <input
+            type="text"
+            value={formData.custom_subcategory_name || ''}
+            onChange={(e) => onChangeCustomSubcategory(e.target.value)}
+            placeholder="New subcategory name…"
+            className="h-11 w-full rounded-xl border-0 bg-[#F3F3F3] px-4 font-vendor text-base text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#F89E07]/35"
+          />
+        </div>
+
+        {/* Optional 3rd level — after a subcategory is chosen or newly typed. */}
+        {(formData.subcategory_id || hasCustomSubcategory) && (
           <div className="space-y-3 rounded-2xl border border-[#F0E0D1] bg-[#FFFAF5] p-4">
             <div className="space-y-0.5">
               <p className="font-vendor text-sm font-bold text-[#111827]">

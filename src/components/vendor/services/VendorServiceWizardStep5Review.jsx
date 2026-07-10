@@ -57,7 +57,7 @@ const VendorServiceWizardStep5Review = ({
     const subSub = sub?.subcategories?.find((s) => s.id === formData.sub_subcategory_id);
     return {
       categoryName: cat?.name || '—',
-      subcategoryName: sub?.name || '',
+      subcategoryName: sub?.name || formData.custom_subcategory_name?.trim() || '',
       subSubcategoryName: subSub?.name || typedSubSub,
     };
   }, [
