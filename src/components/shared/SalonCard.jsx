@@ -1,6 +1,48 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FiStar, FiMapPin, FiChevronDown, FiChevronUp, FiHeart } from "react-icons/fi";
+import { FiStar, FiMapPin, FiChevronDown, FiChevronUp, FiHeart, FiTag } from "react-icons/fi";
+
+/**
+ * Rotating strip of the salon's own (vendor) coupons, shown at the bottom of a
+ * salon card. Auto-advances when there is more than one. Renders nothing when
+ * the salon has no active coupons.
+ */
+function SalonCouponStrip({ coupons }) {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    if (coupons.length <= 1) return undefined;
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % coupons.length);
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [coupons.length]);
+
+  if (coupons.length === 0) return null;
+  const coupon = coupons[index % coupons.length];
+
+  return (
+    <div className="bg-orange-50 border border-orange-100 rounded-lg p-2.5 flex items-center gap-2 overflow-hidden">
+      <FiTag size={13} className="text-accent-orange flex-shrink-0" />
+      <span className="text-[11px] text-neutral-black font-semibold line-clamp-1 flex-1 min-w-0">
+        {coupon.summary}
+      </span>
+      <span className="text-[9px] font-bold uppercase tracking-wide text-accent-orange bg-white border border-orange-200 rounded px-1.5 py-0.5 flex-shrink-0">
+        {coupon.code}
+      </span>
+      {coupons.length > 1 && (
+        <span className="flex gap-0.5 flex-shrink-0">
+          {coupons.map((c, i) => (
+            <span
+              key={c.id || i}
+              className={`w-1 h-1 rounded-full ${i === index % coupons.length ? "bg-accent-orange" : "bg-orange-200"}`}
+            />
+          ))}
+        </span>
+      )}
+    </div>
+  );
+}
 
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
   if (!lat1 || !lon1 || !lat2 || !lon2) return null;
@@ -112,9 +154,11 @@ export function SalonCard({
           </div>
         )}
 
-        <div className="absolute bottom-0 left-0 bg-gradient-to-r from-orange-100 to-orange-50 text-accent-orange text-[10px] font-bold px-2.5 py-1 rounded-tr-lg z-10 shadow-sm border-t border-r border-orange-200/50">
-          UPTO 20% OFF
-        </div>
+        {salon.max_discount_percentage > 0 && (
+          <div className="absolute bottom-0 left-0 bg-gradient-to-r from-orange-100 to-orange-50 text-accent-orange text-[10px] font-bold px-2.5 py-1 rounded-tr-lg z-10 shadow-sm border-t border-r border-orange-200/50">
+            UPTO {Math.round(salon.max_discount_percentage)}% OFF
+          </div>
+        )}
 
         <div
           className={`absolute inset-0 bg-black/40 z-20 transition-opacity duration-300 ${
@@ -193,12 +237,9 @@ export function SalonCard({
           </div>
         </div>
 
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 flex items-center gap-2">
-          <span className="text-[14px] leading-none">✨</span>
-          <span className="text-[11px] text-gray-600 font-medium line-clamp-1">
-            Extra 10% Off on Online Payments
-          </span>
-        </div>
+        {Array.isArray(salon.coupons) && salon.coupons.length > 0 && (
+          <SalonCouponStrip coupons={salon.coupons} />
+        )}
       </div>
     </div>
   );
