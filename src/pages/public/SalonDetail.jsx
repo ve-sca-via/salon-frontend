@@ -360,16 +360,6 @@ export default function SalonDetail() {
     }
   }, [services]); // Re-run when services change
 
-  // Calculate max discount percentage
-  const maxDiscount = React.useMemo(() => {
-    if (!services || services.length === 0) return 10;
-    const max = services.reduce((acc, curr) => {
-      const discount = curr.discount_percentage ? Number(curr.discount_percentage) : 0;
-      return discount > acc ? discount : acc;
-    }, 0);
-    return max > 0 ? max : 10;
-  }, [services]);
-
   const handleToggleFavorite = async () => {
     if (!isAuthenticated) {
       showInfoToast("Please log in to save salons to your favorites");
@@ -905,7 +895,9 @@ export default function SalonDetail() {
 
             {/* Offers available for you */}
             <div className="sm:bg-transparent sm:rounded-xl mb-3 sm:mb-6 mt-1 sm:mt-4">
-              <OffersSection maxDiscount={maxDiscount} />
+              <OffersSection
+                coupons={[...(salon?.coupons || []), ...(salon?.platform_coupons || [])]}
+              />
             </div>
 
             {/* Tabs */}
