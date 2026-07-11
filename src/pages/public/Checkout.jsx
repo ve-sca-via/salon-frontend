@@ -146,14 +146,19 @@ export default function Checkout() {
   };
 
   /**
-   * Generate time slots from 2:30 PM to 8:15 PM (15-min intervals)
+   * Generate bookable time slots within the salon's open/close window.
+   *
+   * - 30-minute gap between consecutive slots.
+   * - `minStartMinutes` hides slots at/before that time-of-day, which is how we
+   *   suppress already-past slots when the customer is booking for today.
    */
-  const generateTimeSlots = (openMinutes, closeMinutes, stepMinutes = 15) => {
+  const generateTimeSlots = (openMinutes, closeMinutes, stepMinutes = 30, minStartMinutes = -Infinity) => {
     if (!Number.isFinite(openMinutes) || !Number.isFinite(closeMinutes)) return [];
     if (closeMinutes <= openMinutes) return [];
 
     const slots = [];
     for (let m = openMinutes; m <= closeMinutes; m += stepMinutes) {
+      if (m <= minStartMinutes) continue; // past (or too-soon) slot — skip
       const hour24 = Math.floor(m / 60);
       const minute = m % 60;
       const hour12 = hour24 % 12 || 12;
@@ -163,7 +168,9 @@ export default function Checkout() {
     return slots;
   };
 
-  const dates = generateDates();
+  // Stable per render so downstream memos/effects don't churn every render.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const dates = useMemo(() => generateDates(), [maxAdvanceDays]);
 
   // Auto-select today's date so slots can be computed immediately (prevents showing fallback slots)
   useEffect(() => {
@@ -265,12 +272,21 @@ export default function Checkout() {
 
     if (getSalonHoursForSelectedDate.isClosed) return [];
 
+    // When booking for today, hide slots that are already in the past so the
+    // customer can only pick upcoming times. (`dates[0]` is always today.)
+    let minStartMinutes = -Infinity;
+    if (selectedDate === dates[0]?.value) {
+      const now = new Date();
+      minStartMinutes = now.getHours() * 60 + now.getMinutes();
+    }
+
     return generateTimeSlots(
       getSalonHoursForSelectedDate.open,
       getSalonHoursForSelectedDate.close,
-      15
+      30,
+      minStartMinutes
     );
-  }, [getSalonHoursForSelectedDate, selectedDate]);
+  }, [getSalonHoursForSelectedDate, selectedDate, dates]);
 
   // Clear selected times when date changes (or salon hours change)
   useEffect(() => {

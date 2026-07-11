@@ -3,7 +3,6 @@ import {
   ServiceWizardShell,
   ServiceWizardPrimaryButton,
   ServiceWizardSelectableCard,
-  ServiceWizardCustomCard,
 } from './ServiceWizardUI';
 import { WIZARD_STEPS } from './serviceWizardConstants';
 
@@ -14,7 +13,6 @@ const VendorServiceWizardStep2Category = ({
   categories,
   categoriesLoading,
   onSelectCategory,
-  onCustomService,
   onBack,
   onContinue,
 }) => {
@@ -41,21 +39,13 @@ const VendorServiceWizardStep2Category = ({
           </h1>
         </div>
 
-        <ServiceWizardCustomCard
-          onClick={onCustomService}
-          compact={Boolean(formData.category_id)}
-        />
-        <p className="text-center font-vendor text-xs text-[#9CA3AF]">
-          Or create a custom service and enter category, subcategory, and name yourself
-        </p>
-
         {categoriesLoading ? (
           <div className="flex justify-center py-12">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-[#F89E07] border-t-transparent" />
           </div>
         ) : categories.length === 0 ? (
           <p className="text-center font-vendor text-sm text-[#6B7280]">
-            No categories available. Use custom service instead.
+            No categories available yet. Please check back soon.
           </p>
         ) : (
           <div className="space-y-3">
