@@ -48,10 +48,15 @@ const buildServicePayload = (formData, isActive, isCustomServiceFlow) => {
     };
   }
 
+  // A typed subcategory name (level 2) is optional; the backend get-or-creates it
+  // under the chosen category, so it becomes a reusable catalog subcategory.
+  const subcategoryName = formData.custom_subcategory_name?.trim() || undefined;
+
   return {
     ...base,
     category_id: formData.category_id || null,
     subcategory_id: formData.subcategory_id || null,
+    subcategory_name: subcategoryName,
     sub_subcategory_id: formData.sub_subcategory_id || null,
     sub_subcategory_name: subSubcategoryName,
   };
@@ -71,9 +76,15 @@ const validateConfigureStep = (formData, isCustomServiceFlow) => {
       showErrorToast('Subcategory is required');
       return false;
     }
-  } else if (!formData.category_id) {
-    showErrorToast('Category is required');
-    return false;
+  } else {
+    if (!formData.category_id) {
+      showErrorToast('Category is required');
+      return false;
+    }
+    if (!formData.subcategory_id && !formData.custom_subcategory_name?.trim()) {
+      showErrorToast('Select a subcategory or add a new one');
+      return false;
+    }
   }
   if (!formData.duration || parseInt(formData.duration, 10) <= 0) {
     showErrorToast('Duration must be greater than 0');
@@ -161,33 +172,6 @@ const VendorAddServiceWizard = ({
     onClose();
   };
 
-  const openCustomConfigureForm = (fromStep = WIZARD_STEPS.CATEGORY) => {
-    setIsCustomServiceFlow(true);
-    setCustomEntryStep(fromStep);
-    // Carry over any catalog category/subcategory the vendor already picked so
-    // the custom form opens pre-filled (editable) instead of asking for the
-    // category name again from scratch — e.g. when they select a category, then
-    // switch to a custom service from the subcategory step.
-    const selectedCat = categories.find((c) => c.id === formData.category_id);
-    const selectedSub = selectedCat?.subcategories?.find(
-      (s) => s.id === formData.subcategory_id
-    );
-    const emptyForm = {
-      ...formData,
-      category_id: '',
-      subcategory_id: '',
-      sub_subcategory_id: '',
-      custom_category_name: selectedCat?.name || '',
-      custom_subcategory_name: selectedSub?.name || '',
-      custom_sub_subcategory_name: '',
-      name: '',
-      description: '',
-    };
-    setFormData(emptyForm);
-    setStep(WIZARD_STEPS.CONFIGURE);
-    persistDraft(WIZARD_STEPS.CONFIGURE, emptyForm, true, draftServiceId, fromStep);
-  };
-
   const handleWizardBack = () => {
     if (step === WIZARD_STEPS.PREFERENCE) {
       const hasProgress =
@@ -228,6 +212,7 @@ const VendorAddServiceWizard = ({
       };
       if (name === 'category_id') {
         updated.subcategory_id = '';
+        updated.custom_subcategory_name = '';
         updated.sub_subcategory_id = '';
         updated.custom_sub_subcategory_name = '';
       }
@@ -265,6 +250,9 @@ const VendorAddServiceWizard = ({
       ...prev,
       category_id: cat.id,
       subcategory_id: '',
+      custom_subcategory_name: '',
+      sub_subcategory_id: '',
+      custom_sub_subcategory_name: '',
       name: '',
     }));
   };
@@ -283,11 +271,23 @@ const VendorAddServiceWizard = ({
     setFormData((prev) => ({
       ...prev,
       subcategory_id: sub.id,
+      // Picking a catalog subcategory clears any half-typed custom name.
+      custom_subcategory_name: '',
       // Reset the optional 3rd level whenever the subcategory changes.
       sub_subcategory_id: '',
       custom_sub_subcategory_name: '',
       name: '',
       description: prev.description || sub.description || '',
+    }));
+  };
+
+  const handleChangeCustomSubcategory = (value) => {
+    setFormData((prev) => ({
+      ...prev,
+      custom_subcategory_name: value,
+      // Typing a new subcategory clears any tapped catalog card and its children.
+      subcategory_id: value ? '' : prev.subcategory_id,
+      sub_subcategory_id: value ? '' : prev.sub_subcategory_id,
     }));
   };
 
@@ -310,8 +310,8 @@ const VendorAddServiceWizard = ({
   };
 
   const handleStep3Continue = () => {
-    if (!formData.subcategory_id) {
-      showErrorToast('Please select a catalog service or create a custom one');
+    if (!formData.subcategory_id && !formData.custom_subcategory_name?.trim()) {
+      showErrorToast('Select a subcategory or add a new one');
       return;
     }
     goToStep(WIZARD_STEPS.CONFIGURE);
@@ -375,7 +375,6 @@ const VendorAddServiceWizard = ({
         categories={categories}
         categoriesLoading={categoriesLoading}
         onSelectCategory={handleSelectCategory}
-        onCustomService={() => openCustomConfigureForm(WIZARD_STEPS.CATEGORY)}
         onBack={handleWizardBack}
         onContinue={handleStep2Continue}
       />
@@ -389,9 +388,9 @@ const VendorAddServiceWizard = ({
         formData={formData}
         categories={categories}
         onSelectSubcategory={handleSelectSubcategory}
+        onChangeCustomSubcategory={handleChangeCustomSubcategory}
         onSelectSubSubcategory={handleSelectSubSubcategory}
         onChangeCustomSubSubcategory={handleChangeCustomSubSubcategory}
-        onCustomService={() => openCustomConfigureForm(WIZARD_STEPS.SUBCATEGORY)}
         onBack={handleWizardBack}
         onContinue={handleStep3Continue}
       />
@@ -415,7 +414,11 @@ const VendorAddServiceWizard = ({
         wizardStep={WIZARD_STEPS.CONFIGURE}
         hideGenderField={Boolean(formData.gender_category)}
         hideCategoryField={!isCustomServiceFlow && Boolean(formData.category_id)}
-        hideSubcategoryField={!isCustomServiceFlow && Boolean(formData.subcategory_id)}
+        hideSubcategoryField={
+          !isCustomServiceFlow &&
+          (Boolean(formData.subcategory_id) ||
+            Boolean(formData.custom_subcategory_name?.trim()))
+        }
         useTextCategoryFields={isCustomServiceFlow}
         submitLabel="Continue"
       />
