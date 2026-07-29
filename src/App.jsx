@@ -75,6 +75,8 @@ const About = lazy(() => import('./pages/public/About'));
 const PrivacyPolicy = lazy(() => import('./pages/public/PrivacyPolicy'));
 const TermsOfService = lazy(() => import('./pages/public/TermsOfService'));
 const FAQ = lazy(() => import('./pages/public/FAQ'));
+// Public account-deletion instructions - URL is registered in the Play Console
+const DeleteAccount = lazy(() => import('./pages/public/DeleteAccount'));
 const PartnerWithUs = lazy(() => import('./pages/public/PartnerWithUs'));
 const NotFoundPage = lazy(() => import('./pages/public/NotFoundPage'));
 
@@ -183,6 +185,7 @@ function App() {
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/terms-of-service" element={<TermsOfService />} />
               <Route path="/faq" element={<FAQ />} />
+              <Route path="/delete-account" element={<DeleteAccount />} />
               <Route path="/salons" element={
                 <ErrorBoundary fallback="page">
                   <PublicSalonListing />

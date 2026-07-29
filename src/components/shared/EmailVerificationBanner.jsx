@@ -7,65 +7,46 @@
  * (above all content) and automatically disappears once the email is confirmed.
  * 
  * Features:
- * - Shows immediately after signup if email confirmation is required
+ * - Driven by `email_verified` from /auth/me, so it is correct on every visit
+ *   (not just the session the account was created in) and disappears on its own
+ *   once the user clicks the confirmation link
  * - Full-width horizontal banner with clear messaging
- * - Dismissible (user can hide it temporarily for the session)
+ * - Dismissible for the session (returns on reload while still unconfirmed)
  * - Provides option to resend verification email
- * - Uses session storage to track if user just signed up
  * 
  * Usage:
  * Place this component at the root level of your app, typically in App.jsx
  * above all other content so it appears at the very top of the page.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FaEnvelope, FaTimes, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import { useSelector } from 'react-redux';
+import { useGetCurrentUserQuery } from '../../services/api/authApi';
 import { showSuccessToast, showErrorToast, showApiErrorToast } from '../../utils/toastConfig';
 
 const EmailVerificationBanner = () => {
-  const [uiTick, setUiTick] = useState(0);
+  const [isDismissed, setIsDismissed] = useState(
+    () => sessionStorage.getItem('email_banner_dismissed') === 'true'
+  );
   const [isResending, setIsResending] = useState(false);
-  const user = useSelector((state) => state.auth?.user);
+  const storedUser = useSelector((state) => state.auth?.user);
   const accessToken = localStorage.getItem('access_token');
-  const justSignedUp = sessionStorage.getItem('just_signed_up');
-  const bannerDismissed = sessionStorage.getItem('email_banner_dismissed');
-  const shouldShow =
-    justSignedUp === 'true' &&
-    bannerDismissed !== 'true' &&
-    !!(user || accessToken);
-  
-  useEffect(() => {
-    const rerender = () => setUiTick((t) => t + 1);
 
-    // Listen for manual confirmation (when user clicks email link and comes back)
-    // We'll rely on user dismissing the banner or clicking email link
-    const handleStorageChange = (e) => {
-      if (e.key === 'just_signed_up') {
-        rerender();
-      }
-      // If email_verified flag is set (you can set this after email confirmation)
-      if (e.key === 'email_verified' && e.newValue === 'true') {
-        sessionStorage.removeItem('just_signed_up');
-        sessionStorage.removeItem('email_banner_dismissed');
-        rerender();
-      }
-    };
+  // Ask the server rather than guessing from sessionStorage. The old version
+  // keyed off a `just_signed_up` flag, so it only ever appeared in the session
+  // where the account was created — it stayed hidden on every later visit even
+  // while the address was still unconfirmed, and it never noticed confirmation
+  // actually happening. /auth/me returns `email_verified`, which is the truth.
+  const { data: profileData, refetch } = useGetCurrentUserQuery(undefined, {
+    skip: !accessToken,
+  });
 
-    window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('auth:just_signed_up', rerender);
-
-    // Safety net: poll sessionStorage so the banner reliably picks up
-    // the just_signed_up flag even if the same-tab dispatch was missed
-    // (e.g. due to route transitions or Suspense remounts).
-    const intervalId = setInterval(rerender, 1000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('auth:just_signed_up', rerender);
-      clearInterval(intervalId);
-    };
-  }, []);
+  // `email_verified` is null when the server could not determine it, and
+  // undefined on responses that predate the field — only an explicit false
+  // means the address is genuinely unconfirmed, so only that warns the user.
+  const emailVerified = profileData?.user?.email_verified ?? storedUser?.email_verified;
+  const shouldShow = emailVerified === false && !isDismissed;
 
   const handleResendEmail = async () => {
     setIsResending(true);
@@ -86,9 +67,9 @@ const EmailVerificationBanner = () => {
 
       if (response.ok && data?.success !== false) {
         if (data?.already_verified) {
-          sessionStorage.removeItem('just_signed_up');
-          sessionStorage.removeItem('email_banner_dismissed');
-          setUiTick((t) => t + 1);
+          // The address was confirmed since this page loaded — re-read the
+          // profile so the banner hides itself instead of lingering.
+          refetch();
           showSuccessToast(data.message || 'Your email is already verified.');
           return;
         }
@@ -109,9 +90,9 @@ const EmailVerificationBanner = () => {
   };
 
   const handleDismiss = () => {
-    setUiTick((t) => t + 1);
-    // Store dismissal in session storage (will show again on page reload if still unverified)
+    // Session-scoped: it comes back on reload while the address stays unconfirmed.
     sessionStorage.setItem('email_banner_dismissed', 'true');
+    setIsDismissed(true);
   };
 
   // Don't render if not visible
@@ -136,7 +117,7 @@ const EmailVerificationBanner = () => {
                 📧 Please verify your email address
               </p>
               <p className="text-xs sm:text-sm opacity-90 mt-0.5">
-                We've sent a confirmation email to <span className="font-semibold">{user?.email || 'your email'}</span>. 
+                We've sent a confirmation email to <span className="font-semibold">{profileData?.user?.email || storedUser?.email || 'your email'}</span>.
                 Please check your inbox and click the verification link to activate your account.
               </p>
             </div>
