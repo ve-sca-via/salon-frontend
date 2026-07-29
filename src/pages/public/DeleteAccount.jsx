@@ -34,7 +34,8 @@ const IN_APP_STEPS = [
   'Open the Lubist app and sign in to your account.',
   'Tap the Profile tab, then scroll to the bottom of the screen.',
   'Tap "Delete Account".',
-  'Enter your password and type DELETE to confirm.',
+  'Confirm it is you: if you signed up with your phone number, enter the code we text you. If you signed up with an email address, enter your password.',
+  'Type DELETE in the confirmation box.',
   'Tap "Delete Account" once more. Your account is deleted immediately and you are signed out.',
 ];
 
