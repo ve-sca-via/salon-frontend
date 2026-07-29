@@ -115,6 +115,11 @@ const Footer = () => {
                   Terms of Service
                 </Link>
               </li>
+              <li>
+                <Link to="/delete-account" className="hover:text-white transition-colors">
+                  Delete Account
+                </Link>
+              </li>
             </ul>
             <div className="space-y-2 text-sm text-gray-400 border-t border-gray-800 pt-4">
               <p className="font-semibold text-white mb-2">Contact Support</p>
