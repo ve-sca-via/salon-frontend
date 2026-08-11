@@ -3,6 +3,7 @@ import {
   ServiceWizardShell,
   ServiceWizardPrimaryButton,
   ServiceWizardSelectableCard,
+  ServiceWizardStepLabel,
 } from './ServiceWizardUI';
 import { WIZARD_STEPS } from './serviceWizardConstants';
 
@@ -31,9 +32,7 @@ const VendorServiceWizardStep2Category = ({
     >
       <div className="space-y-6">
         <div className="space-y-1">
-          <p className="font-vendor text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">
-            Step 2 of 5
-          </p>
+          <ServiceWizardStepLabel step={WIZARD_STEPS.CATEGORY} />
           <h1 className="font-vendor text-2xl font-bold text-[#111827]">
             Select service category
           </h1>
