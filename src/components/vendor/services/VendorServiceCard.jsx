@@ -18,6 +18,7 @@ const formatPrice = (amount) => {
  */
 const VendorServiceCard = ({
   service,
+  taxonomy,
   onEdit,
   onToggleActive,
   onDelete,
@@ -35,6 +36,9 @@ const VendorServiceCard = ({
 
   const displayPrice = hasDiscount ? service.discounted_price : service.price;
   const originalPrice = service.price;
+  // Cards live under a category heading + subcategory band, so the only part of
+  // the catalog path still worth repeating here is the optional level-3 sub-type.
+  const subType = taxonomy?.subSubcategoryName || null;
 
   return (
     <article className="rounded-2xl bg-[#FFFDFC] p-5 shadow-[0_2px_16px_rgba(34,26,17,0.06)]">
@@ -83,6 +87,12 @@ const VendorServiceCard = ({
           </span>
         </button>
       </div>
+
+      {subType && (
+        <span className="mt-1.5 inline-block max-w-full truncate rounded-full bg-[#FFF1E6] px-2.5 py-1 font-vendor text-xs font-semibold text-[#865300]">
+          {subType}
+        </span>
+      )}
 
       <p className="mt-2 line-clamp-2 font-vendor text-sm leading-5 text-[#4B5563]">
         {service.description || 'No description'}

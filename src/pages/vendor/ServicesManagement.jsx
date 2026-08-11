@@ -13,12 +13,19 @@
  * 
  * Key Features:
  * - Service CRUD operations (Create, Read, Update, Delete)
- * - Real-time search filtering
+ * - Real-time search filtering (matches name, description and catalog path)
  * - Status filtering (All, Active, Inactive)
  * - Quick toggle for service activation/deactivation
- * - Category assignment
+ * - Catalog-aware browsing: category chips, dependent subcategory chips, and
+ *   collapsible Category → Subcategory sections
  * - Responsive grid layout
  * - Empty state handling
+ *
+ * Taxonomy note:
+ * A service stores `category_id` plus a single `subcategory_id` that holds the
+ * DEEPEST node picked (level-2 subcategory OR level-3 sub-type). The names are
+ * not returned by the services endpoint, so every label here is resolved
+ * client-side against the cached category tree — see ./serviceTaxonomy.
  * 
  * Service Structure:
  * - name: Service name (required)
@@ -52,10 +59,17 @@ import {
   ServicesPageHeader,
   ServicesAddButton,
   ServicesSearchInput,
-  ServicesGenderChip,
-  ServicesStatusChip,
-  ServicesCategoryHeading,
+  ServicesSegmentedControl,
+  ServicesTaxonomyChip,
+  ServicesCategorySectionHeader,
+  ServicesSubcategoryHeading,
 } from '../../components/vendor/services/ServicesManagementFigmaUI';
+import {
+  buildTaxonomyIndex,
+  resolveServiceTaxonomy,
+  groupServicesByTaxonomy,
+  taxonomySearchText,
+} from '../../components/vendor/services/serviceTaxonomy';
 import {
   useGetVendorServicesQuery,
   useCreateVendorServiceMutation,
@@ -66,6 +80,20 @@ import {
 import { FiShoppingBag } from 'react-icons/fi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastConfig';
 
+/** Each segmented control owns one filter dimension and always has a value. */
+const GENDER_FILTER_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'male', label: 'Men' },
+  { value: 'female', label: 'Women' },
+  { value: 'both', label: 'Unisex' },
+];
+
+const STATUS_FILTER_OPTIONS = [
+  { value: 'all', label: 'All' },
+  { value: 'active', label: 'Active' },
+  { value: 'inactive', label: 'Inactive' },
+];
+
 const ServicesManagement = () => {
   // RTK Query hooks for fetching and mutating service data
   const { data: servicesData, isLoading: servicesLoading } = useGetVendorServicesQuery();
@@ -74,8 +102,10 @@ const ServicesManagement = () => {
   const [updateService, { isLoading: isUpdating }] = useUpdateVendorServiceMutation();
   const [deleteService, { isLoading: isDeleting }] = useDeleteVendorServiceMutation();
   
-  const services = servicesData || [];
-  const categories = categoriesData?.data || [];
+  // Stable identities: the `|| []` fallbacks would otherwise be a fresh array on
+  // every render and invalidate the taxonomy/grouping memos below.
+  const services = useMemo(() => servicesData || [], [servicesData]);
+  const categories = useMemo(() => categoriesData?.data || [], [categoriesData]);
 
   // Add wizard vs edit modal
   const [isWizardOpen, setIsWizardOpen] = useState(false);
@@ -88,6 +118,11 @@ const ServicesManagement = () => {
   const [filterActive, setFilterActive] = useState('all');
   /** Figma gender chips: all | male (Men) | female (Women) | both (Unisex) */
   const [genderFilter, setGenderFilter] = useState('all');
+  /** Taxonomy filters: 'all' or a category id / subcategory id from the catalog tree */
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [subcategoryFilter, setSubcategoryFilter] = useState('all');
+  /** Category ids whose section is collapsed in the list */
+  const [collapsedCategories, setCollapsedCategories] = useState(() => new Set());
 
   // Form data state - represents service fields
   // Note: duration_minutes is the canonical field, but API may return 'duration' in some cases
@@ -107,37 +142,35 @@ const ServicesManagement = () => {
   });
 
   /**
-   * Resolve a stored (deepest) subcategory_id back into its level-2 + level-3 parts.
-   * A service's subcategory_id may point at a level-2 subcategory OR a level-3
-   * sub-subcategory; the edit form needs both filled so the dropdowns pre-select.
+   * Flattened catalog tree — category / subcategory / sub-type lookups by id.
+   * Services only store the deepest node id, so every label on this page is
+   * resolved through this index.
    */
-  const resolveServiceTaxonomy = (service) => {
-    const storedSubId = service.subcategory_id || '';
-    if (!storedSubId) return { subcategory_id: '', sub_subcategory_id: '' };
+  const taxonomyIndex = useMemo(() => buildTaxonomyIndex(categories), [categories]);
 
-    for (const cat of categories) {
-      for (const sub of cat.subcategories || []) {
-        if (sub.id === storedSubId) {
-          return { subcategory_id: sub.id, sub_subcategory_id: '' };
-        }
-        const subSub = (sub.subcategories || []).find((ss) => ss.id === storedSubId);
-        if (subSub) {
-          return { subcategory_id: sub.id, sub_subcategory_id: subSub.id };
-        }
-      }
-    }
-    // Not found in the active tree (e.g. inactive node) — keep it as the L2 value.
-    return { subcategory_id: storedSubId, sub_subcategory_id: '' };
-  };
+  /** Each service paired with its resolved taxonomy path, resolved once. */
+  const servicesWithTaxonomy = useMemo(
+    () =>
+      services.map((service) => ({
+        service,
+        taxonomy: resolveServiceTaxonomy(service, taxonomyIndex),
+      })),
+    [services, taxonomyIndex]
+  );
 
   /**
-   * handleOpenAdd - Opens 5-step wizard for new service (resumes local draft if present)
+   * handleOpenAdd - Opens the 4-step add-services wizard.
+   *
+   * Services are saved as they are added, so a stored draft only remembers which
+   * category/subcategory the vendor was working through — offer to jump back there.
    */
   const handleOpenAdd = () => {
     const saved = loadServiceWizardDraft();
     if (saved) {
       const resume = window.confirm(
-        'You have an unfinished service draft. Resume where you left off?'
+        saved.contextLabel
+          ? `Continue adding services under "${saved.contextLabel}"?`
+          : 'Continue adding services where you left off?'
       );
       if (resume) {
         setWizardDraft(saved);
@@ -163,7 +196,10 @@ const ServicesManagement = () => {
     if (service) {
       // Edit mode - pre-fill form with service data
       setEditingService(service);
-      const { subcategory_id, sub_subcategory_id } = resolveServiceTaxonomy(service);
+      // The edit form needs level-2 and level-3 as separate dropdown values.
+      const taxonomy = resolveServiceTaxonomy(service, taxonomyIndex);
+      const subcategory_id = taxonomy.subcategoryId || '';
+      const sub_subcategory_id = taxonomy.subSubcategoryId || '';
       setFormData({
         name: service.name || '',
         description: service.description || '',
@@ -174,7 +210,10 @@ const ServicesManagement = () => {
             : '',
         // Handle API inconsistency: duration_minutes is canonical, but may receive 'duration'
         duration: service.duration_minutes || service.duration || '',
-        category_id: service.category_id || (categories.length > 0 ? categories[0].id : ''),
+        // Prefer the category that actually owns the stored subcategory, so the
+        // subcategory dropdown has the right options to pre-select from.
+        category_id:
+          taxonomy.categoryId || service.category_id || (categories.length > 0 ? categories[0].id : ''),
         subcategory_id,
         sub_subcategory_id,
         custom_sub_subcategory_name: '',
@@ -348,17 +387,20 @@ const ServicesManagement = () => {
   };
 
   /**
-   * Filter services based on search term and active status
-   * Memoized to prevent recalculation on every render
+   * Services matching everything EXCEPT the taxonomy filters. The category and
+   * subcategory chips are counted against this set so their counts reflect the
+   * search/status/gender filters without a chip zeroing out its own count.
    */
-  const filteredServices = useMemo(() => {
-    return services.filter((service) => {
-      // Search filter - matches name, category, or description
+  const searchableServices = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    return servicesWithTaxonomy.filter(({ service, taxonomy }) => {
+      // Search matches name, description, and the full catalog path
       const matchesSearch =
-        service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (service.category && service.category.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (service.description && service.description.toLowerCase().includes(searchTerm.toLowerCase()));
-      
+        !query ||
+        service.name.toLowerCase().includes(query) ||
+        (service.description && service.description.toLowerCase().includes(query)) ||
+        taxonomySearchText(taxonomy).includes(query);
+
       // Status filter - all, active only, or inactive only
       const matchesActive =
         filterActive === 'all' ||
@@ -366,95 +408,223 @@ const ServicesManagement = () => {
         (filterActive === 'inactive' && !service.is_active);
 
       const matchesGender =
-        genderFilter === 'all' ||
-        (service.gender_category || 'both') === genderFilter;
+        genderFilter === 'all' || (service.gender_category || 'both') === genderFilter;
 
       return matchesSearch && matchesActive && matchesGender;
     });
-  }, [services, searchTerm, filterActive, genderFilter]);
+  }, [servicesWithTaxonomy, searchTerm, filterActive, genderFilter]);
 
-  const groupedServices = useMemo(() => {
-    const resolveCategoryName = (service) => {
-      if (service.category) return service.category;
-      const cat = categories.find((c) => c.id === service.category_id);
-      if (cat?.name) return cat.name;
-      if (service.subcategory_id) {
-        for (const c of categories) {
-          const sub = c.subcategories?.find((s) => s.id === service.subcategory_id);
-          if (sub?.name) return sub.name;
-        }
+  /** Category chips, in catalog order, limited to categories the vendor actually uses. */
+  const categoryFilterOptions = useMemo(() => {
+    const counts = new Map();
+    searchableServices.forEach(({ taxonomy }) => {
+      const id = taxonomy.categoryId || '__uncategorised__';
+      const existing = counts.get(id);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        counts.set(id, {
+          id,
+          name: taxonomy.categoryName || 'Other Services',
+          count: 1,
+        });
       }
-      return 'Other Services';
-    };
-
-    const groups = {};
-    filteredServices.forEach((service) => {
-      const key = resolveCategoryName(service);
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(service);
     });
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [filteredServices, categories]);
+
+    const orderOf = (id) =>
+      taxonomyIndex.categoryOrder.has(id)
+        ? taxonomyIndex.categoryOrder.get(id)
+        : Number.MAX_SAFE_INTEGER;
+
+    return Array.from(counts.values()).sort(
+      (a, b) => orderOf(a.id) - orderOf(b.id) || a.name.localeCompare(b.name)
+    );
+  }, [searchableServices, taxonomyIndex]);
+
+  /** Subcategory chips for the selected category — hidden while "All" is active. */
+  const subcategoryFilterOptions = useMemo(() => {
+    if (categoryFilter === 'all') return [];
+
+    const counts = new Map();
+    searchableServices.forEach(({ taxonomy }) => {
+      const categoryId = taxonomy.categoryId || '__uncategorised__';
+      if (categoryId !== categoryFilter) return;
+
+      const id = taxonomy.subcategoryId || '__none__';
+      const existing = counts.get(id);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        counts.set(id, { id, name: taxonomy.subcategoryName || 'General', count: 1 });
+      }
+    });
+
+    return Array.from(counts.values()).sort((a, b) => {
+      if (a.id === '__none__') return 1;
+      if (b.id === '__none__') return -1;
+      return a.name.localeCompare(b.name);
+    });
+  }, [searchableServices, categoryFilter]);
+
+  const filteredEntries = useMemo(
+    () =>
+      searchableServices.filter(({ taxonomy }) => {
+        const categoryId = taxonomy.categoryId || '__uncategorised__';
+        if (categoryFilter !== 'all' && categoryId !== categoryFilter) return false;
+        if (subcategoryFilter !== 'all') {
+          const subcategoryId = taxonomy.subcategoryId || '__none__';
+          if (subcategoryId !== subcategoryFilter) return false;
+        }
+        return true;
+      }),
+    [searchableServices, categoryFilter, subcategoryFilter]
+  );
+
+  const groupedServices = useMemo(
+    () => groupServicesByTaxonomy(filteredEntries, taxonomyIndex),
+    [filteredEntries, taxonomyIndex]
+  );
+
+  const hasActiveFilters =
+    Boolean(searchTerm) ||
+    filterActive !== 'all' ||
+    genderFilter !== 'all' ||
+    categoryFilter !== 'all';
+
+  /** Selecting a category resets the dependent subcategory chip row. */
+  const handleSelectCategory = (categoryId) => {
+    setCategoryFilter((prev) => (prev === categoryId ? 'all' : categoryId));
+    setSubcategoryFilter('all');
+  };
+
+  const toggleCategoryCollapsed = (categoryId) => {
+    setCollapsedCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(categoryId)) {
+        next.delete(categoryId);
+      } else {
+        next.add(categoryId);
+      }
+      return next;
+    });
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
+    setFilterActive('all');
+    setGenderFilter('all');
+    setCategoryFilter('all');
+    setSubcategoryFilter('all');
+  };
 
   return (
     <DashboardLayout role="vendor">
       <VendorPageShell bgClass={SERVICES_PAGE_BG}>
       <div className={`${SERVICES_PAGE_BG} space-y-5 px-4 py-6 max-lg:min-h-[calc(100dvh-4rem)] lg:space-y-6`}>
-        <ServicesPageHeader
-          title="Services Management"
-          subtitle="Manage your salon services and pricing"
-        />
-
-        <ServicesAddButton onClick={handleOpenAdd} />
-
-        <div className="space-y-4 rounded-2xl bg-white/60 p-4 shadow-[0_2px_12px_rgba(34,26,17,0.04)] lg:p-6">
-          <ServicesSearchInput
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <ServicesPageHeader
+            title="Services Management"
+            subtitle="Manage your salon services and pricing"
           />
-
-          <div className="-mx-1 flex gap-2 overflow-x-auto pb-1">
-            <ServicesGenderChip
-              active={genderFilter === 'male'}
-              onClick={() => setGenderFilter(genderFilter === 'male' ? 'all' : 'male')}
-            >
-              Men
-            </ServicesGenderChip>
-            <ServicesGenderChip
-              active={genderFilter === 'female'}
-              onClick={() => setGenderFilter(genderFilter === 'female' ? 'all' : 'female')}
-            >
-              Women
-            </ServicesGenderChip>
-            <ServicesGenderChip
-              active={genderFilter === 'both'}
-              onClick={() => setGenderFilter(genderFilter === 'both' ? 'all' : 'both')}
-            >
-              Unisex
-            </ServicesGenderChip>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <ServicesStatusChip
-              active={filterActive === 'all'}
-              onClick={() => setFilterActive('all')}
-            >
-              All
-            </ServicesStatusChip>
-            <ServicesStatusChip
-              active={filterActive === 'active'}
-              onClick={() => setFilterActive('active')}
-            >
-              Active
-            </ServicesStatusChip>
-            <ServicesStatusChip
-              active={filterActive === 'inactive'}
-              onClick={() => setFilterActive('inactive')}
-            >
-              Inactive
-            </ServicesStatusChip>
-          </div>
+          <ServicesAddButton onClick={handleOpenAdd} />
         </div>
+
+        {/* One compact toolbar. Search + both segmented controls share a single
+            wrapping row (all three sit on one line from lg up), with the catalog
+            chips below. The subcategory row only appears once a category is
+            picked, so the resting height stays two rows. */}
+        <div className="space-y-2.5 rounded-2xl bg-white/60 p-3 shadow-[0_2px_12px_rgba(34,26,17,0.04)] lg:p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="min-w-[180px] flex-1 basis-full lg:basis-0">
+              <ServicesSearchInput
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <ServicesSegmentedControl
+              label="Filter by gender"
+              options={GENDER_FILTER_OPTIONS}
+              value={genderFilter}
+              onChange={setGenderFilter}
+            />
+            <ServicesSegmentedControl
+              label="Filter by status"
+              options={STATUS_FILTER_OPTIONS}
+              value={filterActive}
+              onChange={setFilterActive}
+            />
+          </div>
+
+          {categoryFilterOptions.length > 0 && (
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 py-0.5">
+              <ServicesTaxonomyChip
+                active={categoryFilter === 'all'}
+                onClick={() => handleSelectCategory('all')}
+                count={searchableServices.length}
+              >
+                All categories
+              </ServicesTaxonomyChip>
+              {categoryFilterOptions.map((option) => (
+                <ServicesTaxonomyChip
+                  key={option.id}
+                  active={categoryFilter === option.id}
+                  onClick={() => handleSelectCategory(option.id)}
+                  count={option.count}
+                >
+                  {option.name}
+                </ServicesTaxonomyChip>
+              ))}
+            </div>
+          )}
+
+          {subcategoryFilterOptions.length > 0 && (
+            <div className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5">
+              <span className="shrink-0 pl-1 font-vendor text-sm text-[#C0A788]" aria-hidden>
+                ↳
+              </span>
+              <ServicesTaxonomyChip
+                active={subcategoryFilter === 'all'}
+                onClick={() => setSubcategoryFilter('all')}
+                subtle
+              >
+                All
+              </ServicesTaxonomyChip>
+              {subcategoryFilterOptions.map((option) => (
+                <ServicesTaxonomyChip
+                  key={option.id}
+                  active={subcategoryFilter === option.id}
+                  onClick={() =>
+                    setSubcategoryFilter((prev) => (prev === option.id ? 'all' : option.id))
+                  }
+                  count={option.count}
+                  subtle
+                >
+                  {option.name}
+                </ServicesTaxonomyChip>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Result count doubles as the home for "clear" — keeps the toolbar from
+            growing a row whenever a filter is on. */}
+        {!servicesLoading && services.length > 0 && (
+          <div className="flex items-center justify-between gap-3 px-1">
+            <p className="font-vendor text-xs text-[#867461]">
+              Showing <span className="font-bold text-[#534433]">{filteredEntries.length}</span> of{' '}
+              {services.length} services
+            </p>
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="shrink-0 font-vendor text-xs font-semibold text-[#F89E07] hover:underline"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+        )}
 
         {servicesLoading ? (
           <div className="flex min-h-[40vh] items-center justify-center">
@@ -463,45 +633,74 @@ const ServicesManagement = () => {
               <p className="font-vendor text-[#4B5563]">Loading services...</p>
             </div>
           </div>
-        ) : filteredServices.length === 0 ? (
+        ) : filteredEntries.length === 0 ? (
           <div className="rounded-3xl bg-white px-6 py-12 text-center shadow-[0_4px_24px_rgba(34,26,17,0.06)]">
             <FiShoppingBag className="mx-auto mb-4 text-6xl text-[#EAE0D3]" />
             <h3 className="mb-2 font-vendor text-xl font-bold text-[#111827]">
-              {searchTerm || filterActive !== 'all' || genderFilter !== 'all'
-                ? 'No services found'
-                : 'No services yet'}
+              {hasActiveFilters ? 'No services found' : 'No services yet'}
             </h3>
             <p className="mb-6 font-vendor text-sm text-[#4B5563]">
-              {searchTerm || filterActive !== 'all' || genderFilter !== 'all'
+              {hasActiveFilters
                 ? 'Try adjusting your search or filters'
                 : 'Get started by adding your first service'}
             </p>
-            {!searchTerm && filterActive === 'all' && genderFilter === 'all' && (
+            {hasActiveFilters ? (
+              <button
+                type="button"
+                onClick={handleClearFilters}
+                className="font-vendor text-sm font-semibold text-[#F89E07] hover:underline"
+              >
+                Clear all filters
+              </button>
+            ) : (
               <ServicesAddButton onClick={handleOpenAdd} label="Add Your First Service" />
             )}
           </div>
         ) : (
           <div className="space-y-6">
-            {groupedServices.map(([categoryName, categoryServices]) => (
-              <section key={categoryName} className="space-y-3">
-                <ServicesCategoryHeading>
-                  {categoryName.toUpperCase()}
-                </ServicesCategoryHeading>
-                <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 xl:grid-cols-3">
-                  {categoryServices.map((service) => (
-                    <VendorServiceCard
-                      key={service.id}
-                      service={service}
-                      onEdit={handleOpenModal}
-                      onToggleActive={handleToggleActive}
-                      onDelete={handleDelete}
-                      isToggling={isUpdating}
-                      isDeleting={isDeleting}
-                    />
-                  ))}
-                </div>
-              </section>
-            ))}
+            {groupedServices.map((group) => {
+              const collapsed = collapsedCategories.has(group.categoryId);
+              return (
+                <section key={group.categoryId} className="space-y-3">
+                  <ServicesCategorySectionHeader
+                    name={group.categoryName.toUpperCase()}
+                    count={group.count}
+                    collapsed={collapsed}
+                    onToggle={() => toggleCategoryCollapsed(group.categoryId)}
+                  />
+
+                  {!collapsed &&
+                    group.subgroups.map((subgroup) => (
+                      <div key={subgroup.subcategoryId} className="space-y-3">
+                        {/* A single "General" bucket needs no band — the category
+                            heading above already says everything. */}
+                        {!(
+                          group.subgroups.length === 1 && subgroup.subcategoryId === '__none__'
+                        ) && (
+                          <ServicesSubcategoryHeading
+                            name={subgroup.subcategoryName}
+                            count={subgroup.services.length}
+                          />
+                        )}
+                        <div className="space-y-4 lg:grid lg:grid-cols-2 lg:gap-4 lg:space-y-0 xl:grid-cols-3">
+                          {subgroup.services.map(({ service, taxonomy }) => (
+                            <VendorServiceCard
+                              key={service.id}
+                              service={service}
+                              taxonomy={taxonomy}
+                              onEdit={handleOpenModal}
+                              onToggleActive={handleToggleActive}
+                              onDelete={handleDelete}
+                              isToggling={isUpdating}
+                              isDeleting={isDeleting}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                </section>
+              );
+            })}
           </div>
         )}
       </div>

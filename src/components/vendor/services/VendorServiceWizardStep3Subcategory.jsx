@@ -4,6 +4,7 @@ import {
   ServiceWizardShell,
   ServiceWizardPrimaryButton,
   ServiceWizardSelectableCard,
+  ServiceWizardStepLabel,
 } from './ServiceWizardUI';
 import { WIZARD_STEPS } from './serviceWizardConstants';
 
@@ -56,10 +57,10 @@ const VendorServiceWizardStep3Subcategory = ({
     >
       <div className="space-y-5">
         <div className="space-y-1">
-          <p className="font-vendor text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">
-            Step 3 of 5
-          </p>
-          <h1 className="font-vendor text-2xl font-bold text-[#111827]">Add services</h1>
+          <ServiceWizardStepLabel step={WIZARD_STEPS.SUBCATEGORY} />
+          <h1 className="font-vendor text-2xl font-bold text-[#111827]">
+            Choose a subcategory
+          </h1>
           {selectedCategory && (
             <p className="font-vendor text-sm text-[#6B7280]">{selectedCategory.name}</p>
           )}
@@ -115,6 +116,7 @@ const VendorServiceWizardStep3Subcategory = ({
             type="text"
             value={formData.custom_subcategory_name || ''}
             onChange={(e) => onChangeCustomSubcategory(e.target.value)}
+            maxLength={255}
             placeholder="New subcategory name…"
             className="h-11 w-full rounded-xl border-0 bg-[#F3F3F3] px-4 font-vendor text-base text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#F89E07]/35"
           />
@@ -158,6 +160,7 @@ const VendorServiceWizardStep3Subcategory = ({
               type="text"
               value={formData.custom_sub_subcategory_name || ''}
               onChange={(e) => onChangeCustomSubSubcategory(e.target.value)}
+              maxLength={255}
               placeholder="Or add a new sub-type…"
               className="h-11 w-full rounded-xl border-0 bg-white px-4 font-vendor text-base text-[#111827] shadow-[0_2px_12px_rgba(34,26,17,0.06)] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#F89E07]/35"
             />

@@ -3,6 +3,7 @@ import {
   ServiceWizardShell,
   ServiceWizardPrimaryButton,
   ServiceWizardSelectableCard,
+  ServiceWizardStepLabel,
 } from './ServiceWizardUI';
 import { GENDER_PREFERENCE_OPTIONS, WIZARD_STEPS } from './serviceWizardConstants';
 
@@ -29,9 +30,7 @@ const VendorServiceWizardStep1Preference = ({
     >
       <div className="space-y-6">
         <div className="space-y-1">
-          <p className="font-vendor text-xs font-semibold uppercase tracking-wide text-[#9CA3AF]">
-            Step 1 of 5
-          </p>
+          <ServiceWizardStepLabel step={WIZARD_STEPS.PREFERENCE} />
           <h1 className="font-vendor text-2xl font-bold text-[#111827]">Select Preference</h1>
           <p className="font-vendor text-sm text-[#6B7280]">
             Who is this service primarily for?
