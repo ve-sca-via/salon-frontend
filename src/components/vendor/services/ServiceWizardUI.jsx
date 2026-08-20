@@ -27,16 +27,6 @@ export const ServiceWizardStepLabel = ({ step }) => (
   </p>
 );
 
-export const ServiceWizardHeading = ({ title, subtitle }) => (
-  <div className="space-y-1">
-    <ServiceWizardStepLabel step={title.step} />
-    <h1 className="font-vendor text-2xl font-bold text-[#111827]">{title.text}</h1>
-    {subtitle && (
-      <p className="font-vendor text-sm text-[#6B7280]">{subtitle}</p>
-    )}
-  </div>
-);
-
 export const ServiceWizardShell = ({
   salonName,
   onBack,
@@ -87,50 +77,6 @@ export const ServiceWizardPrimaryButton = ({ children, onClick, disabled, type =
     className="flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-[#F89E07] to-[#FDBA4D] py-3.5 font-vendor text-base font-bold text-white shadow-md hover:from-[#E08F06] disabled:opacity-50"
   >
     {children}
-  </button>
-);
-
-export const ServiceWizardOutlineButton = ({ children, onClick, disabled }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    disabled={disabled}
-    className="flex w-full items-center justify-center rounded-xl border border-[#F89E07] py-3 font-vendor text-base font-semibold text-[#F89E07] hover:bg-[#FFF1E6] disabled:opacity-50"
-  >
-    {children}
-  </button>
-);
-
-export const ServiceWizardGhostButton = ({ children, onClick }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className="w-full py-2 font-vendor text-sm font-medium text-[#6B7280] hover:text-[#111827]"
-  >
-    {children}
-  </button>
-);
-
-/** Figma “Create Custom Service” card */
-export const ServiceWizardCustomCard = ({ onClick, compact = false }) => (
-  <button
-    type="button"
-    onClick={onClick}
-    className={`flex w-full items-center gap-4 rounded-2xl border-2 border-dashed border-[#F0E0D1] bg-white p-4 text-left transition-colors hover:border-[#F89E07]/50 hover:bg-[#FFFAF5] ${
-      compact ? '' : 'shadow-[0_2px_12px_rgba(34,26,17,0.04)]'
-    }`}
-  >
-    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[#FFF1E6] text-2xl text-[#F89E07]">
-      +
-    </span>
-    <span>
-      <span className="block font-vendor text-base font-bold text-[#111827]">
-        Create Custom Service
-      </span>
-      <span className="mt-0.5 block font-vendor text-sm text-[#6B7280]">
-        Add a service not listed in our catalog
-      </span>
-    </span>
   </button>
 );
 
