@@ -1,0 +1,30 @@
+# Lubist — https://www.lubist.com
+#
+# Everything public is crawlable. The disallowed paths below are either
+# authenticated areas, transactional steps, or pages that only ever render
+# personal data — none of them are useful in a search result and crawling them
+# wastes budget that should go to /salons, /products and /blog.
+
+User-agent: *
+Allow: /
+
+Disallow: /cart
+Disallow: /product-cart
+Disallow: /checkout
+Disallow: /product-checkout
+Disallow: /order-confirmation
+Disallow: /booking-confirmation
+Disallow: /login
+Disallow: /signup
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /vendor-login
+Disallow: /rm-login
+Disallow: /vendor/
+Disallow: /hmr/
+Disallow: /customer/
+Disallow: /my-bookings
+Disallow: /my-reviews
+Disallow: /favorites
+
+Sitemap: https://www.lubist.com/sitemap.xml

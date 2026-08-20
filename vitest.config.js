@@ -26,6 +26,9 @@ export default defineConfig({
     globals: true,
     css: false,
     setupFiles: ['./src/test/setup.js'],
-    include: ['src/**/*.{test,spec}.{js,jsx}'],
+    // api/ holds the Vercel server-rendering functions (CommonJS). They are
+    // plain modules with no DOM dependency, so they run in the same jsdom
+    // project rather than warranting a second vitest config.
+    include: ['src/**/*.{test,spec}.{js,jsx}', 'api/**/*.{test,spec}.js'],
   },
 });

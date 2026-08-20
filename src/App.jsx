@@ -78,6 +78,10 @@ const FAQ = lazy(() => import('./pages/public/FAQ'));
 // Public account-deletion instructions - URL is registered in the Play Console
 const DeleteAccount = lazy(() => import('./pages/public/DeleteAccount'));
 const PartnerWithUs = lazy(() => import('./pages/public/PartnerWithUs'));
+// Blog: a direct hit on these URLs is server-rendered by api/render.js
+// (see vercel.json); these components are the in-SPA click-through render.
+const Blog = lazy(() => import('./pages/public/Blog'));
+const BlogPost = lazy(() => import('./pages/public/BlogPost'));
 const NotFoundPage = lazy(() => import('./pages/public/NotFoundPage'));
 
 // Customer pages
@@ -248,6 +252,16 @@ function App() {
               <Route path="/booking-confirmation" element={<BookingConfirmation />} />
               <Route path="/careers" element={<Careers />} />
               <Route path="/partner-with-us" element={<PartnerWithUs />} />
+              <Route path="/blog" element={
+                <ErrorBoundary fallback="page">
+                  <Blog />
+                </ErrorBoundary>
+              } />
+              <Route path="/blog/:slug" element={
+                <ErrorBoundary fallback="page">
+                  <BlogPost />
+                </ErrorBoundary>
+              } />
               
               {/* Authentication pages */}
               <Route path="/login" element={<Login />} />

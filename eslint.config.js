@@ -33,4 +33,16 @@ export default [
       }],
     },
   },
+  {
+    // api/ holds the Vercel serverless functions that server-render /blog.
+    // They run on Node, not in the browser, and are CommonJS: package.json has
+    // no "type": "module", and adding one would change how Vite, PostCSS and
+    // Tailwind load their own configs. Their *.test.js files are ESM (vitest
+    // transforms them) but still need the Node globals, so both are covered.
+    files: ['api/**/*.js'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+      parserOptions: { sourceType: 'commonjs' },
+    },
+  },
 ]
