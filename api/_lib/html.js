@@ -122,7 +122,15 @@ h1,h2,h3,h4{font-family:"Marcellus",Georgia,serif;font-weight:400;color:#111827}
 .site-nav{display:flex;gap:20px;flex-wrap:wrap}
 .site-nav a{font-size:.9375rem;color:#374151}
 .site-nav a:hover{color:#b26e02}
-@media(max-width:640px){.site-nav{display:none}}
+/* No hamburger to open: these documents deliberately ship no JavaScript. The
+   nav drops to its own row and scrolls sideways instead of disappearing, so a
+   reader who landed here from search can still reach /salons. */
+@media(max-width:640px){
+  .site-header .wrap{flex-wrap:wrap;gap:4px 16px;padding-bottom:8px}
+  .site-nav{width:100%;flex-wrap:nowrap;gap:18px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .site-nav::-webkit-scrollbar{display:none}
+  .site-nav a{white-space:nowrap;font-size:.875rem}
+}
 
 /* Hero */
 .hero{background:linear-gradient(180deg,#F5F8FE 0%,#CEE0F6 100%);padding:56px 0;text-align:center}
@@ -131,7 +139,10 @@ h1,h2,h3,h4{font-family:"Marcellus",Georgia,serif;font-weight:400;color:#111827}
 .hero p{max-width:640px;margin:16px auto 0;color:#555;font-size:1rem}
 
 /* Cards */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;padding:48px 0}
+/* min() keeps the 300px floor on real columns but lets a single column fall
+   back to the container width — a bare minmax(300px,1fr) cannot shrink, so on
+   a 320px screen the card overhung the gutter. */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(300px,100%),1fr));gap:24px;padding:48px 0}
 .card{display:flex;flex-direction:column;border:1px solid #e5e7eb;border-radius:12px;overflow:hidden;background:#fff;transition:box-shadow .2s}
 .card:hover{box-shadow:0 10px 15px rgba(0,0,0,.1)}
 .card__media{aspect-ratio:16/9;background:linear-gradient(180deg,#F5F8FE 0%,#CEE0F6 100%);overflow:hidden}
@@ -152,7 +163,11 @@ h1,h2,h3,h4{font-family:"Marcellus",Georgia,serif;font-weight:400;color:#111827}
 .pager a:hover{border-color:#111827}
 
 /* Article */
-.article{padding:40px 0 24px}
+/* Longhands, not a shorthand: this class shares an element with .wrap
+   (<article class="wrap wrap--narrow article">) and is declared later at the
+   same specificity, so a padding shorthand here silently reset .wrap's own
+   0 20px side gutters to zero and pinned the article to the screen edge. */
+.article{padding-top:40px;padding-bottom:24px}
 .breadcrumb{font-size:.875rem;color:#6b7280;margin-bottom:24px}
 .breadcrumb a:hover{color:#b26e02}
 .article__tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
