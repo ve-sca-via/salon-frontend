@@ -21,6 +21,7 @@ import { productApi } from '../services/api/productApi';
 import { productCartApi } from '../services/api/productCartApi';
 import { productOrderApi } from '../services/api/productOrderApi';
 import { bannerApi } from '../services/api/bannerApi';
+import { blogApi } from '../services/api/blogApi';
 
 const authPersistConfig = {
   key: 'auth',
@@ -51,6 +52,7 @@ export const store = configureStore({
     [productCartApi.reducerPath]: productCartApi.reducer,
     [productOrderApi.reducerPath]: productOrderApi.reducer,
     [bannerApi.reducerPath]: bannerApi.reducer,
+    [blogApi.reducerPath]: blogApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -76,6 +78,7 @@ export const store = configureStore({
           'productCartApi',
           'productOrderApi',
           'bannerApi',
+          'blogApi',
         ],
       },
     }).concat(
@@ -93,7 +96,8 @@ export const store = configureStore({
       productApi.middleware,
       productCartApi.middleware,
       productOrderApi.middleware,
-      bannerApi.middleware
+      bannerApi.middleware,
+      blogApi.middleware
     ),
 });
 

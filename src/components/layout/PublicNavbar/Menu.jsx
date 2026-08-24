@@ -3,6 +3,7 @@ import { MenuItem } from "./MenuItem";
 import { MenuItemWithDropdown } from "./Dropdown";
 
 export const MORE_ITEMS = [
+  { label: "Blog", to: "/blog" },
   { label: "How It Works", to: "/how-it-works" },
   { label: "Testimonials", to: "/testimonials" },
   { label: "FAQ", to: "/faq" },
