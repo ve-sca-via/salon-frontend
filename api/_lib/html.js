@@ -108,7 +108,7 @@ const SHELL_CSS = `
 *,*::before,*::after{box-sizing:border-box}
 body,h1,h2,h3,h4,p,ul,ol,li,figure,blockquote{margin:0;padding:0}
 ul,ol{list-style:none}
-img{max-width:100%;display:block}
+img{max-width:100%;height:auto;display:block}
 a{color:inherit;text-decoration:none}
 body{background:#fff;color:#111827;font-family:"DM Sans",system-ui,sans-serif;line-height:1.6;-webkit-font-smoothing:antialiased}
 h1,h2,h3,h4{font-family:"Marcellus",Georgia,serif;font-weight:400;color:#111827}
@@ -174,7 +174,11 @@ h1,h2,h3,h4{font-family:"Marcellus",Georgia,serif;font-weight:400;color:#111827}
 .article__tags a{background:#F5F8FE;border-radius:9999px;padding:4px 12px;font-size:.75rem;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:#b26e02}
 .article h1{font-size:2.25rem;line-height:1.2}
 .article__meta{margin-top:16px;font-size:.875rem;color:#6b7280}
-.article__cover{margin-top:32px;border-radius:12px;width:100%}
+/* The cover keeps its own proportions: max-width instead of width so a small
+   image is never blown up, height:auto so a narrow screen scales it down
+   rather than squashing it, and max-height so a portrait cover cannot fill a
+   whole phone screen before the article starts. */
+.article__cover{display:block;margin:32px auto 0;max-width:100%;height:auto;max-height:80vh;border-radius:12px}
 .article .blog-prose{margin-top:32px}
 
 /* Conversion block + read-next */
