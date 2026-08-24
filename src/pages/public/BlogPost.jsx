@@ -138,11 +138,15 @@ const BlogPost = () => {
         </header>
 
         {/* ---------- Cover ---------- */}
+        {/* Proportions are the image's own: `max-w-full` instead of `w-full` so a
+            small cover is not blown up, and `max-h-[80vh]` so a portrait one
+            cannot push the article off a phone screen. Must match
+            `.article__cover` in `api/_lib/html.js`. */}
         {post.cover_image_url && (
           <img
             src={post.cover_image_url}
             alt={post.cover_image_alt || ''}
-            className="mt-8 w-full rounded-xl object-cover"
+            className="mx-auto mt-8 block h-auto max-h-[80vh] max-w-full rounded-xl"
           />
         )}
 

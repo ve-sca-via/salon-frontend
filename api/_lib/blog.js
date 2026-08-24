@@ -279,7 +279,7 @@ async function renderBlogPost({ slug }) {
     .join(' &middot; ');
 
   const cover = post.cover_image_url
-    ? `<img class="article__cover" src="${escapeHtml(post.cover_image_url)}" alt="${escapeHtml(post.cover_image_alt || '')}" width="1200" height="675" />`
+    ? `<img class="article__cover" src="${escapeHtml(post.cover_image_url)}" alt="${escapeHtml(post.cover_image_alt || '')}" />`
     : '';
 
   const readNext = related.length
