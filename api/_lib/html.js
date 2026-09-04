@@ -181,6 +181,18 @@ h1,h2,h3,h4{font-family:"Marcellus",Georgia,serif;font-weight:400;color:#111827}
 .article__cover{display:block;margin:32px auto 0;max-width:100%;height:auto;max-height:80vh;border-radius:12px}
 .article .blog-prose{margin-top:32px}
 
+/* FAQ accordion — <details>/<summary> needs no JavaScript, which matches this
+   document's "ships no JS" constraint (see .site-nav above). */
+.faq{margin-top:48px}
+.faq h2{font-size:1.5rem}
+.faq__list{margin-top:16px;border-top:1px solid #e5e7eb}
+.faq__item{border-bottom:1px solid #e5e7eb;padding:16px 0}
+.faq__item summary{cursor:pointer;list-style:none;display:flex;align-items:center;justify-content:space-between;gap:16px;font-weight:500;color:#111827}
+.faq__item summary::-webkit-details-marker{display:none}
+.faq__item summary::after{content:'+';flex-shrink:0;font-size:1.25rem;line-height:1;color:#6b7280}
+.faq__item[open] summary::after{content:'\\2212'}
+.faq__item p{margin-top:12px;color:#555;font-size:.9375rem;line-height:1.6}
+
 /* Conversion block + read-next */
 .cta{margin:48px 0;padding:32px 24px;border-radius:12px;text-align:center;background:linear-gradient(180deg,#F5F8FE 0%,#CEE0F6 100%)}
 .cta h2{font-size:1.5rem}

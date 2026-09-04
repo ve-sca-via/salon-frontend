@@ -332,6 +332,41 @@ describe('renderBlogPost', () => {
     expect(status).toBe(404);
   });
 
+  it('renders FAQs as a details/summary accordion and a matching FAQPage block', async () => {
+    registerPost(
+      makePost({
+        faqs: [
+          { question: 'How often should I get a hair spa?', answer: 'Every 4-6 weeks for most hair types.' },
+          { question: 'Is it safe for coloured hair?', answer: 'Yes, ask for a colour-safe product.' },
+        ],
+      }),
+    );
+    const { html } = await renderBlogPost({ slug: 'best-hair-spa-in-delhi' });
+    expect(html).toContain('<summary>How often should I get a hair spa?</summary>');
+    expect(html).toContain('<p>Every 4-6 weeks for most hair types.</p>');
+    expect(html).toContain('"@type":"FAQPage"');
+    expect(html).toContain('"name":"Is it safe for coloured hair?"');
+    expect(html).toContain('"@type":"Answer"');
+  });
+
+  it('omits the FAQ section and FAQPage data when there are no FAQs', async () => {
+    registerPost(makePost({ faqs: [] }));
+    const { html } = await renderBlogPost({ slug: 'best-hair-spa-in-delhi' });
+    expect(html).not.toContain('class="faq"');
+    expect(html).not.toContain('"@type":"FAQPage"');
+  });
+
+  it('escapes FAQ text rather than letting stored markup into the page', async () => {
+    registerPost(
+      makePost({
+        faqs: [{ question: '<img src=x onerror=alert(1)>', answer: 'Safe answer' }],
+      }),
+    );
+    const { html } = await renderBlogPost({ slug: 'best-hair-spa-in-delhi' });
+    expect(html).not.toContain('<img src=x onerror=alert(1)>');
+    expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+  });
+
   it('escapes a malicious title while still rendering the sanitised body', async () => {
     registerPost(
       makePost({
