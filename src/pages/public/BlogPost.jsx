@@ -158,6 +158,34 @@ const BlogPost = () => {
           dangerouslySetInnerHTML={{ __html: post.content || '' }}
         />
 
+        {/* ---------- FAQ ----------
+            Plain text, not HTML — safe to render directly. The SSR twin in
+            api/_lib/blog.js also emits the matching FAQPage JSON-LD; that
+            schema is what search engines see, since this client-side render
+            is not what crawlers read. */}
+        {post.faqs?.length > 0 && (
+          <section className="mt-12" aria-label="Frequently asked questions">
+            <h2 className="font-display text-2xl text-neutral-black">
+              Frequently asked questions
+            </h2>
+            <div className="mt-4 divide-y divide-gray-200 border-y border-gray-200">
+              {post.faqs.map((faq, index) => (
+                <details key={index} className="group py-4" data-testid="blog-faq-item">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-body font-medium text-neutral-black">
+                    {faq.question}
+                    <span aria-hidden="true" className="shrink-0 text-neutral-gray-400 transition-transform group-open:rotate-45">
+                      +
+                    </span>
+                  </summary>
+                  <p className="mt-3 font-body text-sm leading-relaxed text-neutral-gray-500">
+                    {faq.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* ---------- Conversion block ----------
             The blog's job is to capture informational searches and hand the
             reader on to the pages that actually earn. Every article ends here. */}

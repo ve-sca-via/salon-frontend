@@ -134,6 +134,32 @@ describe('BlogPost', () => {
     );
   });
 
+  it('renders FAQs as a collapsible list', async () => {
+    registerPost(
+      makePost({
+        faqs: [
+          { question: 'How often should I get a hair spa?', answer: 'Every 4-6 weeks for most hair types.' },
+          { question: 'Is it safe for coloured hair?', answer: 'Yes, ask for a colour-safe product.' },
+        ],
+      }),
+    );
+    renderPage();
+
+    expect(await screen.findByText('Frequently asked questions')).toBeInTheDocument();
+    const items = screen.getAllByTestId('blog-faq-item');
+    expect(items).toHaveLength(2);
+    expect(within(items[0]).getByText('How often should I get a hair spa?').closest('summary')).toBeInTheDocument();
+    expect(within(items[0]).getByText('Every 4-6 weeks for most hair types.')).toBeInTheDocument();
+  });
+
+  it('omits the FAQ section when the post has none', async () => {
+    registerPost(makePost({ faqs: [] }));
+    renderPage();
+
+    await screen.findByTestId('blog-article-body');
+    expect(screen.queryByText('Frequently asked questions')).not.toBeInTheDocument();
+  });
+
   it('omits the read-next block when nothing is related', async () => {
     registerPost();
     renderPage();
