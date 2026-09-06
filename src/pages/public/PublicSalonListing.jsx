@@ -11,6 +11,7 @@ import { SkeletonSalonCard } from "../../components/shared/Skeleton";
 import { SalonCard } from "../../components/shared/SalonCard";
 import { showErrorToast, showInfoToast, showSuccessToast } from "../../utils/toastConfig";
 import { normalizeCityName, citiesMatch, uniqueNormalizedCities } from "../../utils/locationText";
+import useDocumentMeta from "../../hooks/useDocumentMeta";
 
 
 // Hero Section Component
@@ -55,6 +56,10 @@ function HeroSection() {
 }
 
 const PublicSalonListing = () => {
+  useDocumentMeta(
+    'Browse Salons | Lubist',
+    'Discover verified salons and spas near you — compare services, prices and reviews, then book instantly on Lubist.',
+  );
   const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
   const { isAuthenticated, user } = useSelector((state) => state.auth);

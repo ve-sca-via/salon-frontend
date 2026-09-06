@@ -18,6 +18,7 @@ import { Link } from "react-router-dom";
 import PublicNavbar from "../../components/layout/PublicNavbar";
 import Footer from "../../components/layout/Footer";
 import { post } from "../../services/apiClient";
+import useDocumentMeta from "../../hooks/useDocumentMeta";
 
 const SHOP_TYPES = ["Salon", "Spa", "Clinic", "Other"];
 
@@ -73,6 +74,10 @@ const steps = [
 ];
 
 const PartnerWithUs = () => {
+  useDocumentMeta(
+    'Partner With Us | Lubist',
+    'List your salon, spa or clinic on Lubist and reach more customers — see partner benefits and apply to onboard.',
+  );
   const [form, setForm] = useState(INITIAL_FORM);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);

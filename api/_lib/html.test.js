@@ -124,9 +124,14 @@ describe('renderDocument', () => {
     );
   });
 
-  it('uses a large twitter card only when there is an image', () => {
-    expect(renderDocument(base)).toContain('<meta name="twitter:card" content="summary" />');
+  it('falls back to the sitewide default OG image when a page has none of its own', () => {
+    const html = renderDocument(base);
+    expect(html).toContain('<meta name="twitter:card" content="summary_large_image" />');
+    expect(html).toContain('<meta property="og:image" content="http://localhost:3000/og-default.png" />');
+    expect(html).toContain('<meta property="og:image:alt" content="Lubist - Beauty. Booking. Simplified." />');
+  });
 
+  it('uses a page-specific image over the default when provided', () => {
     const withImage = renderDocument({
       ...base,
       imageUrl: 'https://res.cloudinary.com/x/blog/a.jpg',

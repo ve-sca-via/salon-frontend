@@ -72,6 +72,10 @@ const truncate = (text, limit) => {
 /** Absolute URL for a site-relative path — canonical tags and og:url need one. */
 const absoluteUrl = (path) => `${SITE_URL}${path.startsWith('/') ? path : `/${path}`}`;
 
+/** Sitewide branded fallback for og:image/twitter:image when a page has none of its own. */
+const DEFAULT_OG_IMAGE = absoluteUrl('/og-default.png');
+const DEFAULT_OG_IMAGE_ALT = 'Lubist - Beauty. Booking. Simplified.';
+
 // ---------------------------------------------------------------------------
 // PAGE CHROME
 // ---------------------------------------------------------------------------
@@ -295,6 +299,12 @@ function renderDocument({
   const canonical = absoluteUrl(canonicalPath);
   const safeTitle = escapeHtml(title);
   const safeDescription = escapeHtml(description);
+  // Fall back to a branded default rather than omitting the tag outright — a
+  // missing og:image degrades the Twitter card from summary_large_image to a
+  // bare summary, and most unfurlers (WhatsApp, LinkedIn, Slack) render no
+  // preview at all without one.
+  const finalImageUrl = imageUrl || DEFAULT_OG_IMAGE;
+  const finalImageAlt = imageAlt || (imageUrl ? undefined : DEFAULT_OG_IMAGE_ALT);
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -305,20 +315,25 @@ function renderDocument({
 <meta name="description" content="${safeDescription}" />
 <link rel="canonical" href="${escapeHtml(canonical)}" />
 ${robots ? `<meta name="robots" content="${escapeHtml(robots)}" />` : '<meta name="robots" content="index, follow" />'}
-<link rel="icon" type="image/svg+xml" href="/vite.svg" />
+<link rel="icon" href="/favicon.ico" sizes="32x32" />
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+<link rel="manifest" href="/manifest.webmanifest" />
+<meta name="theme-color" content="#F89C02" />
 
 <meta property="og:site_name" content="Lubist" />
 <meta property="og:type" content="${escapeHtml(ogType)}" />
 <meta property="og:title" content="${safeTitle}" />
 <meta property="og:description" content="${safeDescription}" />
 <meta property="og:url" content="${escapeHtml(canonical)}" />
-${imageUrl ? `<meta property="og:image" content="${escapeHtml(imageUrl)}" />` : ''}
-${imageUrl && imageAlt ? `<meta property="og:image:alt" content="${escapeHtml(imageAlt)}" />` : ''}
+<meta property="og:image" content="${escapeHtml(finalImageUrl)}" />
+${finalImageAlt ? `<meta property="og:image:alt" content="${escapeHtml(finalImageAlt)}" />` : ''}
 
-<meta name="twitter:card" content="${imageUrl ? 'summary_large_image' : 'summary'}" />
+<meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="${safeTitle}" />
 <meta name="twitter:description" content="${safeDescription}" />
-${imageUrl ? `<meta name="twitter:image" content="${escapeHtml(imageUrl)}" />` : ''}
+<meta name="twitter:image" content="${escapeHtml(finalImageUrl)}" />
 
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -360,6 +375,8 @@ module.exports = {
   truncate,
   absoluteUrl,
   publisher,
+  DEFAULT_OG_IMAGE,
+  DEFAULT_OG_IMAGE_ALT,
   renderDocument,
   renderNotice,
   siteHeader,

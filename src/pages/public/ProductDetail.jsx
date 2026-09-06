@@ -9,6 +9,7 @@ import { FiShoppingCart, FiCreditCard, FiChevronLeft, FiStar, FiTruck, FiShield,
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
 import RelatedProducts from '../../components/shared/RelatedProducts';
+import useDocumentMeta from '../../hooks/useDocumentMeta';
 
 const ProductDetail = () => {
   const { slug } = useParams();
@@ -23,6 +24,10 @@ const ProductDetail = () => {
   // Fetch product details
   const { data: productData, isLoading, error } = useGetProductBySlugQuery(slug);
   const product = productData?.product || productData;
+  useDocumentMeta(
+    product?.name ? `${product.name} | Lubist` : 'Product Details | Lubist',
+    product?.description || (product?.name ? `Shop ${product.name} on Lubist.` : undefined),
+  );
 
   // Cart mutation
   const [addToCart, { isLoading: isAddingToCart }] = useAddToProductCartMutation();

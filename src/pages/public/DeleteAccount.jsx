@@ -17,6 +17,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
+import useDocumentMeta from '../../hooks/useDocumentMeta';
 import {
   FiTrash2,
   FiSmartphone,
@@ -76,6 +77,11 @@ const RETAINED_DATA = [
 ];
 
 export default function DeleteAccount() {
+  useDocumentMeta(
+    'Delete Your Account | Lubist',
+    'How to request deletion of your Lubist account and the data associated with it — in-app or by email.',
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PublicNavbar />
