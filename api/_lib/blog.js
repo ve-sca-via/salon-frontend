@@ -23,6 +23,7 @@ const {
   publisher,
   renderDocument,
   renderNotice,
+  DEFAULT_OG_IMAGE,
 } = require('./html');
 
 // Must match POSTS_PER_PAGE in src/pages/public/Blog.jsx, or ?page=2 would show
@@ -314,7 +315,7 @@ async function renderBlogPost({ slug }) {
       '@type': 'BlogPosting',
       headline: post.title,
       description: metaDescription,
-      image: post.cover_image_url ? [post.cover_image_url] : undefined,
+      image: [post.cover_image_url || DEFAULT_OG_IMAGE],
       datePublished: post.published_at || undefined,
       dateModified: post.updated_at || post.published_at || undefined,
       author: post.author_name

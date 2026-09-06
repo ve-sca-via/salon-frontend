@@ -16,8 +16,13 @@ import React, { useState } from 'react';
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
 import { FiHelpCircle, FiChevronDown, FiChevronUp, FiMail } from 'react-icons/fi';
+import useDocumentMeta from '../../hooks/useDocumentMeta';
 
 export default function FAQ() {
+  useDocumentMeta(
+    'FAQs | Lubist',
+    'Answers to common questions about booking, payments, cancellations and using the Lubist platform.',
+  );
   const [openIndex, setOpenIndex] = useState(null);
 
   const toggleFAQ = (index) => {

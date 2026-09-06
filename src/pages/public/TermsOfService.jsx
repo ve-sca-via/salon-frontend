@@ -2,8 +2,14 @@ import React from 'react';
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
 import { FiShield, FiFileText, FiRefreshCcw, FiPhoneCall, FiAlertCircle } from 'react-icons/fi';
+import useDocumentMeta from '../../hooks/useDocumentMeta';
 
 export default function TermsOfService() {
+  useDocumentMeta(
+    'Terms of Service | Lubist',
+    'The terms and conditions governing your use of the Lubist app and website.',
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PublicNavbar />

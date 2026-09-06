@@ -53,7 +53,7 @@ export default defineConfig({
     }),
     // Bundle analyzer - generates stats.html after build
     visualizer({
-      open: true,
+      open: false,
       gzipSize: true,
       brotliSize: true,
       filename: 'dist/stats.html',

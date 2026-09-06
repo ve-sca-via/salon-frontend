@@ -39,6 +39,7 @@ import InstagramFeed from "../../components/shared/InstagramFeed";
 import UserQuickDashboard from "../../components/shared/UserQuickDashboard";
 import FeaturedProducts from "../../components/shared/FeaturedProducts";
 import ProductCatalog from "../../components/shared/ProductCatalog";
+import useDocumentMeta from "../../hooks/useDocumentMeta";
 // Carousel items
 import carouselImg1 from "../../assets/images/website pic 1.png";
 import carouselImg2 from "../../assets/images/website pic 2.png";
@@ -355,6 +356,10 @@ function HeroSection() {
  * Composes multiple sections into a cohesive landing experience
  */
 const Home = () => {
+  useDocumentMeta(
+    'Lubist - Beauty. Booking. Simplified.',
+    'Lubist is a modern beauty and wellness platform. Discover verified salons, book appointments instantly, and enjoy stress-free beauty services.',
+  );
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   return (

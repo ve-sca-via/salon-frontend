@@ -44,6 +44,7 @@ import ShareModal from "../../components/shared/ShareModal";
 import RelatedSalons from "../../components/shared/RelatedSalons";
 import OffersSection from "../../components/shared/OffersSection";
 import { showErrorToast, showInfoToast, showSuccessToast } from "../../utils/toastConfig";
+import useDocumentMeta from "../../hooks/useDocumentMeta";
 
 /**
  * getCategoryImage - Returns category-specific image URL
@@ -220,6 +221,14 @@ export default function SalonDetail() {
   
   // Extract data from responses
   const salon = salonData?.salon || salonData;
+  const salonName = salon?.business_name || salon?.name;
+  const salonLocation = salon?.city ? `in ${salon.city}` : 'near you';
+  useDocumentMeta(
+    salonName ? `${salonName} | Lubist` : 'Salon Details | Lubist',
+    salonName
+      ? `Book appointments at ${salonName} ${salonLocation} — compare services, prices and reviews on Lubist.`
+      : undefined,
+  );
   const services = servicesData?.services || [];
   const displayReviews = reviewsData?.reviews || [];
   const isFavorited = (favoritesData?.favorites || []).some(

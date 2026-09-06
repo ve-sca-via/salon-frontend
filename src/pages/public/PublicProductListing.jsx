@@ -6,8 +6,13 @@ import { useGetProductsQuery, useGetProductCategoriesQuery } from "../../service
 import ProductCard from "../../components/shared/ProductCard";
 import Skeleton from "../../components/shared/Skeleton";
 import { FiSearch, FiFilter, FiX } from "react-icons/fi";
+import useDocumentMeta from "../../hooks/useDocumentMeta";
 
 const PublicProductListing = () => {
+  useDocumentMeta(
+    'Shop Beauty Products | Lubist',
+    'Browse and shop beauty, hair and skincare products from verified salons and brands on Lubist.',
+  );
   const [searchParams, setSearchParams] = useSearchParams();
   
   // Get initial values from URL
