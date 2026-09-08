@@ -16,8 +16,14 @@ import React from 'react';
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
 import { FiShield, FiLock, FiEye, FiFileText, FiMail, FiPhone } from 'react-icons/fi';
+import useDocumentMeta from '../../hooks/useDocumentMeta';
 
 export default function PrivacyPolicy() {
+  useDocumentMeta(
+    'Privacy Policy | Lubist',
+    "Learn how Lubist collects, uses, shares and protects your personal information.",
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
       <PublicNavbar />

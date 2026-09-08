@@ -17,8 +17,13 @@ import { useNavigate } from 'react-router-dom';
 import PublicNavbar from '../../components/layout/PublicNavbar';
 import Footer from '../../components/layout/Footer';
 import FileUpload from '../../components/shared/FileUpload';
+import useDocumentMeta from '../../hooks/useDocumentMeta';
 
 const Careers = () => {
+  useDocumentMeta(
+    'Careers | Lubist',
+    'Join the Lubist team — apply for open Relationship Manager roles.',
+  );
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

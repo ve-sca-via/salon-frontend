@@ -23,6 +23,7 @@ const {
   publisher,
   renderDocument,
   renderNotice,
+  DEFAULT_OG_IMAGE,
 } = require('./html');
 
 // Must match POSTS_PER_PAGE in src/pages/public/Blog.jsx, or ?page=2 would show
@@ -282,6 +283,23 @@ async function renderBlogPost({ slug }) {
     ? `<img class="article__cover" src="${escapeHtml(post.cover_image_url)}" alt="${escapeHtml(post.cover_image_alt || '')}" />`
     : '';
 
+  const faqs = post.faqs || [];
+  const faqSection = faqs.length
+    ? `<section class="faq" aria-label="Frequently asked questions">
+  <h2>Frequently asked questions</h2>
+  <div class="faq__list">
+    ${faqs
+      .map(
+        (faq) => `<details class="faq__item">
+      <summary>${escapeHtml(faq.question)}</summary>
+      <p>${escapeHtml(faq.answer)}</p>
+    </details>`,
+      )
+      .join('\n    ')}
+  </div>
+</section>`
+    : '';
+
   const readNext = related.length
     ? `<section class="read-next">
   <div class="wrap">
@@ -297,7 +315,7 @@ async function renderBlogPost({ slug }) {
       '@type': 'BlogPosting',
       headline: post.title,
       description: metaDescription,
-      image: post.cover_image_url ? [post.cover_image_url] : undefined,
+      image: [post.cover_image_url || DEFAULT_OG_IMAGE],
       datePublished: post.published_at || undefined,
       dateModified: post.updated_at || post.published_at || undefined,
       author: post.author_name
@@ -319,6 +337,17 @@ async function renderBlogPost({ slug }) {
         { '@type': 'ListItem', position: 3, name: post.title, item: absoluteUrl(`/blog/${post.slug}`) },
       ],
     },
+    faqs.length
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map((faq) => ({
+            '@type': 'Question',
+            name: faq.question,
+            acceptedAnswer: { '@type': 'Answer', text: faq.answer },
+          })),
+        }
+      : null,
   ];
 
   return {
@@ -344,6 +373,7 @@ async function renderBlogPost({ slug }) {
     <p class="article__meta">${byline}</p>
     ${cover}
     <div class="blog-prose">${post.content || ''}</div>
+    ${faqSection}
     <aside class="cta">
       <h2>Ready to book?</h2>
       <p>Find verified salons near you, compare real prices and book an appointment in under a minute.</p>
