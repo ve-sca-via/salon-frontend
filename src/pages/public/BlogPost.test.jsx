@@ -194,12 +194,12 @@ describe('BlogPost', () => {
     expect(screen.queryByText(/moved or was removed/i)).not.toBeInTheDocument();
   });
 
-  it('prefers meta_title for the browser tab when the author set one', async () => {
+  it('prefers meta_title for the browser tab when the author set one, used verbatim', async () => {
     registerPost(makePost({ meta_title: 'Hair Spa Cost in Delhi (2026)' }));
     renderPage();
 
     await screen.findByTestId('blog-article-body');
-    expect(document.title).toBe('Hair Spa Cost in Delhi (2026) | Lubist');
+    expect(document.title).toBe('Hair Spa Cost in Delhi (2026)');
   });
 
   it('falls back to the title when meta_title is blank', async () => {
