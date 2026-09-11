@@ -227,8 +227,15 @@ describe('renderBlogPost', () => {
       }),
     );
     const { html } = await renderBlogPost({ slug: 'best-hair-spa-in-delhi' });
-    expect(html).toContain('<title>Hair Spa Cost in Delhi (2026 Guide) | Lubist</title>');
+    expect(html).toContain('<title>Hair Spa Cost in Delhi (2026 Guide)</title>');
     expect(html).toContain('content="Prices, frequency and what to ask for."');
+  });
+
+  it('uses an author-supplied meta_title verbatim, without appending the brand again', async () => {
+    registerPost(makePost({ meta_title: 'Best Men’s Salon in Ranchi | Lubist' }));
+    const { html } = await renderBlogPost({ slug: 'best-hair-spa-in-delhi' });
+    expect(html).toContain('<title>Best Men’s Salon in Ranchi | Lubist</title>');
+    expect(html).not.toContain('Lubist | Lubist');
   });
 
   it('falls back title -> excerpt when the SEO fields are blank', async () => {

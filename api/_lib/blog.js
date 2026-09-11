@@ -256,7 +256,9 @@ async function renderBlogPost({ slug }) {
 
   // Same fallback chain as the admin SERP preview and the React page: the
   // explicit SEO field, then the human-facing one, then the body text.
-  const metaTitle = post.meta_title || post.title;
+  // meta_title is author-controlled SEO copy (see SerpPreview.jsx) and is
+  // used verbatim, unlike the plain post.title fallback below.
+  const metaTitle = post.meta_title || `${post.title} | Lubist`;
   const metaDescription = truncate(
     post.meta_description || post.excerpt || stripHtml(post.content),
     META_DESCRIPTION_LIMIT,
@@ -354,7 +356,7 @@ async function renderBlogPost({ slug }) {
     status: 200,
     cacheControl: CACHE.post,
     html: renderDocument({
-      title: `${metaTitle} | Lubist`,
+      title: metaTitle,
       description: metaDescription,
       canonicalPath: `/blog/${post.slug}`,
       ogType: 'article',

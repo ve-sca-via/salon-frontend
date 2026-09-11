@@ -30,9 +30,9 @@ const BlogPost = () => {
   const relatedPosts = post?.related_posts ?? [];
 
   // Same fallback chain the API and the SSR renderer use: explicit SEO field
-  // first, then the human-facing one.
+  // (used verbatim, author-controlled) first, then the human-facing one.
   useDocumentMeta(
-    post ? `${post.meta_title || post.title} | Lubist` : undefined,
+    post ? post.meta_title || `${post.title} | Lubist` : undefined,
     post ? post.meta_description || post.excerpt || undefined : undefined,
   );
 
